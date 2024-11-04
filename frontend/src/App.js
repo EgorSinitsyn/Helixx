@@ -1,18 +1,20 @@
 // src/App.js
 import React, { useState, useEffect } from 'react';
 import MapComponent from './components/MapComponent';
+import 'mapbox-gl/dist/mapbox-gl.css';
 import Sidebar from './components/Sidebar';
+import Papa from 'papaparse'; // Для парсинга CSV файлов
 
 const App = () => {
   const [dronePosition, setDronePosition] = useState({ lat: 56.0153, lng: 92.8932 });
   const [route, setRoute] = useState([]);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true); // Состояние для боковой панели
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false); // Состояние для модального окна "Настройки карты"
-  const [isHistoryOpen, setIsHistoryOpen] = useState(false); // Состояние для модального окна "История полетов"
-  const [isMissionOpen, setIsMissionOpen] = useState(false); // Состояние для модального окна "Старт миссии"
-  const [is3D, setIs3D] = useState(false); // Состояние для 2D/3D режима
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [isMissionOpen, setIsMissionOpen] = useState(false);
+  const [is3D, setIs3D] = useState(false);
+  const [cellTowers, setCellTowers] = useState([]); // Состояние для хранения вышек
 
-  // Подключение к WebSocket серверу
   useEffect(() => {
     const socket = new WebSocket('ws://localhost:8080/telemetry');
 
@@ -31,27 +33,52 @@ const App = () => {
     return () => socket.close();
   }, []);
 
-  // Управление видимостью модальных окон
   const openSettings = () => setIsSettingsOpen(true);
   const closeSettings = () => setIsSettingsOpen(false);
-
   const openHistory = () => setIsHistoryOpen(true);
   const closeHistory = () => setIsHistoryOpen(false);
-
   const openMission = () => setIsMissionOpen(true);
   const closeMission = () => setIsMissionOpen(false);
-
-  // Управление видимостью боковой панели
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
 
-  // Переключение между 2D и 3D режимами карты
-  const toggle3DMode = () => setIs3D(!is3D);
+  const handleSceneModeChange = (event) => {
+    setIs3D(event.target.value === "3D");
+  };
+
+// Обработка загрузки файла CSV
+const handleFileUpload = (event) => {
+  const file = event.target.files[0];
+  Papa.parse(file, {
+    header: true,
+    dynamicTyping: true,
+    complete: (results) => {
+      // Преобразуем данные из CSV в формат [{lat, lng, radius}, ...]
+      const towers = results.data
+        .map(row => ({
+          lat: parseFloat(row.latitude),
+          lng: parseFloat(row.longitude),
+          radius: parseFloat(row.radius),
+        }))
+        .filter(tower =>
+          !isNaN(tower.lat) &&
+          !isNaN(tower.lng) &&
+          !isNaN(tower.radius)
+        ); // Отфильтровываем некорректные данные
+      setCellTowers(towers);
+    },
+    error: (error) => console.error("Ошибка при обработке CSV:", error)
+  });
+};
 
   return (
     <div>
-      <MapComponent dronePosition={dronePosition} route={route} is3D={is3D} />
+      <MapComponent
+        dronePosition={dronePosition}
+        route={route}
+        is3D={is3D}
+        cellTowers={cellTowers} // Передаем вышки на карту
+      />
 
-      {/* Боковая панель */}
       <Sidebar
         onOpenSettings={openSettings}
         onOpenHistory={openHistory}
@@ -60,26 +87,28 @@ const App = () => {
         onToggleSidebar={toggleSidebar}
       />
 
-      {/* Модальное окно для "Настройки карты" */}
       {isSettingsOpen && (
         <div style={styles.modal}>
           <h2>Настройки карты</h2>
-          <p>Выберите режим видимости:</p>
-          <div style={styles.toggleContainer}>
-            <label>
-              <input
-                type="checkbox"
-                checked={is3D}
-                onChange={toggle3DMode}
-              />
-              Режим {is3D ? '3D' : '2D'}
-            </label>
+          <div style={styles.selectorContainer}>
+            <label style={styles.label}>Режим сцены</label>
+            <select
+              value={is3D ? "3D" : "2D"}
+              onChange={handleSceneModeChange}
+              style={styles.selector}
+            >
+              <option value="2D">2D</option>
+              <option value="3D">3D</option>
+            </select>
+          </div>
+          <div style={{ marginTop: '20px' }}>
+            <p>Импортировать локации сотовых вышек (CSV):</p>
+            <input type="file" accept=".csv" onChange={handleFileUpload} />
           </div>
           <button onClick={closeSettings} style={styles.closeButton}>Закрыть</button>
         </div>
       )}
 
-      {/* Модальное окно для истории полетов */}
       {isHistoryOpen && (
         <div style={styles.modal}>
           <h2>История полетов</h2>
@@ -88,7 +117,6 @@ const App = () => {
         </div>
       )}
 
-      {/* Модальное окно для запуска миссии */}
       {isMissionOpen && (
         <div style={styles.modal}>
           <h2>Старт миссии</h2>
@@ -122,10 +150,18 @@ const styles = {
     border: 'none',
     cursor: 'pointer',
   },
-  toggleContainer: {
+  selectorContainer: {
     display: 'flex',
     alignItems: 'center',
-    marginBottom: '10px',
+    marginBottom: '20px',
+  },
+  label: {
+    marginRight: '10px',
+    fontSize: '16px',
+  },
+  selector: {
+    fontSize: '16px',
+    padding: '5px',
   },
 };
 
