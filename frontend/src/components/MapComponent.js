@@ -46,10 +46,14 @@ const MapComponent = ({ dronePosition, route, is3D, cellTowers }) => {
         const markerElement = document.createElement('div');
         markerElement.className = 'custom-marker';
         markerElement.style.backgroundImage = `url(${towerIcon})`;
-        markerElement.style.width = '30px'; // Задайте нужный размер
-        markerElement.style.height = '30px';
+        markerElement.style.width = '40px'; // Задайте нужный размер
+        markerElement.style.height = '40px';
         markerElement.style.backgroundSize = 'contain';
         markerElement.style.backgroundRepeat = 'no-repeat';
+        markerElement.style.backgroundColor = 'transparent';
+        markerElement.style.position = 'absolute';
+        markerElement.style.filter = 'invert(100%)'; // Применяем фильтр, чтобы изображение стало белым
+
 
         // Добавляем маркер на карту
         new mapboxgl.Marker({ element: markerElement })
