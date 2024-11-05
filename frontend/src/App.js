@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import MapComponent from './components/MapComponent';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import Sidebar from './components/Sidebar';
-import Papa from 'papaparse'; // Для парсинга CSV файлов
+import Papa from 'papaparse';
 
 const App = () => {
   const [dronePosition, setDronePosition] = useState({ lat: 56.0153, lng: 92.8932 });
@@ -13,7 +13,8 @@ const App = () => {
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [isMissionOpen, setIsMissionOpen] = useState(false);
   const [is3D, setIs3D] = useState(false);
-  const [cellTowers, setCellTowers] = useState([]); // Состояние для хранения вышек
+  const [cellTowers, setCellTowers] = useState([]);
+  const [isCoverageEnabled, setIsCoverageEnabled] = useState(true); // Управление зонами покрытия
 
   useEffect(() => {
     const socket = new WebSocket('ws://localhost:8080/telemetry');
@@ -45,86 +46,94 @@ const App = () => {
     setIs3D(event.target.value === "3D");
   };
 
-// Обработка загрузки файла CSV
-const handleFileUpload = (event) => {
-  const file = event.target.files[0];
-  Papa.parse(file, {
-    header: true,
-    dynamicTyping: true,
-    complete: (results) => {
-      // Преобразуем данные из CSV в формат [{lat, lng, radius}, ...]
-      const towers = results.data
-        .map(row => ({
-          lat: parseFloat(row.latitude),
-          lng: parseFloat(row.longitude),
-          radius: parseFloat(row.radius),
-        }))
-        .filter(tower =>
-          !isNaN(tower.lat) &&
-          !isNaN(tower.lng) &&
-          !isNaN(tower.radius)
-        ); // Отфильтровываем некорректные данные
-      setCellTowers(towers);
-    },
-    error: (error) => console.error("Ошибка при обработке CSV:", error)
-  });
-};
+  // Обработка загрузки файла CSV
+  const handleFileUpload = (event) => {
+    const file = event.target.files[0];
+    Papa.parse(file, {
+      header: true,
+      dynamicTyping: true,
+      complete: (results) => {
+        const towers = results.data
+            .map(row => ({
+              lat: parseFloat(row.latitude),
+              lng: parseFloat(row.longitude),
+              radius: parseFloat(row.radius),
+            }))
+            .filter(tower =>
+                !isNaN(tower.lat) &&
+                !isNaN(tower.lng) &&
+                !isNaN(tower.radius)
+            );
+        setCellTowers(towers);
+      },
+      error: (error) => console.error("Ошибка при обработке CSV:", error)
+    });
+  };
+
+  const toggleCoverage = () => setIsCoverageEnabled(!isCoverageEnabled); // Переключение зон покрытия
 
   return (
-    <div>
-      <MapComponent
-        dronePosition={dronePosition}
-        route={route}
-        is3D={is3D}
-        cellTowers={cellTowers} // Передаем вышки на карту
-      />
+      <div>
+        <MapComponent
+            dronePosition={dronePosition}
+            route={route}
+            is3D={is3D}
+            cellTowers={cellTowers}
+            isCoverageEnabled={isCoverageEnabled} // Передаем состояние покрытия
+        />
 
-      <Sidebar
-        onOpenSettings={openSettings}
-        onOpenHistory={openHistory}
-        onOpenMission={openMission}
-        isOpen={isSidebarOpen}
-        onToggleSidebar={toggleSidebar}
-      />
+        <Sidebar
+            onOpenSettings={openSettings}
+            onOpenHistory={openHistory}
+            onOpenMission={openMission}
+            isOpen={isSidebarOpen}
+            onToggleSidebar={toggleSidebar}
+        />
 
-      {isSettingsOpen && (
-        <div style={styles.modal}>
-          <h2>Настройки карты</h2>
-          <div style={styles.selectorContainer}>
-            <label style={styles.label}>Режим сцены</label>
-            <select
-              value={is3D ? "3D" : "2D"}
-              onChange={handleSceneModeChange}
-              style={styles.selector}
-            >
-              <option value="2D">2D</option>
-              <option value="3D">3D</option>
-            </select>
-          </div>
-          <div style={{ marginTop: '20px' }}>
-            <p>Импортировать локации сотовых вышек (CSV):</p>
-            <input type="file" accept=".csv" onChange={handleFileUpload} />
-          </div>
-          <button onClick={closeSettings} style={styles.closeButton}>Закрыть</button>
-        </div>
-      )}
+        {isSettingsOpen && (
+            <div style={styles.modal}>
+              <h2>Настройки карты</h2>
+              <div style={styles.selectorContainer}>
+                <label style={styles.label}>Режим сцены</label>
+                <select
+                    value={is3D ? "3D" : "2D"}
+                    onChange={handleSceneModeChange}
+                    style={styles.selector}
+                >
+                  <option value="2D">2D</option>
+                  <option value="3D">3D</option>
+                </select>
+              </div>
+              <div style={{ marginTop: '20px' }}>
+                <p>Импортировать локации сотовых вышек (CSV):</p>
+                <input type="file" accept=".csv" onChange={handleFileUpload} />
+              </div>
+              <div style={styles.coverageControl}>
+                <span>ВКЛ. отображение сигнала вышек</span>
+                <button onClick={toggleCoverage} style={styles.toggleButton}>
+                  {isCoverageEnabled ? '✔' : '✖'}
+                </button>
+              </div>
+              <button onClick={closeSettings} style={styles.closeButton}>Закрыть</button>
+            </div>
+        )}
 
-      {isHistoryOpen && (
-        <div style={styles.modal}>
-          <h2>История полетов</h2>
-          <p>Просмотр истории выполненных миссий.</p>
-          <button onClick={closeHistory} style={styles.closeButton}>Закрыть</button>
-        </div>
-      )}
+        {isHistoryOpen && (
+            <div style={styles.modal}>
+              <h2>История полетов</h2>
+              <p>Просмотр истории выполненных миссий.</p>
+              <button onClick={closeHistory} style={styles.closeButton}>Закрыть</button>
+            </div>
+        )}
 
-      {isMissionOpen && (
-        <div style={styles.modal}>
-          <h2>Старт миссии</h2>
-          <p>Установите параметры дрона и запустите миссию.</p>
-          <button onClick={closeMission} style={styles.closeButton}>Закрыть</button>
-        </div>
-      )}
-    </div>
+        {isMissionOpen && (
+            <div style={styles.modal}>
+              <h2>Старт миссии</h2>
+              <p>Установите параметры дрона и запустите миссию.</p>
+              <button onClick={closeMission} style={styles.closeButton}>Закрыть</button>
+            </div>
+        )}
+      </div>
   );
 };
 
@@ -162,6 +171,20 @@ const styles = {
   selector: {
     fontSize: '16px',
     padding: '5px',
+  },
+  coverageControl: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: '20px',
+  },
+  toggleButton: {
+    padding: '5px 10px',
+    fontSize: '16px',
+    backgroundColor: '#444',
+    color: 'white',
+    border: 'none',
+    cursor: 'pointer',
   },
 };
 
