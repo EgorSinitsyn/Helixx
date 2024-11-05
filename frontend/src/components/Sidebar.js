@@ -1,21 +1,27 @@
 // src/components/Sidebar.js
 import React from 'react';
 
-const Sidebar = ({ onOpenSettings, onOpenHistory, onOpenMission, isOpen, onToggleSidebar }) => {
+const Sidebar = ({
+                   onOpenSettings,
+                   onOpenHistory,
+                   onOpenMission,
+                   isOpen,
+                   onToggleSidebar
+                 }) => {
   return (
-    <div style={{ ...styles.sidebar, width: isOpen ? '200px' : '50px' }}>
-      <button style={styles.toggleButton} onClick={onToggleSidebar}>
-        {isOpen ? '<<' : '>>'}
-      </button>
-      {isOpen && (
-        <>
-          <h2 style={styles.title}>Helixx</h2>
-          <button style={styles.button} onClick={onOpenSettings}>Настройки карты</button>
-          <button style={styles.button} onClick={onOpenHistory}>История полетов</button>
-          <button style={styles.button} onClick={onOpenMission}>Старт миссии</button>
-        </>
-      )}
-    </div>
+      <div style={{ ...styles.sidebar, width: isOpen ? '200px' : '50px' }}>
+        <button style={styles.toggleButton} onClick={onToggleSidebar}>
+          {isOpen ? '<<' : '>>'}
+        </button>
+        {isOpen && (
+            <>
+              <h2 style={styles.title}>Helixx</h2>
+              <button style={styles.button} onClick={onOpenSettings}>Настройки карты</button>
+              <button style={styles.button} onClick={onOpenHistory}>История полетов</button>
+              <button style={styles.button} onClick={onOpenMission}>Старт миссии</button>
+            </>
+        )}
+      </div>
   );
 };
 

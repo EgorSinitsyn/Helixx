@@ -1,11 +1,11 @@
 // src/components/MapComponent.js
 import React, { useEffect, useRef } from 'react';
 import mapboxgl from 'mapbox-gl';
-import towerIcon from '../assets/tower-icon.png'; // Импорт вашего изображения вышки
+import towerIcon from '../assets/tower-icon.png';
 
 mapboxgl.accessToken = process.env.REACT_APP_MAPBOX_TOKEN;
 
-const MapComponent = ({ dronePosition, route, is3D, cellTowers }) => {
+const MapComponent = ({ dronePosition, route: _route, is3D, cellTowers, isCoverageEnabled }) => {
   const mapContainerRef = useRef(null);
   const mapRef = useRef(null);
   const markerRef = useRef(null);
@@ -22,7 +22,7 @@ const MapComponent = ({ dronePosition, route, is3D, cellTowers }) => {
       zoom: 6,
       pitch: is3D ? 60 : 0,
       bearing: is3D ? -17.6 : 0,
-      antialias: true
+      antialias: true,
     });
 
     mapRef.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
@@ -33,53 +33,88 @@ const MapComponent = ({ dronePosition, route, is3D, cellTowers }) => {
           type: 'raster-dem',
           url: 'mapbox://mapbox.mapbox-terrain-dem-v1',
           tileSize: 512,
-          maxzoom: 14
+          maxzoom: 14,
         });
 
         mapRef.current.setTerrain({ source: 'mapbox-dem', exaggeration: 1.5 });
         mapRef.current.setLight({ anchor: 'map', intensity: 0.5 });
       }
 
-      // Добавляем сотовые вышки на карту с изображением вместо стандартного маркера
-      cellTowers.forEach(tower => {
-        // Создаем кастомный элемент маркера с изображением
+      cellTowers.forEach((tower, index) => {
+        const lat = parseFloat(tower.latitude || tower.lat);
+        const lng = parseFloat(tower.longitude || tower.lng);
+        const radius = (parseFloat(tower.radius) * 1000) / 10;
+
+        if (isNaN(lat) || isNaN(lng) || isNaN(radius)) {
+          console.error(`Invalid tower data at index ${index}:`, { lat, lng, radius });
+          return;
+        }
+
         const markerElement = document.createElement('div');
         markerElement.className = 'custom-marker';
         markerElement.style.backgroundImage = `url(${towerIcon})`;
-        markerElement.style.width = '40px'; // Задайте нужный размер
+        markerElement.style.width = '40px';
         markerElement.style.height = '40px';
         markerElement.style.backgroundSize = 'contain';
         markerElement.style.backgroundRepeat = 'no-repeat';
         markerElement.style.backgroundColor = 'transparent';
         markerElement.style.position = 'absolute';
-        markerElement.style.filter = 'invert(100%)'; // Применяем фильтр, чтобы изображение стало белым
+        markerElement.style.filter = 'invert(100%)';
 
-
-        // Добавляем маркер на карту
         new mapboxgl.Marker({ element: markerElement })
-          .setLngLat([tower.lng, tower.lat])
-          .addTo(mapRef.current);
+            .setLngLat([lng, lat])
+            .addTo(mapRef.current);
 
-        // Добавляем радиус покрытия вышки
-        mapRef.current.addLayer({
-          id: `tower-radius-${tower.lat}-${tower.lng}`,
-          type: 'circle',
-          source: {
+        if (isCoverageEnabled) { // Условный рендеринг зоны покрытия
+          const createCirclePolygon = (center, radius, numPoints = 64) => {
+            const coords = [];
+            for (let i = 0; i < numPoints; i++) {
+              const angle = (i * 360) / numPoints;
+              const radian = (angle * Math.PI) / 180;
+              const dx = radius * Math.cos(radian);
+              const dy = radius * Math.sin(radian);
+              const offsetLng = lng + (dx / 6378137) * (180 / Math.PI) / Math.cos(lat * Math.PI / 180);
+              const offsetLat = lat + (dy / 6378137) * (180 / Math.PI);
+              coords.push([offsetLng, offsetLat]);
+            }
+            coords.push(coords[0]);
+            return coords;
+          };
+
+          const polygonCoords = [createCirclePolygon([lng, lat], radius)];
+          const polygonSourceId = `tower-coverage-${index}`;
+
+          mapRef.current.addSource(polygonSourceId, {
             type: 'geojson',
             data: {
               type: 'Feature',
               geometry: {
-                type: 'Point',
-                coordinates: [tower.lng, tower.lat]
-              }
-            }
-          },
-          paint: {
-            'circle-radius': tower.radius / 100, // Радиус в километрах, делим на 100 для корректного отображения
-            'circle-color': '#FF0000',
-            'circle-opacity': 0.3,
-          }
-        });
+                type: 'Polygon',
+                coordinates: polygonCoords,
+              },
+            },
+          });
+
+          mapRef.current.addLayer({
+            id: `${polygonSourceId}-fill`,
+            type: 'fill',
+            source: polygonSourceId,
+            paint: {
+              'fill-color': '#808080',
+              'fill-opacity': 0.2,
+            },
+          });
+
+          mapRef.current.addLayer({
+            id: `${polygonSourceId}-outline`,
+            type: 'line',
+            source: polygonSourceId,
+            paint: {
+              'line-color': '#FFFFFF',
+              'line-width': 2,
+            },
+          });
+        }
       });
     });
 
@@ -91,57 +126,7 @@ const MapComponent = ({ dronePosition, route, is3D, cellTowers }) => {
         mapRef.current = null;
       }
     };
-  }, [is3D, cellTowers]);
-
-  useEffect(() => {
-    if (markerRef.current && mapRef.current) {
-      markerRef.current.setLngLat([dronePosition.lng, dronePosition.lat]);
-    }
-  }, [dronePosition.lat, dronePosition.lng]);
-
-  useEffect(() => {
-    if (mapRef.current && route.length) {
-      if (mapRef.current.getSource('route')) {
-        mapRef.current.getSource('route').setData({
-          type: 'FeatureCollection',
-          features: [{
-            type: 'Feature',
-            geometry: {
-              type: 'LineString',
-              coordinates: route,
-            },
-          }],
-        });
-      } else {
-        mapRef.current.addSource('route', {
-          type: 'geojson',
-          data: {
-            type: 'FeatureCollection',
-            features: [{
-              type: 'Feature',
-              geometry: {
-                type: 'LineString',
-                coordinates: route,
-              },
-            }],
-          },
-        });
-        mapRef.current.addLayer({
-          id: 'route',
-          type: 'line',
-          source: 'route',
-          layout: {
-            'line-join': 'round',
-            'line-cap': 'round',
-          },
-          paint: {
-            'line-color': '#1db7dd',
-            'line-width': 5,
-          },
-        });
-      }
-    }
-  }, [route]);
+  }, [is3D, cellTowers, isCoverageEnabled]);
 
   return <div ref={mapContainerRef} style={{ width: '100%', height: '100vh' }} />;
 };
