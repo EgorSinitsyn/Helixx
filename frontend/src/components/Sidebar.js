@@ -38,8 +38,22 @@ const styles = {
         padding: '20px',
         display: 'flex',
         flexDirection: 'column',
-        alignItems: 'center', // Центрируем контент в сайдбаре
+        alignItems: 'flex-start',
         zIndex: 1000,
+    },
+    toggleButton: {
+        alignSelf: 'flex-end',
+        marginBottom: '20px',
+    },
+    rotatedText: {
+        transform: 'rotate(-90deg)',
+        transformOrigin: 'left bottom',
+        position: 'absolute',
+        left: -70,
+        top: '50%',
+        fontSize: '16px',
+        color: 'white',
+        whiteSpace: 'nowrap',
     },
     title: {
         marginBottom: '20px',
@@ -53,26 +67,6 @@ const styles = {
         color: 'white',
         border: 'none',
         cursor: 'pointer',
-    },
-    toggleButton: {
-        alignSelf: 'flex-end',
-        marginBottom: '10px',
-        padding: '5px',
-        fontSize: '16px',
-        backgroundColor: '#444',
-        color: 'white',
-        border: 'none',
-        cursor: 'pointer',
-    },
-    rotatedText: {
-        writingMode: 'vertical-rl',
-        transform: 'rotate(180deg)',
-        fontSize: '20px', // Увеличиваем размер шрифта
-        color: 'white',
-        textAlign: 'center',
-        marginTop: 'auto',
-        marginBottom: 'auto',
-        whiteSpace: 'nowrap',
     },
 };
 

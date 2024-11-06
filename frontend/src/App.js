@@ -7,6 +7,7 @@ import Papa from 'papaparse';
 
 const App = () => {
   const [dronePosition, setDronePosition] = useState({ lat: 56.0153, lng: 92.8932 });
+  const [newDronePosition, setNewDronePosition] = useState({ lat: '', lng: '', altitude: '' });
   const [route, setRoute] = useState([]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -14,7 +15,7 @@ const App = () => {
   const [isMissionOpen, setIsMissionOpen] = useState(false);
   const [is3D, setIs3D] = useState(false);
   const [cellTowers, setCellTowers] = useState([]);
-  const [isCoverageEnabled, setIsCoverageEnabled] = useState(true); // Управление зонами покрытия
+  const [isCoverageEnabled, setIsCoverageEnabled] = useState(true);
 
   useEffect(() => {
     const socket = new WebSocket('ws://localhost:8080/telemetry');
@@ -70,7 +71,18 @@ const App = () => {
     });
   };
 
-  const toggleCoverage = () => setIsCoverageEnabled(!isCoverageEnabled); // Переключение зон покрытия
+  const toggleCoverage = () => setIsCoverageEnabled(!isCoverageEnabled);
+
+  // Обновление местоположения дрона
+  const handleConfirmDronePosition = () => {
+    const { lat, lng } = newDronePosition;
+    if (!isNaN(lat) && !isNaN(lng) && lat && lng) {
+      setDronePosition({ lat: parseFloat(lat), lng: parseFloat(lng) });
+      closeSettings();
+    } else {
+      alert("Введите корректные координаты дрона.");
+    }
+  };
 
   return (
       <div>
@@ -79,7 +91,7 @@ const App = () => {
             route={route}
             is3D={is3D}
             cellTowers={cellTowers}
-            isCoverageEnabled={isCoverageEnabled} // Передаем состояние покрытия
+            isCoverageEnabled={isCoverageEnabled}
         />
 
         <Sidebar
@@ -114,6 +126,26 @@ const App = () => {
                   {isCoverageEnabled ? '✔' : '✖'}
                 </button>
               </div>
+              <h3>Установить местоположение дрона</h3>
+              <input
+                  type="number"
+                  placeholder="Широта"
+                  value={newDronePosition.lat}
+                  onChange={(e) => setNewDronePosition({ ...newDronePosition, lat: e.target.value })}
+              />
+              <input
+                  type="number"
+                  placeholder="Долгота"
+                  value={newDronePosition.lng}
+                  onChange={(e) => setNewDronePosition({ ...newDronePosition, lng: e.target.value })}
+              />
+              <input
+                  type="number"
+                  placeholder="Высота"
+                  value={newDronePosition.altitude}
+                  onChange={(e) => setNewDronePosition({ ...newDronePosition, altitude: e.target.value })}
+              />
+              <button onClick={handleConfirmDronePosition} style={styles.confirmButton}>Подтвердить местоположение</button>
               <button onClick={closeSettings} style={styles.closeButton}>Закрыть</button>
             </div>
         )}
@@ -182,6 +214,15 @@ const styles = {
     padding: '5px 10px',
     fontSize: '16px',
     backgroundColor: '#444',
+    color: 'white',
+    border: 'none',
+    cursor: 'pointer',
+  },
+  confirmButton: {
+    marginTop: '10px',
+    padding: '10px',
+    fontSize: '16px',
+    backgroundColor: '#008CBA',
     color: 'white',
     border: 'none',
     cursor: 'pointer',
