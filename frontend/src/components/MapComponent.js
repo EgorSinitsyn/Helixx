@@ -2,13 +2,14 @@
 import React, { useEffect, useRef } from 'react';
 import mapboxgl from 'mapbox-gl';
 import towerIcon from '../assets/tower-icon.png';
+import '../components/drone_style.css';
 
 mapboxgl.accessToken = process.env.REACT_APP_MAPBOX_TOKEN;
 
-const MapComponent = ({ dronePosition, route: _route, is3D, cellTowers, isCoverageEnabled }) => {
+const MapComponent = ({ dronePosition, route, is3D, cellTowers, isCoverageEnabled }) => {
   const mapContainerRef = useRef(null);
   const mapRef = useRef(null);
-  const markerRef = useRef(null);
+  const droneMarkerRef = useRef(null);
 
   useEffect(() => {
     if (mapRef.current) {
@@ -65,7 +66,7 @@ const MapComponent = ({ dronePosition, route: _route, is3D, cellTowers, isCovera
             .setLngLat([lng, lat])
             .addTo(mapRef.current);
 
-        if (isCoverageEnabled) { // Условный рендеринг зоны покрытия
+        if (isCoverageEnabled) {
           const createCirclePolygon = (center, radius, numPoints = 64) => {
             const coords = [];
             for (let i = 0; i < numPoints; i++) {
@@ -116,9 +117,14 @@ const MapComponent = ({ dronePosition, route: _route, is3D, cellTowers, isCovera
           });
         }
       });
-    });
 
-    markerRef.current = new mapboxgl.Marker().setLngLat([dronePosition.lng, dronePosition.lat]).addTo(mapRef.current);
+      const droneElement = document.createElement('div');
+      droneElement.className = 'gps-marker';
+
+      droneMarkerRef.current = new mapboxgl.Marker({ element: droneElement })
+          .setLngLat([dronePosition.lng, dronePosition.lat])
+          .addTo(mapRef.current);
+    });
 
     return () => {
       if (mapRef.current) {
@@ -127,6 +133,17 @@ const MapComponent = ({ dronePosition, route: _route, is3D, cellTowers, isCovera
       }
     };
   }, [is3D, cellTowers, isCoverageEnabled]);
+
+  // Обновляем позицию и размер маркера дрона при изменении координат или высоты
+  useEffect(() => {
+    if (droneMarkerRef.current) {
+      droneMarkerRef.current.setLngLat([dronePosition.lng, dronePosition.lat]);
+
+      // Изменение размера маркера в зависимости от высоты
+      const heightFactor = Math.max(1, dronePosition.altitude / 10);
+      droneMarkerRef.current.getElement().style.transform = `scale(${heightFactor})`;
+    }
+  }, [dronePosition]);
 
   return <div ref={mapContainerRef} style={{ width: '100%', height: '100vh' }} />;
 };
