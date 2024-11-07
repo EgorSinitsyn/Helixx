@@ -13,14 +13,17 @@ const Sidebar = ({
             <button style={styles.toggleButton} onClick={onToggleSidebar}>
                 {isOpen ? '<<' : '>>'}
             </button>
-            {!isOpen && <div style={styles.rotatedText}>Планировщик миссий</div>}
-            {isOpen && (
+            {isOpen ? (
                 <>
-                    <h2 style={styles.title}>Helixx</h2>
+                    <h2 style={styles.centeredTitle}>Helixx</h2>
                     <button style={styles.button} onClick={onOpenSettings}>Настройки карты</button>
                     <button style={styles.button} onClick={onOpenHistory}>История полетов</button>
                     <button style={styles.button} onClick={onOpenMission}>Старт миссии</button>
                 </>
+            ) : (
+                <div style={styles.rotatedTextContainer}>
+                    <div style={styles.rotatedText}>Планировщик миссий</div>
+                </div>
             )}
         </div>
     );
@@ -45,24 +48,33 @@ const styles = {
         alignSelf: 'flex-end',
         marginBottom: '20px',
     },
+    rotatedTextContainer: {
+        position: 'relative',
+        width: '100%',
+        height: '100%',
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
     rotatedText: {
         transform: 'rotate(-90deg)',
-        transformOrigin: 'left bottom',
-        position: 'absolute',
-        left: -70,
-        top: '50%',
-        fontSize: '16px',
+        transformOrigin: 'center',
+        fontSize: '20px',
         color: 'white',
         whiteSpace: 'nowrap',
+        zIndex: 1001,
     },
-    title: {
+    centeredTitle: {
         marginBottom: '20px',
+        textAlign: 'center',
+        alignSelf: 'center',
+        width: '100%',
     },
     button: {
         width: '100%',
         marginBottom: '10px',
         padding: '10px',
-        fontSize: '16px',
+        fontSize: '20px',
         backgroundColor: '#444',
         color: 'white',
         border: 'none',
