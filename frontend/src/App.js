@@ -6,8 +6,8 @@ import Sidebar from './components/Sidebar';
 import Papa from 'papaparse';
 
 const App = () => {
-  const [dronePosition, setDronePosition] = useState({ lat: 56.0153, lng: 92.8932 });
-  const [newDronePosition, setNewDronePosition] = useState({ lat: '', lng: '', altitude: '' });
+  const [dronePosition, setDronePosition] = useState({ lat: 55.967398, lng: 93.128459, altitude: 370 });
+  const [newDronePosition, setNewDronePosition] = useState({ lat: '', lng: '', altitude: 0 });
   const [route, setRoute] = useState([]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -23,7 +23,11 @@ const App = () => {
     socket.onmessage = (event) => {
       const data = JSON.parse(event.data);
       if (data.type === 'POSITION') {
-        setDronePosition({ lat: data.lat, lng: data.lng });
+        setDronePosition((prevPosition) => ({
+          lat: data.lat,
+          lng: data.lng,
+          altitude: data.altitude !== undefined ? data.altitude : prevPosition.altitude,
+        }));
       } else if (data.type === 'ROUTE') {
         setRoute(data.coordinates);
       }
@@ -35,8 +39,20 @@ const App = () => {
     return () => socket.close();
   }, []);
 
-  const openSettings = () => setIsSettingsOpen(true);
-  const closeSettings = () => setIsSettingsOpen(false);
+  const openSettings = () => {
+    setIsSettingsOpen(true);
+    setNewDronePosition({
+      lat: dronePosition.lat,
+      lng: dronePosition.lng,
+      altitude: 0,
+    });
+  };
+
+  const closeSettings = () => {
+    setIsSettingsOpen(false);
+    setNewDronePosition({ lat: '', lng: '', altitude: '' });
+  };
+
   const openHistory = () => setIsHistoryOpen(true);
   const closeHistory = () => setIsHistoryOpen(false);
   const openMission = () => setIsMissionOpen(true);
@@ -73,14 +89,28 @@ const App = () => {
 
   const toggleCoverage = () => setIsCoverageEnabled(!isCoverageEnabled);
 
-  // Обновление местоположения дрона
+  // Обновление местоположения дрона: новое значение высоты было равно текущей высоте плюс введённой дельты
   const handleConfirmDronePosition = () => {
-    const { lat, lng } = newDronePosition;
-    if (!isNaN(lat) && !isNaN(lng) && lat && lng) {
-      setDronePosition({ lat: parseFloat(lat), lng: parseFloat(lng) });
+    const { lat, lng, altitude } = newDronePosition;
+    const latNum = parseFloat(lat);
+    const lngNum = parseFloat(lng);
+    const altitudeDelta = parseFloat(altitude);
+
+    if (
+        !isNaN(latNum) &&
+        !isNaN(lngNum) &&
+        lat !== '' &&
+        lng !== '' &&
+        !isNaN(altitudeDelta)
+    ) {
+      setDronePosition((prevPosition) => ({
+        lat: latNum,
+        lng: lngNum,
+        altitude: prevPosition.altitude + altitudeDelta, // Добавляем дельту к текущей высоте
+      }));
       closeSettings();
     } else {
-      alert("Введите корректные координаты дрона.");
+      alert("Введите корректные координаты и дельту высоты дрона.");
     }
   };
 
