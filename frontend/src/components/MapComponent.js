@@ -4,9 +4,7 @@ import mapboxgl from 'mapbox-gl';
 import towerIcon from '../assets/tower-icon.png';
 import '../components/drone_style.css';
 import * as THREE from 'three';
-// import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader';
 import { GLTFLoader } from 'three-stdlib';
-
 
 mapboxgl.accessToken = process.env.REACT_APP_MAPBOX_TOKEN;
 
@@ -45,20 +43,21 @@ const MapComponent = ({ dronePosition, route: _route, is3D, cellTowers, isCovera
         mapRef.current.setTerrain({ source: 'mapbox-dem', exaggeration: 1.5 });
         mapRef.current.setLight({ anchor: 'map', intensity: 0.5 });
 
-      // Добавляем 3D модель дрона
-      droneLayerRef.current = addDroneModel(mapRef.current, dronePosition);
+        // Добавляем 3D модель дрона без ауры
+        droneLayerRef.current = addDroneModel(mapRef.current, dronePosition);
       } else {
-      // Добавляем маркер дрона в 2D режиме
-      droneMarkerRef.current = addDroneMarker(mapRef.current, dronePosition);
+        // Добавляем маркер дрона в 2D режиме
+        droneMarkerRef.current = addDroneMarker(mapRef.current, dronePosition);
       }
 
+      // Добавляем базовые вышки и зоны покрытия
       cellTowers.forEach((tower, index) => {
         const lat = parseFloat(tower.latitude || tower.lat);
         const lng = parseFloat(tower.longitude || tower.lng);
         const radius = (parseFloat(tower.radius) * 1000) / 10;
 
         if (isNaN(lat) || isNaN(lng) || isNaN(radius)) {
-          console.error(`Invalid tower data at index ${index}:`, { lat, lng, radius });
+          console.error(`Недействительные данные вышки на индексе ${index}:`, { lat, lng, radius });
           return;
         }
 
@@ -136,7 +135,7 @@ const MapComponent = ({ dronePosition, route: _route, is3D, cellTowers, isCovera
         mapRef.current = null;
       }
     };
-  }, [is3D, cellTowers, isCoverageEnabled]);
+  }, [is3D, cellTowers, isCoverageEnabled, dronePosition]);
 
   // Обновляем позицию дрона при изменении dronePosition
   useEffect(() => {
@@ -154,17 +153,16 @@ const MapComponent = ({ dronePosition, route: _route, is3D, cellTowers, isCovera
     }
   }, [dronePosition, is3D]);
 
-    return <div ref={mapContainerRef} style={{ width: '100%', height: '100vh' }} />;
-  };
+  return <div ref={mapContainerRef} style={{ width: '100%', height: '100vh' }} />;
+};
 
-// Функция для добавления 3D-модели дрона
-// Функция для добавления 3D-модели дрона
+// Функция для добавления 3D-модели дрона без ауры
 function addDroneModel(map, dronePosition) {
   const customLayer = {
     id: 'drone-model-layer',
     type: 'custom',
     renderingMode: '3d',
-    dronePosition: dronePosition, // Инициализируем без позиции
+    dronePosition: dronePosition,
     onAdd: function (map, gl) {
       this.map = map;
       this.camera = new THREE.Camera();
@@ -181,24 +179,24 @@ function addDroneModel(map, dronePosition) {
           (gltf) => {
             console.log('Модель загружена успешно');
             this.drone = gltf.scene;
-            // Установка первоначальной ориентации модели дрона
-            // Предположим, что модель изначально ориентирована вдоль оси Z
-            // Чтобы нос указывал на север (ось Y), поворачиваем модель на -90 градусов вокруг оси Y
-            this.drone.rotation.set(-Math.PI / 0, 2, 0);
+            this.drone.rotation.set( 0, 2, 0); // Исправленная ориентация
 
-            // Инвертирование цветов модели
+            // Настройка материалов модели дрона
             this.drone.traverse((child) => {
-              if (child.isMesh) {
-                if (child.material.color) {
-                  child.material.color.setRGB(1 - child.material.color.r, 1 - child.material.color.g, 1 - child.material.color.b);
+              if (child.isMesh && child.material) {
+                child.material.color.setHex(0xffffff);
+                child.material.emissive = new THREE.Color(0xffffff);
+                child.material.emissiveIntensity = 1;
+                child.material.transparent = true;
+                child.material.opacity = 1.0;
+                child.material.needsUpdate = true;
+                if (child.material.map) {
+                  child.material.map = null;
                 }
-                // Если материал имеет карту, можно инвертировать её, но это более сложный процесс
               }
             });
 
             this.scene.add(this.drone);
-            // Добавление свечения
-            addGlow(this.scene, this.drone);
           },
           undefined,
           (error) => {
@@ -214,51 +212,43 @@ function addDroneModel(map, dronePosition) {
       this.renderer.autoClear = false;
     },
     render: function (gl, matrix) {
-      console.log('Метод render вызывается');
-
       // Обновляем матрицу проекции камеры
       this.camera.projectionMatrix = new THREE.Matrix4().fromArray(matrix);
 
-      // Очищаем состояние рендерера
+      // Сбрасываем состояние рендерера
       this.renderer.state.reset();
-
-      // Очищаем буфер глубины
       this.renderer.clearDepth();
 
-      // Проверяем, что модель загружена и позиция дрона определена
+      // Обновляем позицию и масштаб дрона
       if (this.drone && this.dronePosition) {
         const { lng, lat, altitude } = this.dronePosition;
         const modelOrigin = [lng, lat];
-        const modelAltitude = altitude || 209;
+        const modelAltitude = altitude;
 
-        const modelAsMercatorCoordinate =
-            mapboxgl.MercatorCoordinate.fromLngLat(
-                modelOrigin,
-                modelAltitude
-            );
+        const modelAsMercatorCoordinate = mapboxgl.MercatorCoordinate.fromLngLat(
+            modelOrigin,
+            modelAltitude
+        );
 
-        const scale =
-            modelAsMercatorCoordinate.meterInMercatorCoordinateUnits();
+        const scale = modelAsMercatorCoordinate.meterInMercatorCoordinateUnits();
+        // Размер модели
         const modelScale = scale * 150;
 
-        // Обновляем позицию и масштаб модели
         this.drone.position.set(
             modelAsMercatorCoordinate.x,
             modelAsMercatorCoordinate.y,
             modelAsMercatorCoordinate.z
         );
 
-        // Устанавливаем масштаб модели
         this.drone.scale.set(scale, scale, scale);
 
-        // Настраиваем поворот модели, если необходимо
-         this.drone.rotation.x = Math.PI / 2; // Поворот по оси X на 90 градусов
+        this.drone.rotation.x = Math.PI / 2; // При необходимости поворот модели
       }
 
       // Рендерим сцену
       this.renderer.render(this.scene, this.camera);
 
-      // Сообщаем карте, что нужно перерисовать кадр
+      // Уведомляем Mapbox о необходимости перерисовки
       this.map.triggerRepaint();
     },
   };
@@ -280,42 +270,4 @@ function addDroneMarker(map, dronePosition) {
   return marker;
 }
 
-// Функция для добавления свечения
-function addGlow(scene, drone) {
-  // Создаём материал для свечения
-  const glowMaterial = new THREE.MeshBasicMaterial({
-    color: 0xff0000, // Красный цвет свечения
-    transparent: true,
-    opacity: 0.5,
-    blending: THREE.AdditiveBlending, // Используем аддитивное смешивание
-    side: THREE.DoubleSide,
-  });
-
-  // Создаём и добавляем свечение для каждой меш-сети в модели дрона
-  drone.traverse((child) => {
-    if (child.isMesh) {
-      const glowGeometry = child.geometry.clone();
-      const glowMesh = new THREE.Mesh(glowGeometry, glowMaterial.clone());
-      glowMesh.scale.multiplyScalar(1.2); // Увеличиваем размер свечения
-      glowMesh.rotation.copy(child.rotation);
-      glowMesh.position.copy(child.position);
-      scene.add(glowMesh);
-
-      // Сохраняем ссылку на свечение для анимации
-      child.userData.glow = glowMesh;
-    }
-  });
-
-  // Определяем функцию анимации свечения
-  const animateGlow = () => {
-    const time = Date.now() * 0.005;
-    scene.children.forEach((child) => {
-      if (child.userData.glow) {
-        const opacity = 0.5 + 0.5 * Math.sin(time); // Пульсация от 0 до 1
-        child.userData.glow.material.opacity = opacity;
-      }
-    });
-  };
-}
-
-  export default MapComponent;
+export default MapComponent;

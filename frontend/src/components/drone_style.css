@@ -12,13 +12,12 @@
     position: absolute;
     top: 50%;
     left: 50%;
-    width: 28px; /* Уменьшаем размер маркера для окантовки */
-    height: 28px;
+    width: 32px; /* Уменьшаем размер маркера для окантовки */
+    height: 30px;
     background: rgba(255, 0, 0, 0.8); /* Цвет внутренней части маркера */
     clip-path: polygon(50% 0%, 100% 100%, 50% 80%, 0% 100%); /* Форма стрелки */
     transform: translate(-50%, -50%); /* Центрирование маркера */
     animation: pulse 1.5s ease-out infinite;
-    border: 2px solid gold; /* Добавляем золотистую окантовку */
     box-sizing: border-box; /* Учитываем бордюр в размерах элемента */
     box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
 }
@@ -30,6 +29,6 @@
     }
     100% {
         transform: translate(-50%, -50%) scale(1);
-        opacity: 0.8;
+        opacity: 0.85;
     }
 }
