@@ -3,12 +3,17 @@ import React, { useEffect, useRef } from 'react';
 import mapboxgl from 'mapbox-gl';
 import towerIcon from '../assets/tower-icon.png';
 import '../components/drone_style.css';
+import * as THREE from 'three';
+// import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader';
+import { GLTFLoader } from 'three-stdlib';
+
 
 mapboxgl.accessToken = process.env.REACT_APP_MAPBOX_TOKEN;
 
-const MapComponent = ({ dronePosition, route, is3D, cellTowers, isCoverageEnabled }) => {
+const MapComponent = ({ dronePosition, route: _route, is3D, cellTowers, isCoverageEnabled }) => {
   const mapContainerRef = useRef(null);
   const mapRef = useRef(null);
+  const droneLayerRef = useRef(null);
   const droneMarkerRef = useRef(null);
 
   useEffect(() => {
@@ -19,8 +24,8 @@ const MapComponent = ({ dronePosition, route, is3D, cellTowers, isCoverageEnable
     mapRef.current = new mapboxgl.Map({
       container: mapContainerRef.current,
       style: 'mapbox://styles/mapbox/satellite-streets-v11',
-      center: [92.8932, 56.0153],
-      zoom: 6,
+      center: [dronePosition.lng, dronePosition.lat],
+      zoom: 15,
       pitch: is3D ? 60 : 0,
       bearing: is3D ? -17.6 : 0,
       antialias: true,
@@ -39,6 +44,12 @@ const MapComponent = ({ dronePosition, route, is3D, cellTowers, isCoverageEnable
 
         mapRef.current.setTerrain({ source: 'mapbox-dem', exaggeration: 1.5 });
         mapRef.current.setLight({ anchor: 'map', intensity: 0.5 });
+
+      // Добавляем 3D модель дрона
+      droneLayerRef.current = addDroneModel(mapRef.current, dronePosition);
+      } else {
+      // Добавляем маркер дрона в 2D режиме
+      droneMarkerRef.current = addDroneMarker(mapRef.current, dronePosition);
       }
 
       cellTowers.forEach((tower, index) => {
@@ -117,13 +128,6 @@ const MapComponent = ({ dronePosition, route, is3D, cellTowers, isCoverageEnable
           });
         }
       });
-
-      const droneElement = document.createElement('div');
-      droneElement.className = 'gps-marker';
-
-      droneMarkerRef.current = new mapboxgl.Marker({ element: droneElement })
-          .setLngLat([dronePosition.lng, dronePosition.lat])
-          .addTo(mapRef.current);
     });
 
     return () => {
@@ -134,18 +138,128 @@ const MapComponent = ({ dronePosition, route, is3D, cellTowers, isCoverageEnable
     };
   }, [is3D, cellTowers, isCoverageEnabled]);
 
-  // Обновляем позицию и размер маркера дрона при изменении координат или высоты
+  // Обновляем позицию дрона при изменении dronePosition
   useEffect(() => {
-    if (droneMarkerRef.current) {
-      droneMarkerRef.current.setLngLat([dronePosition.lng, dronePosition.lat]);
-
-      // Изменение размера маркера в зависимости от высоты
-      const heightFactor = Math.max(1, dronePosition.altitude / 10);
-      droneMarkerRef.current.getElement().style.transform = `scale(${heightFactor})`;
+    if (is3D) {
+      if (droneLayerRef.current) {
+        droneLayerRef.current.dronePosition = dronePosition;
+        if (mapRef.current) {
+          mapRef.current.triggerRepaint();
+        }
+      }
+    } else {
+      if (droneMarkerRef.current) {
+        droneMarkerRef.current.setLngLat([dronePosition.lng, dronePosition.lat]);
+      }
     }
-  }, [dronePosition]);
+  }, [dronePosition, is3D]);
 
-  return <div ref={mapContainerRef} style={{ width: '100%', height: '100vh' }} />;
-};
+    return <div ref={mapContainerRef} style={{ width: '100%', height: '100vh' }} />;
+  };
 
-export default MapComponent;
+// Функция для добавления 3D-модели дрона
+// Функция для добавления 3D-модели дрона
+function addDroneModel(map) {
+  const customLayer = {
+    id: 'drone-model-layer',
+    type: 'custom',
+    renderingMode: '3d',
+    dronePosition: null, // Инициализируем без позиции
+    onAdd: function (map, gl) {
+      this.map = map;
+      this.camera = new THREE.Camera();
+      this.scene = new THREE.Scene();
+
+      // Добавляем базовое освещение
+      const ambientLight = new THREE.AmbientLight(0xffffff, 1);
+      this.scene.add(ambientLight);
+
+      // Загрузка модели дрона
+      const loader = new GLTFLoader();
+      loader.load(
+          '/drone-model.glb',
+          (gltf) => {
+            this.drone = gltf.scene;
+            this.scene.add(this.drone);
+          },
+          undefined,
+          (error) => {
+            console.error('Ошибка при загрузке модели дрона:', error);
+          }
+      );
+
+      this.renderer = new THREE.WebGLRenderer({
+        canvas: map.getCanvas(),
+        context: gl,
+        antialias: true,
+      });
+      this.renderer.autoClear = false;
+    },
+    render: function (gl, matrix) {
+      console.log('Метод render вызывается');
+
+      // Обновляем матрицу проекции камеры
+      this.camera.projectionMatrix = new THREE.Matrix4().fromArray(matrix);
+
+      // Очищаем состояние рендерера
+      this.renderer.state.reset();
+
+      // Очищаем буфер глубины
+      this.renderer.clearDepth();
+
+      // Проверяем, что модель загружена и позиция дрона определена
+      if (this.drone && this.dronePosition) {
+        const { lng, lat, altitude } = this.dronePosition;
+        const modelOrigin = [lng, lat];
+        const modelAltitude = altitude || 0;
+
+        const modelAsMercatorCoordinate =
+            mapboxgl.MercatorCoordinate.fromLngLat(
+                modelOrigin,
+                modelAltitude
+            );
+
+        const scale =
+            modelAsMercatorCoordinate.meterInMercatorCoordinateUnits();
+
+        // Обновляем позицию и масштаб модели
+        this.drone.position.set(
+            modelAsMercatorCoordinate.x,
+            modelAsMercatorCoordinate.y,
+            modelAsMercatorCoordinate.z
+        );
+
+        // Устанавливаем масштаб модели
+        this.drone.scale.set(scale, scale, scale);
+
+        // Настраиваем поворот модели, если необходимо
+        this.drone.rotation.x = Math.PI / 2; // Поворот по оси X на 90 градусов
+      }
+
+      // Рендерим сцену
+      this.renderer.render(this.scene, this.camera);
+
+      // Сообщаем карте, что нужно перерисовать кадр
+      this.map.triggerRepaint();
+    },
+  };
+
+  map.addLayer(customLayer);
+
+  return customLayer; // Возвращаем слой для доступа к dronePosition
+}
+
+// Функция для добавления маркера дрона в 2D режиме
+function addDroneMarker(map, dronePosition) {
+  const markerElement = document.createElement('div');
+  markerElement.className = 'gps-marker';
+
+  const marker = new mapboxgl.Marker({ element: markerElement })
+      .setLngLat([dronePosition.lng, dronePosition.lat])
+      .addTo(map);
+
+  return marker;
+}
+
+
+  export default MapComponent;

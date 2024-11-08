@@ -6,7 +6,7 @@ import Sidebar from './components/Sidebar';
 import Papa from 'papaparse';
 
 const App = () => {
-  const [dronePosition, setDronePosition] = useState({ lat: 56.0153, lng: 92.8932 });
+  const [dronePosition, setDronePosition] = useState({ lat: 56.0153, lng: 92.8932, altitude: 0  });
   const [newDronePosition, setNewDronePosition] = useState({ lat: '', lng: '', altitude: '' });
   const [route, setRoute] = useState([]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -75,12 +75,23 @@ const App = () => {
 
   // Обновление местоположения дрона
   const handleConfirmDronePosition = () => {
-    const { lat, lng } = newDronePosition;
-    if (!isNaN(lat) && !isNaN(lng) && lat && lng) {
-      setDronePosition({ lat: parseFloat(lat), lng: parseFloat(lng) });
+    const { lat, lng, altitude } = newDronePosition;
+    if (
+        !isNaN(lat) &&
+        !isNaN(lng) &&
+        lat &&
+        lng &&
+        !isNaN(altitude) &&
+        altitude >= 0
+    ) {
+      setDronePosition({
+        lat: parseFloat(lat),
+        lng: parseFloat(lng),
+        altitude: parseFloat(altitude),
+      });
       closeSettings();
     } else {
-      alert("Введите корректные координаты дрона.");
+      alert("Введите корректные координаты и высоту дрона.");
     }
   };
 
