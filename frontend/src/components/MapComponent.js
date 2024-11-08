@@ -159,12 +159,12 @@ const MapComponent = ({ dronePosition, route: _route, is3D, cellTowers, isCovera
 
 // Функция для добавления 3D-модели дрона
 // Функция для добавления 3D-модели дрона
-function addDroneModel(map) {
+function addDroneModel(map, dronePosition) {
   const customLayer = {
     id: 'drone-model-layer',
     type: 'custom',
     renderingMode: '3d',
-    dronePosition: null, // Инициализируем без позиции
+    dronePosition: dronePosition, // Инициализируем без позиции
     onAdd: function (map, gl) {
       this.map = map;
       this.camera = new THREE.Camera();
@@ -179,8 +179,26 @@ function addDroneModel(map) {
       loader.load(
           '/drone-model.glb',
           (gltf) => {
+            console.log('Модель загружена успешно');
             this.drone = gltf.scene;
+            // Установка первоначальной ориентации модели дрона
+            // Предположим, что модель изначально ориентирована вдоль оси Z
+            // Чтобы нос указывал на север (ось Y), поворачиваем модель на -90 градусов вокруг оси Y
+            this.drone.rotation.set(-Math.PI / 0, 2, 0);
+
+            // Инвертирование цветов модели
+            this.drone.traverse((child) => {
+              if (child.isMesh) {
+                if (child.material.color) {
+                  child.material.color.setRGB(1 - child.material.color.r, 1 - child.material.color.g, 1 - child.material.color.b);
+                }
+                // Если материал имеет карту, можно инвертировать её, но это более сложный процесс
+              }
+            });
+
             this.scene.add(this.drone);
+            // Добавление свечения
+            addGlow(this.scene, this.drone);
           },
           undefined,
           (error) => {
@@ -211,7 +229,7 @@ function addDroneModel(map) {
       if (this.drone && this.dronePosition) {
         const { lng, lat, altitude } = this.dronePosition;
         const modelOrigin = [lng, lat];
-        const modelAltitude = altitude || 0;
+        const modelAltitude = altitude || 209;
 
         const modelAsMercatorCoordinate =
             mapboxgl.MercatorCoordinate.fromLngLat(
@@ -221,6 +239,7 @@ function addDroneModel(map) {
 
         const scale =
             modelAsMercatorCoordinate.meterInMercatorCoordinateUnits();
+        const modelScale = scale * 150;
 
         // Обновляем позицию и масштаб модели
         this.drone.position.set(
@@ -233,7 +252,7 @@ function addDroneModel(map) {
         this.drone.scale.set(scale, scale, scale);
 
         // Настраиваем поворот модели, если необходимо
-        this.drone.rotation.x = Math.PI / 2; // Поворот по оси X на 90 градусов
+         this.drone.rotation.x = Math.PI / 2; // Поворот по оси X на 90 градусов
       }
 
       // Рендерим сцену
@@ -254,12 +273,49 @@ function addDroneMarker(map, dronePosition) {
   const markerElement = document.createElement('div');
   markerElement.className = 'gps-marker';
 
-  const marker = new mapboxgl.Marker({ element: markerElement })
+  const marker = new mapboxgl.Marker({ element: markerElement, anchor: 'bottom' })
       .setLngLat([dronePosition.lng, dronePosition.lat])
       .addTo(map);
 
   return marker;
 }
 
+// Функция для добавления свечения
+function addGlow(scene, drone) {
+  // Создаём материал для свечения
+  const glowMaterial = new THREE.MeshBasicMaterial({
+    color: 0xff0000, // Красный цвет свечения
+    transparent: true,
+    opacity: 0.5,
+    blending: THREE.AdditiveBlending, // Используем аддитивное смешивание
+    side: THREE.DoubleSide,
+  });
+
+  // Создаём и добавляем свечение для каждой меш-сети в модели дрона
+  drone.traverse((child) => {
+    if (child.isMesh) {
+      const glowGeometry = child.geometry.clone();
+      const glowMesh = new THREE.Mesh(glowGeometry, glowMaterial.clone());
+      glowMesh.scale.multiplyScalar(1.2); // Увеличиваем размер свечения
+      glowMesh.rotation.copy(child.rotation);
+      glowMesh.position.copy(child.position);
+      scene.add(glowMesh);
+
+      // Сохраняем ссылку на свечение для анимации
+      child.userData.glow = glowMesh;
+    }
+  });
+
+  // Определяем функцию анимации свечения
+  const animateGlow = () => {
+    const time = Date.now() * 0.005;
+    scene.children.forEach((child) => {
+      if (child.userData.glow) {
+        const opacity = 0.5 + 0.5 * Math.sin(time); // Пульсация от 0 до 1
+        child.userData.glow.material.opacity = opacity;
+      }
+    });
+  };
+}
 
   export default MapComponent;
