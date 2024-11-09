@@ -4,10 +4,12 @@ import MapComponent from './components/MapComponent';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import Sidebar from './components/Sidebar';
 import Papa from 'papaparse';
+import './components/compass_style.css';
+import DraggableModal from './components/DraggableModal.js';
 
 const App = () => {
   const [dronePosition, setDronePosition] = useState({ lat: 55.967398, lng: 93.128459, altitude: 370 });
-  const [newDronePosition, setNewDronePosition] = useState({ lat: '', lng: '', altitude: 0 });
+  const [newDronePosition, setNewDronePosition] = useState({ lat: '', lng: '', altitude: '' });
   const [route, setRoute] = useState([]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -16,6 +18,8 @@ const App = () => {
   const [is3D, setIs3D] = useState(false);
   const [cellTowers, setCellTowers] = useState([]);
   const [isCoverageEnabled, setIsCoverageEnabled] = useState(true);
+  const [isCalibrationOpen, setIsCalibrationOpen] = useState(false);
+  const [droneHeading, setDroneHeading] = useState(90);
 
   useEffect(() => {
     const socket = new WebSocket('ws://localhost:8080/telemetry');
@@ -44,7 +48,7 @@ const App = () => {
     setNewDronePosition({
       lat: dronePosition.lat,
       lng: dronePosition.lng,
-      altitude: 0,
+      altitude: dronePosition.altitude,
     });
   };
 
@@ -54,16 +58,26 @@ const App = () => {
   };
 
   const openHistory = () => setIsHistoryOpen(true);
-  const closeHistory = () => setIsHistoryOpen(false);
+  // const closeHistory = () => setIsHistoryOpen(false);
   const openMission = () => setIsMissionOpen(true);
-  const closeMission = () => setIsMissionOpen(false);
+  // const closeMission = () => setIsMissionOpen(false);
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
 
-  const handleSceneModeChange = (event) => {
-    setIs3D(event.target.value === "3D");
+  const openCalibration = () => {
+    setIsCalibrationOpen(true);
+    setNewDronePosition({
+      lat: dronePosition.lat,
+      lng: dronePosition.lng,
+      altitude: dronePosition.altitude,
+    });
   };
 
-  // Обработка загрузки файла CSV
+  const closeCalibration = () => setIsCalibrationOpen(false);
+
+  //  const handleSceneModeChange = (event) => {
+  //   setIs3D(event.target.value === "3D");
+  // };
+
   const handleFileUpload = (event) => {
     const file = event.target.files[0];
     Papa.parse(file, {
@@ -87,31 +101,33 @@ const App = () => {
     });
   };
 
-  const toggleCoverage = () => setIsCoverageEnabled(!isCoverageEnabled);
+  // const toggleCoverage = () => setIsCoverageEnabled(!isCoverageEnabled);
 
-  // Обновление местоположения дрона: новое значение высоты было равно текущей высоте плюс введённой дельты
   const handleConfirmDronePosition = () => {
     const { lat, lng, altitude } = newDronePosition;
     const latNum = parseFloat(lat);
     const lngNum = parseFloat(lng);
-    const altitudeDelta = parseFloat(altitude);
+    const altitudeNum = parseFloat(altitude);
 
     if (
         !isNaN(latNum) &&
         !isNaN(lngNum) &&
         lat !== '' &&
         lng !== '' &&
-        !isNaN(altitudeDelta)
+        !isNaN(altitudeNum)
     ) {
-      setDronePosition((prevPosition) => ({
+      setDronePosition(() => ({
         lat: latNum,
         lng: lngNum,
-        altitude: prevPosition.altitude + altitudeDelta, // Добавляем дельту к текущей высоте
+        altitude: altitudeNum,
+        heading: droneHeading,
       }));
-      closeSettings();
     } else {
       alert("Введите корректные координаты и дельту высоты дрона.");
     }
+  };
+  const handleHeadingChange = (angle) => {
+    setDroneHeading(angle);
   };
 
   return (
@@ -122,6 +138,7 @@ const App = () => {
             is3D={is3D}
             cellTowers={cellTowers}
             isCoverageEnabled={isCoverageEnabled}
+            droneHeading={droneHeading}
         />
 
         <Sidebar
@@ -130,71 +147,92 @@ const App = () => {
             onOpenMission={openMission}
             isOpen={isSidebarOpen}
             onToggleSidebar={toggleSidebar}
+            onOpenCalibration={openCalibration}
         />
 
-        {isSettingsOpen && (
-            <div style={styles.modal}>
-              <h2>Настройки карты</h2>
-              <div style={styles.selectorContainer}>
-                <label style={styles.label}>Режим сцены</label>
-                <select
-                    value={is3D ? "3D" : "2D"}
-                    onChange={handleSceneModeChange}
-                    style={styles.selector}
-                >
-                  <option value="2D">2D</option>
-                  <option value="3D">3D</option>
-                </select>
-              </div>
-              <div style={{ marginTop: '20px' }}>
-                <p>Импортировать локации сотовых вышек (CSV):</p>
-                <input type="file" accept=".csv" onChange={handleFileUpload} />
-              </div>
-              <div style={styles.coverageControl}>
-                <span>ВКЛ. отображение сигнала вышек</span>
-                <button onClick={toggleCoverage} style={styles.toggleButton}>
-                  {isCoverageEnabled ? '✔' : '✖'}
-                </button>
-              </div>
-              <h3>Установить местоположение дрона</h3>
-              <input
-                  type="number"
-                  placeholder="Широта"
-                  value={newDronePosition.lat}
-                  onChange={(e) => setNewDronePosition({ ...newDronePosition, lat: e.target.value })}
-              />
-              <input
-                  type="number"
-                  placeholder="Долгота"
-                  value={newDronePosition.lng}
-                  onChange={(e) => setNewDronePosition({ ...newDronePosition, lng: e.target.value })}
-              />
-              <input
-                  type="number"
-                  placeholder="Высота"
-                  value={newDronePosition.altitude}
-                  onChange={(e) => setNewDronePosition({ ...newDronePosition, altitude: e.target.value })}
-              />
-              <button onClick={handleConfirmDronePosition} style={styles.confirmButton}>Подтвердить местоположение</button>
-              <button onClick={closeSettings} style={styles.closeButton}>Закрыть</button>
-            </div>
-        )}
+        {/* Используем DraggableModal для окон */}
+        <DraggableModal isOpen={isSettingsOpen} onClose={closeSettings}>
+          <h2>Настройки карты</h2>
+          <div style={styles.selectorContainer}>
+            <label style={styles.label}>Режим сцены</label>
+            <select
+                value={is3D ? "3D" : "2D"}
+                onChange={(e) => setIs3D(e.target.value === "3D")}
+                style={styles.selector}
+            >
+              <option value="2D">2D</option>
+              <option value="3D">3D</option>
+            </select>
+          </div>
+          <div style={{marginTop: '20px'}}>
+            <p>Импортировать локации сотовых вышек (CSV):</p>
+            <input type="file" accept=".csv" onChange={(e) => handleFileUpload(e)}/>
+          </div>
+          <div style={styles.coverageControl}>
+            <span>ВКЛ. отображение сигнала вышек</span>
+            <button onClick={() => setIsCoverageEnabled(!isCoverageEnabled)} style={styles.toggleButton}>
+              {isCoverageEnabled ? '✔' : '✖'}
+            </button>
+          </div>
+        </DraggableModal>
 
-        {isHistoryOpen && (
-            <div style={styles.modal}>
-              <h2>История полетов</h2>
-              <p>Просмотр истории выполненных миссий.</p>
-              <button onClick={closeHistory} style={styles.closeButton}>Закрыть</button>
+        <DraggableModal isOpen={isCalibrationOpen} onClose={closeCalibration}>
+          <h3>Калибровка дрона</h3>
+          <input
+              type="number"
+              placeholder="Широта"
+              value={newDronePosition.lat}
+              onChange={(e) => setNewDronePosition({...newDronePosition, lat: e.target.value})}
+          />
+          <input
+              type="number"
+              placeholder="Долгота"
+              value={newDronePosition.lng}
+              onChange={(e) => setNewDronePosition({...newDronePosition, lng: e.target.value})}
+          />
+          <input
+              type="number"
+              placeholder="Высота"
+              value={newDronePosition.altitude}
+              onChange={(e) => setNewDronePosition({...newDronePosition, altitude: e.target.value})}
+          />
+          <div className="compass-container">
+            <div className="compass">
+              <div className="compass-center"></div>
+              <div className="arrow-south"></div>
+              <div className="arrow"></div>
+              <div
+                  className="compass-rotatable"
+                  style={{transform: `rotate(${droneHeading}deg)`}} // вращение по углу
+              >
+                <div className="tick tick-0"></div>
+                <div className="tick tick-45"></div>
+                <div className="tick tick-90"></div>
+                <div className="tick tick-135"></div>
+                <div className="tick tick-180"></div>
+                <div className="tick tick-225"></div>
+                <div className="tick tick-270"></div>
+                <div className="tick tick-315"></div>
+                <div className="compass-directions">
+                  <div className="north">С</div>
+                  <div className="east">В</div>
+                  <div className="south">Ю</div>
+                  <div className="west">З</div>
+                </div>
+              </div>
             </div>
-        )}
-
-        {isMissionOpen && (
-            <div style={styles.modal}>
-              <h2>Старт миссии</h2>
-              <p>Установите параметры дрона и запустите миссию.</p>
-              <button onClick={closeMission} style={styles.closeButton}>Закрыть</button>
-            </div>
-        )}
+            <input
+                type="range"
+                min="0"
+                max="360"
+                value={droneHeading}
+                onChange={(e) => handleHeadingChange(parseFloat(e.target.value))}
+                className="slider"
+            />
+            <p>Направление: {droneHeading}°</p>
+          </div>
+          <button onClick={handleConfirmDronePosition} style={styles.confirmButton}>Подтвердить местоположение</button>
+        </DraggableModal>
       </div>
   );
 };
