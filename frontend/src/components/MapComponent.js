@@ -31,7 +31,6 @@ const MapComponent = ({ dronePosition, route: _route, is3D, cellTowers, isCovera
 
       mapRef.current.on('load', () => {
         if (is3D) {
-          // Добавляем DEM данные и освещение только один раз
           mapRef.current.addSource('mapbox-dem', {
             type: 'raster-dem',
             url: 'mapbox://mapbox.mapbox-terrain-dem-v1',
@@ -41,14 +40,12 @@ const MapComponent = ({ dronePosition, route: _route, is3D, cellTowers, isCovera
           mapRef.current.setTerrain({ source: 'mapbox-dem', exaggeration: 1.5 });
           mapRef.current.setLight({ anchor: 'map', intensity: 0.5 });
 
-          // Добавляем 3D модель дрона без ауры
           droneLayerRef.current = addDroneModel(mapRef.current, dronePosition);
         } else {
-          // Добавляем маркер дрона в 2D режиме
           droneMarkerRef.current = addDroneMarker(mapRef.current, dronePosition);
         }
 
-        // Добавляем базовые вышки и зоны покрытия один раз
+        // Добавляем вышки и зоны покрытия
         cellTowers.forEach((tower, index) => {
           const lat = parseFloat(tower.latitude || tower.lat);
           const lng = parseFloat(tower.longitude || tower.lng);
@@ -139,16 +136,22 @@ const MapComponent = ({ dronePosition, route: _route, is3D, cellTowers, isCovera
   // Обновляем позицию дрона и ориентацию при изменении dronePosition и droneHeading
   useEffect(() => {
     if (is3D && droneLayerRef.current && droneLayerRef.current.drone) {
-      // Обновляем позицию 3D модели
       droneLayerRef.current.dronePosition = dronePosition;
-      // Устанавливаем поворот по оси Y
-      droneLayerRef.current.drone.rotation.y = THREE.MathUtils.degToRad(droneHeading);
       mapRef.current.triggerRepaint();
     } else if (droneMarkerRef.current) {
-      // Обновляем позицию маркера
       droneMarkerRef.current.setLngLat([dronePosition.lng, dronePosition.lat]);
     }
-  }, [dronePosition, droneHeading]);
+  }, [dronePosition, is3D]);
+
+  // Отдельный useEffect для обновления ориентации дрона при изменении droneHeading
+  useEffect(() => {
+    if (is3D && droneLayerRef.current && droneLayerRef.current.drone) {
+      // Добавляем поправку в 90 градусов к droneHeading для синхронизации с компасом
+      const adjustedHeading = droneHeading + 90;
+      droneLayerRef.current.drone.rotation.y = THREE.MathUtils.degToRad(adjustedHeading);
+      mapRef.current.triggerRepaint();
+    }
+  }, [droneHeading]);
 
   return <div ref={mapContainerRef} style={{ width: '100%', height: '100vh' }} />;
 };
@@ -171,7 +174,7 @@ function addDroneModel(map, dronePosition) {
           '/drone-model.glb',
           (gltf) => {
             this.drone = gltf.scene;
-            this.drone.rotation.set(0, 0, 0);
+            this.drone.rotation.set(0, 2, 0); // начальная ориентация
             this.drone.rotation.x = Math.PI / 2;
 
             this.drone.traverse((child) => {
@@ -203,8 +206,10 @@ function addDroneModel(map, dronePosition) {
         const modelAsMercatorCoordinate = mapboxgl.MercatorCoordinate.fromLngLat(modelOrigin, altitude);
         const scale = modelAsMercatorCoordinate.meterInMercatorCoordinateUnits();
 
+        // Обновляем позицию и масштаб
         this.drone.position.set(modelAsMercatorCoordinate.x, modelAsMercatorCoordinate.y, modelAsMercatorCoordinate.z);
         this.drone.scale.set(scale, scale, scale);
+
         this.camera.projectionMatrix = new THREE.Matrix4().fromArray(matrix);
         this.renderer.state.reset();
         this.renderer.clearDepth();
