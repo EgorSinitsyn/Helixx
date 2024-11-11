@@ -6,13 +6,20 @@ import Sidebar from './components/Sidebar';
 import Papa from 'papaparse';
 import './components/compass_style.css';
 import DraggableModal from './components/DraggableModal.js';
+import DroneInfoPanel from './components/DroneInfoPanel.js';
+
+const CALIBRATION_LATITUDE = 55.967398;
+const CALIBRATION_LONGITUDE = 93.128459;
+const CALIBRATION_ALTITUDE = 370;
 
 const App = () => {
-  const [dronePosition, setDronePosition] = useState({ lat: 55.967398, lng: 93.128459, altitude: 370 });
-  // Функция для обновления высоты дрона
-  const updateDroneAltitude = (newAltitude) => {
-    setDronePosition((prev) => ({ ...prev, altitude: newAltitude, heading: droneHeading }));
-  };
+  const [dronePosition, setDronePosition] = useState({
+    lat: CALIBRATION_LATITUDE,
+    lng: CALIBRATION_LONGITUDE,
+    altitude: CALIBRATION_ALTITUDE,
+    heading: 0,
+  });
+
   const [newDronePosition, setNewDronePosition] = useState({ lat: '', lng: '', altitude: '' });
   const [route, setRoute] = useState([]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -24,6 +31,14 @@ const App = () => {
   const [isCoverageEnabled, setIsCoverageEnabled] = useState(true);
   const [isCalibrationOpen, setIsCalibrationOpen] = useState(false);
   const [droneHeading, setDroneHeading] = useState(0);
+  const [isDroneInfoVisible, setIsDroneInfoVisible] = useState(false);
+
+  const updateDroneAltitude = (newAltitude) => {
+    setDronePosition((prev) => ({ ...prev, altitude: newAltitude }));
+  };
+
+  // Функция для скрытия панели
+  const hideDroneInfoPanel = () => setIsDroneInfoVisible(false);
 
   useEffect(() => {
     const socket = new WebSocket('ws://localhost:8080/telemetry');
@@ -32,6 +47,7 @@ const App = () => {
       const data = JSON.parse(event.data);
       if (data.type === 'POSITION') {
         setDronePosition((prevPosition) => ({
+          ...prevPosition,
           lat: data.lat,
           lng: data.lng,
           altitude: data.altitude !== undefined ? data.altitude : prevPosition.altitude,
@@ -52,7 +68,7 @@ const App = () => {
     setNewDronePosition({
       lat: dronePosition.lat,
       lng: dronePosition.lng,
-      altitude: dronePosition.altitude,
+      altitude: dronePosition.altitude || CALIBRATION_ALTITUDE,
     });
   };
 
@@ -62,9 +78,7 @@ const App = () => {
   };
 
   const openHistory = () => setIsHistoryOpen(true);
-  // const closeHistory = () => setIsHistoryOpen(false);
   const openMission = () => setIsMissionOpen(true);
-  // const closeMission = () => setIsMissionOpen(false);
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
 
   const openCalibration = () => {
@@ -72,15 +86,11 @@ const App = () => {
     setNewDronePosition({
       lat: dronePosition.lat,
       lng: dronePosition.lng,
-      altitude: dronePosition.altitude,
+      altitude: dronePosition.altitude || CALIBRATION_ALTITUDE,
     });
   };
 
   const closeCalibration = () => setIsCalibrationOpen(false);
-
-  //  const handleSceneModeChange = (event) => {
-  //   setIs3D(event.target.value === "3D");
-  // };
 
   const handleFileUpload = (event) => {
     const file = event.target.files[0];
@@ -101,11 +111,9 @@ const App = () => {
             );
         setCellTowers(towers);
       },
-      error: (error) => console.error("Ошибка при обработке CSV:", error)
+      error: (error) => console.error("Ошибка при обработке CSV:", error),
     });
   };
-
-  // const toggleCoverage = () => setIsCoverageEnabled(!isCoverageEnabled);
 
   const handleConfirmDronePosition = () => {
     const { lat, lng, altitude } = newDronePosition;
@@ -113,24 +121,21 @@ const App = () => {
     const lngNum = parseFloat(lng);
     const altitudeNum = parseFloat(altitude);
 
-    if (
-        !isNaN(latNum) &&
-        !isNaN(lngNum) &&
-        lat !== '' &&
-        lng !== '' &&
-        !isNaN(altitudeNum)
-    ) {
-      setDronePosition(() => ({
+    setIsDroneInfoVisible(true);
+
+    if (!isNaN(latNum) && !isNaN(lngNum) && lat !== '' && lng !== '' && !isNaN(altitudeNum)) {
+      setDronePosition({
         lat: latNum,
         lng: lngNum,
         altitude: altitudeNum,
         heading: droneHeading,
-      }));
+      });
       console.log("Новое положение дрона:", { lat: latNum, lng: lngNum, altitude: altitudeNum, heading: droneHeading });
     } else {
       alert("Введите корректные координаты и дельту высоты дрона.");
     }
   };
+
   const handleHeadingChange = (angle) => {
     setDroneHeading(angle);
   };
@@ -147,6 +152,16 @@ const App = () => {
             updateDroneAltitude={updateDroneAltitude}
         />
 
+        {isDroneInfoVisible && (
+            <DroneInfoPanel
+                latitude={dronePosition.lat}
+                longitude={dronePosition.lng}
+                altitude={dronePosition.altitude}
+                heading={droneHeading}
+                onHide={hideDroneInfoPanel} // передаем функцию для скрытия
+            />
+        )}
+
         <Sidebar
             onOpenSettings={openSettings}
             onOpenHistory={openHistory}
@@ -156,7 +171,6 @@ const App = () => {
             onOpenCalibration={openCalibration}
         />
 
-        {/* Используем DraggableModal для окон */}
         <DraggableModal isOpen={isSettingsOpen} onClose={closeSettings}>
           <h2>Настройки карты</h2>
           <div style={styles.selectorContainer}>
@@ -170,9 +184,9 @@ const App = () => {
               <option value="3D">3D</option>
             </select>
           </div>
-          <div style={{marginTop: '20px'}}>
+          <div style={{ marginTop: '20px' }}>
             <p>Импортировать локации сотовых вышек (CSV):</p>
-            <input type="file" accept=".csv" onChange={(e) => handleFileUpload(e)}/>
+            <input type="file" accept=".csv" onChange={handleFileUpload} />
           </div>
           <div style={styles.coverageControl}>
             <span>ВКЛ. отображение сигнала вышек</span>
@@ -188,19 +202,19 @@ const App = () => {
               type="number"
               placeholder="Широта"
               value={newDronePosition.lat}
-              onChange={(e) => setNewDronePosition({...newDronePosition, lat: e.target.value})}
+              onChange={(e) => setNewDronePosition({ ...newDronePosition, lat: e.target.value })}
           />
           <input
               type="number"
               placeholder="Долгота"
               value={newDronePosition.lng}
-              onChange={(e) => setNewDronePosition({...newDronePosition, lng: e.target.value})}
+              onChange={(e) => setNewDronePosition({ ...newDronePosition, lng: e.target.value })}
           />
           <input
               type="number"
               placeholder="Высота"
               value={newDronePosition.altitude}
-              onChange={(e) => setNewDronePosition({...newDronePosition, altitude: e.target.value})}
+              onChange={(e) => setNewDronePosition({ ...newDronePosition, altitude: e.target.value })}
           />
           <div className="compass-container">
             <div className="compass">
@@ -209,7 +223,7 @@ const App = () => {
               <div className="arrow"></div>
               <div
                   className="compass-rotatable"
-                  style={{transform: `rotate(${droneHeading}deg)`}} // вращение по углу
+                  style={{ transform: `rotate(${droneHeading}deg)` }}
               >
                 <div className="tick tick-0"></div>
                 <div className="tick tick-45"></div>
@@ -244,27 +258,6 @@ const App = () => {
 };
 
 const styles = {
-  modal: {
-    position: 'fixed',
-    top: '50%',
-    left: '50%',
-    transform: 'translate(-50%, -50%)',
-    width: '300px',
-    padding: '20px',
-    backgroundColor: 'white',
-    border: '1px solid #ccc',
-    borderRadius: '8px',
-    zIndex: 1001,
-  },
-  closeButton: {
-    marginTop: '10px',
-    padding: '10px',
-    fontSize: '16px',
-    backgroundColor: '#444',
-    color: 'white',
-    border: 'none',
-    cursor: 'pointer',
-  },
   selectorContainer: {
     display: 'flex',
     alignItems: 'center',
