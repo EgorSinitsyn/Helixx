@@ -9,6 +9,10 @@ import DraggableModal from './components/DraggableModal.js';
 
 const App = () => {
   const [dronePosition, setDronePosition] = useState({ lat: 55.967398, lng: 93.128459, altitude: 370 });
+  // Функция для обновления высоты дрона
+  const updateDroneAltitude = (newAltitude) => {
+    setDronePosition((prev) => ({ ...prev, altitude: newAltitude, heading: droneHeading }));
+  };
   const [newDronePosition, setNewDronePosition] = useState({ lat: '', lng: '', altitude: '' });
   const [route, setRoute] = useState([]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -19,7 +23,7 @@ const App = () => {
   const [cellTowers, setCellTowers] = useState([]);
   const [isCoverageEnabled, setIsCoverageEnabled] = useState(true);
   const [isCalibrationOpen, setIsCalibrationOpen] = useState(false);
-  const [droneHeading, setDroneHeading] = useState(90);
+  const [droneHeading, setDroneHeading] = useState(0);
 
   useEffect(() => {
     const socket = new WebSocket('ws://localhost:8080/telemetry');
@@ -122,6 +126,7 @@ const App = () => {
         altitude: altitudeNum,
         heading: droneHeading,
       }));
+      console.log("Новое положение дрона:", { lat: latNum, lng: lngNum, altitude: altitudeNum, heading: droneHeading });
     } else {
       alert("Введите корректные координаты и дельту высоты дрона.");
     }
@@ -139,6 +144,7 @@ const App = () => {
             cellTowers={cellTowers}
             isCoverageEnabled={isCoverageEnabled}
             droneHeading={droneHeading}
+            updateDroneAltitude={updateDroneAltitude}
         />
 
         <Sidebar
