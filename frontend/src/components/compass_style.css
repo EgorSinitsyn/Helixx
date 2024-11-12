@@ -38,11 +38,13 @@
 
 /* Красная стрелка (на севере) */
 .arrow {
-    width: 4px;
-    height: 30px;
-    background-color: red;
+    width: 0;
+    height: 0;
+    border-left: 8px solid transparent;
+    border-right: 8px solid transparent;
+    border-bottom: 30px solid red; /* Цвет стрелки */
     position: absolute;
-    top: 25px;
+    top: 23px;
     left: 50%;
     transform: translateX(-50%);
     z-index: 2;
@@ -50,11 +52,13 @@
 
 /* Синяя стрелка (на юге) */
 .arrow-south {
-    width: 4px;
-    height: 30px;
-    background-color: blue;
+    width: 0;
+    height: 0;
+    border-left: 8px solid transparent;
+    border-right: 8px solid transparent;
+    border-top: 30px solid blue; /* Цвет стрелки */
     position: absolute;
-    bottom: 25px;
+    bottom: 23px;
     left: 50%;
     transform: translateX(-50%);
     z-index: 2;
