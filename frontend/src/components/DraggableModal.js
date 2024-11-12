@@ -1,7 +1,6 @@
-// src/components/DraggableModal.js
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 
-const DraggableModal = ({ isOpen, onClose, children, style }) => {
+const DraggableModal = React.memo(({ isOpen, onClose, children, style }) => {
     const [position, setPosition] = useState({ x: 0, y: 0 });
     const dragRef = useRef(null);
 
@@ -18,7 +17,7 @@ const DraggableModal = ({ isOpen, onClose, children, style }) => {
         }
     }, [isOpen]);
 
-    const handleMouseDown = (e) => {
+    const handleMouseDown = useCallback((e) => {
         const initialX = e.clientX - position.x;
         const initialY = e.clientY - position.y;
 
@@ -35,7 +34,7 @@ const DraggableModal = ({ isOpen, onClose, children, style }) => {
 
         document.addEventListener('mousemove', handleMouseMove);
         document.addEventListener('mouseup', handleMouseUp);
-    };
+    }, [position]);
 
     if (!isOpen) return null;
 
@@ -50,7 +49,6 @@ const DraggableModal = ({ isOpen, onClose, children, style }) => {
                 top: `${position.y}px`,
             }}
         >
-            {/* Заголовок для захвата и перетаскивания */}
             <div
                 onMouseDown={handleMouseDown}
                 style={{
@@ -66,7 +64,7 @@ const DraggableModal = ({ isOpen, onClose, children, style }) => {
             <div style={{ padding: '10px' }}>{children}</div>
         </div>
     );
-};
+});
 
 const defaultStyle = {
     width: '300px',

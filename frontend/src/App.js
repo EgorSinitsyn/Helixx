@@ -1,5 +1,4 @@
-// src/App.js
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import MapComponent from './components/MapComponent';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import Sidebar from './components/Sidebar';
@@ -7,6 +6,7 @@ import Papa from 'papaparse';
 import './components/compass_style.css';
 import DraggableModal from './components/DraggableModal.js';
 import DroneInfoPanel from './components/DroneInfoPanel.js';
+import MissionPlannerSidebar from './components/MissionPlannerSidebar';
 
 const CALIBRATION_LATITUDE = 55.967398;
 const CALIBRATION_LONGITUDE = 93.128459;
@@ -33,12 +33,17 @@ const App = () => {
   const [droneHeading, setDroneHeading] = useState(0);
   const [isDroneInfoVisible, setIsDroneInfoVisible] = useState(false);
 
-  const updateDroneAltitude = (newAltitude) => {
-    setDronePosition((prev) => ({ ...prev, altitude: newAltitude }));
-  };
+  // Для построения маршрута
+  const [routePoints, setRoutePoints] = useState([]);
+  const [selectedPoint, setSelectedPoint] = useState({ lat: '', lng: '', altitude: '' });
+  const [isMissionBuilding, setIsMissionBuilding] = useState(false);
+  const [isPlacingMarker, setIsPlacingMarker] = useState(false);
 
-  // Функция для скрытия панели
-  const hideDroneInfoPanel = () => setIsDroneInfoVisible(false);
+  const updateDroneAltitude = useCallback((newAltitude) => {
+    setDronePosition((prev) => ({ ...prev, altitude: newAltitude }));
+  }, []);
+
+  const hideDroneInfoPanel = useCallback(() => setIsDroneInfoVisible(false), []);
 
   useEffect(() => {
     const socket = new WebSocket('ws://localhost:8080/telemetry');
@@ -63,36 +68,36 @@ const App = () => {
     return () => socket.close();
   }, []);
 
-  const openSettings = () => {
+  const openSettings = useCallback(() => {
     setIsSettingsOpen(true);
     setNewDronePosition({
       lat: dronePosition.lat,
       lng: dronePosition.lng,
       altitude: dronePosition.altitude || CALIBRATION_ALTITUDE,
     });
-  };
+  }, [dronePosition]);
 
-  const closeSettings = () => {
+  const closeSettings = useCallback(() => {
     setIsSettingsOpen(false);
     setNewDronePosition({ lat: '', lng: '', altitude: '' });
-  };
+  }, []);
 
-  const openHistory = () => setIsHistoryOpen(true);
-  const openMission = () => setIsMissionOpen(true);
-  const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
+  const openHistory = useCallback(() => setIsHistoryOpen(true), []);
+  const openMission = useCallback(() => setIsMissionOpen(true), []);
+  const toggleSidebar = useCallback(() => setIsSidebarOpen((prev) => !prev), []);
 
-  const openCalibration = () => {
+  const openCalibration = useCallback(() => {
     setIsCalibrationOpen(true);
     setNewDronePosition({
       lat: dronePosition.lat,
       lng: dronePosition.lng,
       altitude: dronePosition.altitude || CALIBRATION_ALTITUDE,
     });
-  };
+  }, [dronePosition]);
 
-  const closeCalibration = () => setIsCalibrationOpen(false);
+  const closeCalibration = useCallback(() => setIsCalibrationOpen(false), []);
 
-  const handleFileUpload = (event) => {
+  const handleFileUpload = useCallback((event) => {
     const file = event.target.files[0];
     Papa.parse(file, {
       header: true,
@@ -113,9 +118,9 @@ const App = () => {
       },
       error: (error) => console.error("Ошибка при обработке CSV:", error),
     });
-  };
+  }, []);
 
-  const handleConfirmDronePosition = () => {
+  const handleConfirmDronePosition = useCallback(() => {
     const { lat, lng, altitude } = newDronePosition;
     const latNum = parseFloat(lat);
     const lngNum = parseFloat(lng);
@@ -134,12 +139,49 @@ const App = () => {
     } else {
       alert("Введите корректные координаты и дельту высоты дрона.");
     }
-  };
+  }, [newDronePosition, droneHeading]);
 
-  const handleHeadingChange = (angle) => {
-    setDroneHeading(angle); // Инвертируем угол
-  };
+  const handleHeadingChange = useCallback((angle) => {
+    setDroneHeading(angle);
+  }, []);
 
+  const startRouteBuilding = useCallback(() => {
+    setIsMissionBuilding(true);
+    // setIsPlacingMarker(true);
+  }, []);
+
+  const handleMapClick = useCallback((lat, lng) => {
+    setSelectedPoint({ lat, lng, altitude: '' });
+  }, []);
+
+  const handleSavePoint = useCallback(() => {
+    if (selectedPoint.lat && selectedPoint.lng && selectedPoint.altitude) {
+      setRoutePoints((prev) => [...prev, selectedPoint]);
+      setSelectedPoint({ lat: '', lng: '', altitude: '' });
+    } else {
+      alert("Введите корректные координаты и высоту.");
+    }
+  }, [selectedPoint]);
+
+  const cancelRoute = useCallback(() => {
+    setRoutePoints([]);
+    // setIsMissionBuilding(false);
+  }, []);
+
+  const saveRoute = useCallback(() => {
+    const geoJson = {
+      type: "FeatureCollection",
+      features: routePoints.map((point, index) => ({
+        type: "Feature",
+        properties: { id: index + 1 },
+        geometry: {
+          type: "Point",
+          coordinates: [parseFloat(point.lng), parseFloat(point.lat), parseFloat(point.altitude)],
+        },
+      })),
+    };
+    console.log("Маршрут в формате GeoJSON:", JSON.stringify(geoJson, null, 2));
+  }, [routePoints]);
 
   return (
       <div>
@@ -151,6 +193,10 @@ const App = () => {
             isCoverageEnabled={isCoverageEnabled}
             droneHeading={droneHeading}
             updateDroneAltitude={updateDroneAltitude}
+            isPlacingMarker={isMissionBuilding}
+            routePoints={routePoints}
+            isMissionBuilding={isMissionBuilding}
+            onMapClick={handleMapClick}
         />
 
         {isDroneInfoVisible && (
@@ -159,20 +205,34 @@ const App = () => {
                 longitude={dronePosition.lng}
                 altitude={dronePosition.altitude}
                 heading={droneHeading}
-                onHide={hideDroneInfoPanel} // передаем функцию для скрытия
+                onHide={hideDroneInfoPanel}
             />
         )}
 
         <Sidebar
             onOpenSettings={openSettings}
             onOpenHistory={openHistory}
-            onOpenMission={openMission}
+            onOpenMission={startRouteBuilding}
             isOpen={isSidebarOpen}
             onToggleSidebar={toggleSidebar}
             onOpenCalibration={openCalibration}
         />
 
-        <DraggableModal isOpen={isSettingsOpen} onClose={closeSettings}>
+        {isMissionBuilding && (
+            <MissionPlannerSidebar
+                isMissionBuilding={isMissionBuilding}
+                routePoints={routePoints}
+                onSaveRoute={saveRoute}
+                onCancelRoute={cancelRoute}
+                selectedPoint={selectedPoint}
+                onAltitudeChange={(altitude) => setSelectedPoint((prev) => ({ ...prev, altitude }))}
+                onSavePoint={handleSavePoint}
+                onClose={() => setIsMissionBuilding(false)}
+            />
+        )}
+
+        {/* Модальное окно для настроек карты */}
+        <DraggableModal key="settings" isOpen={isSettingsOpen} onClose={closeSettings}>
           <h2>Настройки карты</h2>
           <div style={styles.selectorContainer}>
             <label style={styles.label}>Режим сцены</label>
@@ -197,7 +257,8 @@ const App = () => {
           </div>
         </DraggableModal>
 
-        <DraggableModal isOpen={isCalibrationOpen} onClose={closeCalibration}>
+        {/* Модальное окно для калибровки дрона */}
+        <DraggableModal key="calibration" isOpen={isCalibrationOpen} onClose={closeCalibration}>
           <h3>Калибровка дрона</h3>
           <input
               type="number"
@@ -224,7 +285,7 @@ const App = () => {
               <div className="arrow"></div>
               <div
                   className="compass-rotatable"
-                  style={{transform: `rotate(${-droneHeading}deg)`}} // инвертируем угол
+                  style={{ transform: `rotate(${-droneHeading}deg)` }}
               >
                 <div className="tick tick-0"></div>
                 <div className="tick tick-45"></div>
@@ -297,4 +358,4 @@ const styles = {
   },
 };
 
-export default App;
+export default React.memo(App);
