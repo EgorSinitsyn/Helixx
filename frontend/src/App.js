@@ -137,8 +137,9 @@ const App = () => {
   };
 
   const handleHeadingChange = (angle) => {
-    setDroneHeading(angle);
+    setDroneHeading(angle); // Инвертируем угол
   };
+
 
   return (
       <div>
@@ -223,7 +224,7 @@ const App = () => {
               <div className="arrow"></div>
               <div
                   className="compass-rotatable"
-                  style={{ transform: `rotate(${droneHeading}deg)` }}
+                  style={{transform: `rotate(${-droneHeading}deg)`}} // инвертируем угол
               >
                 <div className="tick tick-0"></div>
                 <div className="tick tick-45"></div>
