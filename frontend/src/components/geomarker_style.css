@@ -1,13 +1,11 @@
-/* geomarker_style.css */
-
 .route-marker {
     width: 20px;
     height: 20px;
-    background-color: rgba(0, 0, 255, 0.4); /* Красный цвет */
+    background-color: rgba(255, 165, 0, 0.4); /* Мягкий оранжевый */
     border: 2px solid white;
     border-radius: 50%;
     position: relative;
-    box-shadow: 0 0 10px rgba(0, 0, 255, 0.6);
+    box-shadow: 0 0 10px rgba(255, 165, 0, 0.6); /* Оранжевая тень */
 }
 
 .route-marker::before {
@@ -17,7 +15,7 @@
     left: 50%;
     width: 100%;
     height: 100%;
-    background-color: rgba(0, 0, 255, 0.3); /* Полупрозрачный красный */
+    background-color: rgba(255, 165, 0, 0.3); /* Полупрозрачный оранжевый */
     border-radius: 50%;
     transform: translate(-50%, -50%);
     animation: pulse 1.5s ease-out infinite;
