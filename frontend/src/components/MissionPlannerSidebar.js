@@ -1,11 +1,15 @@
+import React from 'react';
+
 const MissionPlannerSidebar = ({
                                    selectedPoint,
                                    onAltitudeChange,
                                    onSavePoint,
-                                   routePoints,
                                    onCancelRoute,
+                                   onRemoveLastPoint, // Новая функция для отмены последней точки
+                                   routePoints,
                                    onClose,
                                }) => {
+
     return (
         <div style={{ ...styles.sidebar, overflowX: 'hidden', overflowY: 'auto' }}>
             <button onClick={onClose} style={styles.closeButton}>✕</button>
@@ -46,8 +50,11 @@ const MissionPlannerSidebar = ({
                     />
                 </div>
 
-                <button onClick={onSavePoint} style={styles.button}>Сохранить точку</button>
-                <button onClick={onCancelRoute} style={styles.button}>Отменить маршрут</button>
+                <div style={styles.buttonRow}>
+                    <button onClick={onRemoveLastPoint} style={styles.cancelButton}>Отменить точку</button>
+                    <button onClick={onSavePoint} style={styles.saveButton}>Сохранить точку</button>
+                </div>
+                <button onClick={onCancelRoute} style={styles.cancelRouteButton}>Отменить маршрут</button>
             </div>
 
             <div style={styles.routeListContainer}>
@@ -110,12 +117,35 @@ const styles = {
         fontSize: '12px',
         textAlign: 'right',
     },
-    button: {
-        width: '100%',
-        marginBottom: '10px',
+    buttonRow: {
+        display: 'flex',
+        justifyContent: 'space-between',
+        marginTop: '10px',
+    },
+    saveButton: {
+        width: '45%',
         padding: '8px',
         fontSize: '16px',
         backgroundColor: '#444',
+        color: 'white',
+        border: 'none',
+        cursor: 'pointer',
+    },
+    cancelButton: {
+        width: '45%',
+        padding: '8px',
+        fontSize: '16px',
+        backgroundColor: '#555',
+        color: 'white',
+        border: 'none',
+        cursor: 'pointer',
+    },
+    cancelRouteButton: {
+        width: '100%',
+        marginTop: '10px',
+        padding: '8px',
+        fontSize: '16px',
+        backgroundColor: '#c9302c',
         color: 'white',
         border: 'none',
         cursor: 'pointer',
