@@ -1,43 +1,51 @@
-import React from 'react';
-
 const MissionPlannerSidebar = ({
                                    selectedPoint,
                                    onAltitudeChange,
                                    onSavePoint,
                                    routePoints,
                                    onCancelRoute,
-                                   onClose, // Функция для закрытия панели
+                                   onClose,
                                }) => {
     return (
-        <div style={styles.sidebar}>
-            <button onClick={onClose} style={styles.closeButton}>✕</button> {/* Кнопка крестика */}
+        <div style={{ ...styles.sidebar, overflowX: 'hidden', overflowY: 'auto' }}>
+            <button onClick={onClose} style={styles.closeButton}>✕</button>
 
             <h3 style={styles.header}>Планировщик миссий</h3>
 
             <div style={styles.pointInputContainer}>
                 <p>Добавить точку маршрута</p>
-                <label>Широта:</label>
-                <input
-                    type="number"
-                    value={selectedPoint.lat}
-                    readOnly
-                    style={styles.input}
-                />
-                <label>Долгота:</label>
-                <input
-                    type="number"
-                    value={selectedPoint.lng}
-                    readOnly
-                    style={styles.input}
-                />
-                <label>Высота:</label>
-                <input
-                    type="number"
-                    value={selectedPoint.altitude}
-                    onChange={(e) => onAltitudeChange(e.target.value)}
-                    placeholder="Введите высоту"
-                    style={styles.input}
-                />
+
+                <div style={styles.inputRow}>
+                    <label>Широта:</label>
+                    <input
+                        type="number"
+                        value={selectedPoint.lat}
+                        readOnly
+                        style={styles.input}
+                    />
+                </div>
+
+                <div style={styles.inputRow}>
+                    <label>Долгота:</label>
+                    <input
+                        type="number"
+                        value={selectedPoint.lng}
+                        readOnly
+                        style={styles.input}
+                    />
+                </div>
+
+                <div style={styles.inputRow}>
+                    <label>Высота:</label>
+                    <input
+                        type="number"
+                        value={selectedPoint.altitude}
+                        onChange={(e) => onAltitudeChange(e.target.value)}
+                        placeholder="Введите высоту"
+                        style={styles.input}
+                    />
+                </div>
+
                 <button onClick={onSavePoint} style={styles.button}>Сохранить точку</button>
                 <button onClick={onCancelRoute} style={styles.button}>Отменить маршрут</button>
             </div>
@@ -64,13 +72,14 @@ const styles = {
         right: 0,
         width: '200px',
         fontSize: '14px',
-        overflowY: 'auto',
         maxHeight: '100vh',
         height: '100%',
         backgroundColor: '#333',
         color: 'white',
         padding: '10px',
         zIndex: 1000,
+        overflowX: 'hidden',
+        overflowY: 'auto',
     },
     closeButton: {
         position: 'absolute',
@@ -89,16 +98,22 @@ const styles = {
     pointInputContainer: {
         marginBottom: '20px',
     },
+    inputRow: {
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: '8px',
+    },
     input: {
-        width: '100%',
-        marginBottom: '10px',
-        padding: '8px',
-        fontSize: '14px',
+        width: '50%',
+        padding: '6px',
+        fontSize: '12px',
+        textAlign: 'right',
     },
     button: {
         width: '100%',
         marginBottom: '10px',
-        padding: '10px',
+        padding: '8px',
         fontSize: '16px',
         backgroundColor: '#444',
         color: 'white',

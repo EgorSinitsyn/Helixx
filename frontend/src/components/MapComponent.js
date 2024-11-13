@@ -180,7 +180,7 @@ const MapComponent = ({ dronePosition, route: _route, is3D, cellTowers, isCovera
     });
   }, [routePoints, isMissionBuilding]); // Добавляем зависимость isMissionBuilding
 
-  return <div ref={mapContainerRef} style={{ width: '100%', height: '100vh' }} />;
+  return <div ref={mapContainerRef} style={{ width: '100%', height: '100vh', overflowX: 'hidden' }} />;
 };
 
 // Функция для добавления модели дрона

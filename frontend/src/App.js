@@ -68,6 +68,7 @@ const App = () => {
     return () => socket.close();
   }, []);
 
+
   const openSettings = useCallback(() => {
     setIsSettingsOpen(true);
     setNewDronePosition({
