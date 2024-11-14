@@ -6,6 +6,7 @@ const MissionPlannerSidebar = ({
                                    onSavePoint,
                                    onCancelRoute,
                                    onRemoveLastPoint, // Новая функция для отмены последней точки
+                                   onConfirmRoute,
                                    routePoints,
                                    onClose,
                                }) => {
@@ -55,6 +56,7 @@ const MissionPlannerSidebar = ({
                     <button onClick={onSavePoint} style={styles.saveButton}>Сохранить точку</button>
                 </div>
                 <button onClick={onCancelRoute} style={styles.cancelRouteButton}>Отменить маршрут</button>
+                <button onClick={onConfirmRoute} style={styles.confirmButton}>Подтвердить маршрут</button>
             </div>
 
             <div style={styles.routeListContainer}>
@@ -131,6 +133,18 @@ const styles = {
         border: 'none',
         cursor: 'pointer',
     },
+    confirmButton: {
+        flex: 1,
+        width: '100%',
+        marginBottom: '10px',
+        marginTop: '10px',
+        padding: '8px',
+        fontSize: '16px',
+        backgroundColor: '#008CBA',
+        color: 'white',
+        border: 'none',
+        cursor: 'pointer',
+    },
     cancelButton: {
         width: '45%',
         padding: '8px',
@@ -141,6 +155,7 @@ const styles = {
         cursor: 'pointer',
     },
     cancelRouteButton: {
+        flex: 1,
         width: '100%',
         marginTop: '10px',
         padding: '8px',

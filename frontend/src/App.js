@@ -198,6 +198,11 @@ const App = () => {
     console.log("Маршрут в формате GeoJSON:", JSON.stringify(geoJson, null, 2));
   }, [routePoints]);
 
+  const handleConfirmRoute = useCallback(() => {
+    setRoute(routePoints); // обновляем маршрут
+  }, [routePoints]);
+
+
   return (
       <div>
         <MapComponent
@@ -210,6 +215,7 @@ const App = () => {
             updateDroneAltitude={updateDroneAltitude}
             isPlacingMarker={isMissionBuilding}
             routePoints={routePoints}
+            confirmedRoute={route}
             isMissionBuilding={isMissionBuilding}
             onMapClick={handleMapClick}
         />
@@ -240,6 +246,7 @@ const App = () => {
                 onSaveRoute={saveRoute}
                 onRemoveLastPoint={removeLastPoint}
                 onCancelRoute={cancelRoute}
+                onConfirmRoute={handleConfirmRoute}
                 selectedPoint={selectedPoint}
                 onAltitudeChange={(altitude) => setSelectedPoint((prev) => ({ ...prev, altitude }))}
                 onSavePoint={handleSavePoint}
