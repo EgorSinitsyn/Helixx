@@ -5,11 +5,67 @@ const MissionPlannerSidebar = ({
                                    onAltitudeChange,
                                    onSavePoint,
                                    onCancelRoute,
-                                   onRemoveLastPoint, // Новая функция для отмены последней точки
+                                   onRemoveLastPoint,
                                    onConfirmRoute,
                                    routePoints,
                                    onClose,
                                }) => {
+    // Функция для сохранения маршрута в проект
+    const saveRouteToProject = async (routePoints) => {
+        const geoJson = {
+            type: 'FeatureCollection',
+            features: routePoints.map((point, index) => ({
+                type: 'Feature',
+                properties: { id: index + 1, altitude: Number(point.altitude) },
+                geometry: {
+                    type: 'Point',
+                    coordinates: [Number(point.lng), Number(point.lat), Number(point.altitude)],
+                },
+            })),
+        };
+
+        try {
+            const response = await fetch('http://localhost:5001/save-route', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(geoJson),
+            });
+
+            if (response.ok) {
+                alert('Маршрут успешно сохранён в директорию проекта: frontend/src/route');
+            } else {
+                alert('Ошибка при сохранении маршрута');
+            }
+        } catch (error) {
+            console.error('Ошибка при запросе к серверу:', error);
+            alert('Не удалось сохранить маршрут');
+        }
+    };
+
+    // Функция для скачивания маршрута
+    const exportRouteToGeoJSON = (routePoints) => {
+        const geoJson = {
+            type: 'FeatureCollection',
+            features: routePoints.map((point, index) => ({
+                type: 'Feature',
+                properties: { id: index + 1, altitude: Number(point.altitude) },
+                geometry: {
+                    type: 'Point',
+                    coordinates: [Number(point.lng), Number(point.lat), Number(point.altitude)],
+                },
+            })),
+        };
+
+        const blob = new Blob([JSON.stringify(geoJson, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'route.geojson';
+        link.click();
+
+        URL.revokeObjectURL(url);
+    };
 
     return (
         <div style={{ ...styles.sidebar, overflowX: 'hidden', overflowY: 'auto' }}>
@@ -55,6 +111,14 @@ const MissionPlannerSidebar = ({
                     <button onClick={onRemoveLastPoint} style={styles.cancelButton}>Отменить точку</button>
                     <button onClick={onSavePoint} style={styles.saveButton}>Сохранить точку</button>
                 </div>
+
+                <div style={styles.buttonRow}>
+                    <button onClick={() => saveRouteToProject(routePoints)} style={styles.saveRouteButton}>Сохранить маршрут</button>
+                    <button onClick={() => exportRouteToGeoJSON(routePoints)} style={styles.downloadButton}>
+                        Скачать маршрут
+                    </button>
+                </div>
+
                 <button onClick={onCancelRoute} style={styles.cancelRouteButton}>Отменить маршрут</button>
                 <button onClick={onConfirmRoute} style={styles.confirmButton}>Подтвердить маршрут</button>
             </div>
@@ -74,6 +138,7 @@ const MissionPlannerSidebar = ({
     );
 };
 
+
 const styles = {
     sidebar: {
         position: 'fixed',
@@ -92,8 +157,8 @@ const styles = {
     },
     closeButton: {
         position: 'absolute',
-        top: '10px',
-        right: '10px',
+        top: '5px',
+        right: '2px',
         backgroundColor: 'transparent',
         border: 'none',
         color: 'white',
@@ -132,6 +197,25 @@ const styles = {
         color: 'white',
         border: 'none',
         cursor: 'pointer',
+    },
+    saveRouteButton: {
+        width: '45%',
+        padding: '8px',
+        fontSize: '16px',
+        backgroundColor: '#4CAF50',
+        color: 'white',
+        border: 'none',
+        cursor: 'pointer',
+    },
+    downloadButton: {
+        width: '45%',
+        padding: '8px',
+        fontSize: '16px',
+        backgroundColor: '#4CAF50',
+        color: 'white',
+        border: 'none',
+        cursor: 'pointer',
+        opacity: 0.8,
     },
     confirmButton: {
         flex: 1,
