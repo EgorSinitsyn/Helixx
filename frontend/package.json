@@ -23,6 +23,7 @@
     "react-scripts": "5.0.1",
     "three": "^0.170.0",
     "three-stdlib": "^2.34.0",
+    "threebox-plugin": "^2.2.7",
     "web-vitals": "^2.1.4"
   },
   "scripts": {
