@@ -4,42 +4,123 @@ const MissionPlannerSidebar = ({
                                    selectedPoint,
                                    onAltitudeChange,
                                    onSavePoint,
-                                   routePoints,
                                    onCancelRoute,
-                                   onClose, // Функция для закрытия панели
+                                   onRemoveLastPoint,
+                                   onConfirmRoute,
+                                   routePoints,
+                                   onClose,
                                }) => {
+    // Функция для сохранения маршрута в проект
+    const saveRouteToProject = async (routePoints) => {
+        const geoJson = {
+            type: 'FeatureCollection',
+            features: routePoints.map((point, index) => ({
+                type: 'Feature',
+                properties: { id: index + 1, altitude: Number(point.altitude) },
+                geometry: {
+                    type: 'Point',
+                    coordinates: [Number(point.lng), Number(point.lat), Number(point.altitude)],
+                },
+            })),
+        };
+
+        try {
+            const response = await fetch('http://localhost:5001/save-route', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(geoJson),
+            });
+
+            if (response.ok) {
+                alert('Маршрут успешно сохранён в директорию проекта: frontend/src/route');
+            } else {
+                alert('Ошибка при сохранении маршрута');
+            }
+        } catch (error) {
+            console.error('Ошибка при запросе к серверу:', error);
+            alert('Не удалось сохранить маршрут');
+        }
+    };
+
+    // Функция для скачивания маршрута
+    const exportRouteToGeoJSON = (routePoints) => {
+        const geoJson = {
+            type: 'FeatureCollection',
+            features: routePoints.map((point, index) => ({
+                type: 'Feature',
+                properties: { id: index + 1, altitude: Number(point.altitude) },
+                geometry: {
+                    type: 'Point',
+                    coordinates: [Number(point.lng), Number(point.lat), Number(point.altitude)],
+                },
+            })),
+        };
+
+        const blob = new Blob([JSON.stringify(geoJson, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'route.geojson';
+        link.click();
+
+        URL.revokeObjectURL(url);
+    };
+
     return (
-        <div style={styles.sidebar}>
-            <button onClick={onClose} style={styles.closeButton}>✕</button> {/* Кнопка крестика */}
+        <div style={{ ...styles.sidebar, overflowX: 'hidden', overflowY: 'auto' }}>
+            <button onClick={onClose} style={styles.closeButton}>✕</button>
 
             <h3 style={styles.header}>Планировщик миссий</h3>
 
             <div style={styles.pointInputContainer}>
                 <p>Добавить точку маршрута</p>
-                <label>Широта:</label>
-                <input
-                    type="number"
-                    value={selectedPoint.lat}
-                    readOnly
-                    style={styles.input}
-                />
-                <label>Долгота:</label>
-                <input
-                    type="number"
-                    value={selectedPoint.lng}
-                    readOnly
-                    style={styles.input}
-                />
-                <label>Высота:</label>
-                <input
-                    type="number"
-                    value={selectedPoint.altitude}
-                    onChange={(e) => onAltitudeChange(e.target.value)}
-                    placeholder="Введите высоту"
-                    style={styles.input}
-                />
-                <button onClick={onSavePoint} style={styles.button}>Сохранить точку</button>
-                <button onClick={onCancelRoute} style={styles.button}>Отменить маршрут</button>
+
+                <div style={styles.inputRow}>
+                    <label>Широта:</label>
+                    <input
+                        type="number"
+                        value={selectedPoint.lat}
+                        readOnly
+                        style={styles.input}
+                    />
+                </div>
+
+                <div style={styles.inputRow}>
+                    <label>Долгота:</label>
+                    <input
+                        type="number"
+                        value={selectedPoint.lng}
+                        readOnly
+                        style={styles.input}
+                    />
+                </div>
+
+                <div style={styles.inputRow}>
+                    <label>Высота:</label>
+                    <input
+                        type="number"
+                        value={selectedPoint.altitude}
+                        onChange={(e) => onAltitudeChange(e.target.value)}
+                        placeholder="Введите высоту"
+                        style={styles.input}
+                    />
+                </div>
+
+                <div style={styles.buttonRow}>
+                    <button onClick={onRemoveLastPoint} style={styles.cancelButton}>Отменить точку</button>
+                    <button onClick={onSavePoint} style={styles.saveButton}>Сохранить точку</button>
+                </div>
+
+                <div style={styles.buttonRow}>
+                    <button onClick={() => saveRouteToProject(routePoints)} style={styles.saveRouteButton}>Сохранить маршрут</button>
+                    <button onClick={() => exportRouteToGeoJSON(routePoints)} style={styles.downloadButton}>
+                        Скачать маршрут
+                    </button>
+                </div>
+
+                <button onClick={onCancelRoute} style={styles.cancelRouteButton}>Отменить маршрут</button>
+                <button onClick={onConfirmRoute} style={styles.confirmButton}>Подтвердить маршрут</button>
             </div>
 
             <div style={styles.routeListContainer}>
@@ -57,6 +138,7 @@ const MissionPlannerSidebar = ({
     );
 };
 
+
 const styles = {
     sidebar: {
         position: 'fixed',
@@ -64,18 +146,19 @@ const styles = {
         right: 0,
         width: '200px',
         fontSize: '14px',
-        overflowY: 'auto',
         maxHeight: '100vh',
         height: '100%',
         backgroundColor: '#333',
         color: 'white',
         padding: '10px',
         zIndex: 1000,
+        overflowX: 'hidden',
+        overflowY: 'auto',
     },
     closeButton: {
         position: 'absolute',
-        top: '10px',
-        right: '10px',
+        top: '5px',
+        right: '2px',
         backgroundColor: 'transparent',
         border: 'none',
         color: 'white',
@@ -89,18 +172,79 @@ const styles = {
     pointInputContainer: {
         marginBottom: '20px',
     },
-    input: {
-        width: '100%',
-        marginBottom: '10px',
-        padding: '8px',
-        fontSize: '14px',
+    inputRow: {
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: '8px',
     },
-    button: {
-        width: '100%',
-        marginBottom: '10px',
-        padding: '10px',
+    input: {
+        width: '50%',
+        padding: '6px',
+        fontSize: '12px',
+        textAlign: 'right',
+    },
+    buttonRow: {
+        display: 'flex',
+        justifyContent: 'space-between',
+        marginTop: '10px',
+    },
+    saveButton: {
+        width: '45%',
+        padding: '8px',
         fontSize: '16px',
         backgroundColor: '#444',
+        color: 'white',
+        border: 'none',
+        cursor: 'pointer',
+    },
+    saveRouteButton: {
+        width: '45%',
+        padding: '8px',
+        fontSize: '16px',
+        backgroundColor: '#4CAF50',
+        color: 'white',
+        border: 'none',
+        cursor: 'pointer',
+    },
+    downloadButton: {
+        width: '45%',
+        padding: '8px',
+        fontSize: '16px',
+        backgroundColor: '#4CAF50',
+        color: 'white',
+        border: 'none',
+        cursor: 'pointer',
+        opacity: 0.8,
+    },
+    confirmButton: {
+        flex: 1,
+        width: '100%',
+        marginBottom: '10px',
+        marginTop: '10px',
+        padding: '8px',
+        fontSize: '16px',
+        backgroundColor: '#008CBA',
+        color: 'white',
+        border: 'none',
+        cursor: 'pointer',
+    },
+    cancelButton: {
+        width: '45%',
+        padding: '8px',
+        fontSize: '16px',
+        backgroundColor: '#555',
+        color: 'white',
+        border: 'none',
+        cursor: 'pointer',
+    },
+    cancelRouteButton: {
+        flex: 1,
+        width: '100%',
+        marginTop: '10px',
+        padding: '8px',
+        fontSize: '16px',
+        backgroundColor: '#c9302c',
         color: 'white',
         border: 'none',
         cursor: 'pointer',

@@ -6,8 +6,9 @@ const DroneInfoPanel = ({ latitude, longitude, altitude, heading, onHide }) => {
 
     const panelStyle = {
         position: 'fixed',
-        bottom: '20px',
-        right: '20px',
+        bottom: '5px',
+        left: '50%',
+        transform: 'translateX(-50%)',
         padding: '15px',
         backgroundColor: 'rgba(0, 0, 0, 0.5)',
         color: 'white',

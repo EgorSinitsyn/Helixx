@@ -4,15 +4,102 @@ import towerIcon from '../assets/tower-icon.png';
 import '../components/drone_style.css';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three-stdlib';
+import '../components/geomarker_style.css';
 
 mapboxgl.accessToken = process.env.REACT_APP_MAPBOX_TOKEN;
 
-const MapComponent = ({ dronePosition, route: _route, is3D, cellTowers, isCoverageEnabled, droneHeading, isPlacingMarker, onMapClick, routePoints, isMissionBuilding }) => {
+const MapComponent = ({ dronePosition, route: confirmedRoute, is3D, cellTowers, isCoverageEnabled, droneHeading, isPlacingMarker, onMapClick, routePoints, isMissionBuilding }) => {
   const mapContainerRef = useRef(null);
   const mapRef = useRef(null);
   const droneLayerRef = useRef(null);
   const droneMarkerRef = useRef(null);
   const markersRef = useRef([]); // Массив для хранения маркеров маршрута
+  const routeLayerId = 'route-line';
+
+  const renderRoute = () => {
+    if (!mapRef.current || !mapRef.current.isStyleLoaded()) return;
+
+    // Удаляем существующие слои маршрута и линии к первой точке, если они уже есть
+    if (mapRef.current.getSource(routeLayerId)) {
+      mapRef.current.removeLayer(routeLayerId);
+      mapRef.current.removeSource(routeLayerId);
+    }
+    if (mapRef.current.getSource('drone-to-first-point')) {
+      mapRef.current.removeLayer('drone-to-first-point');
+      mapRef.current.removeSource('drone-to-first-point');
+    }
+
+    // Создаем линию маршрута, если есть больше одной точки
+    if (confirmedRoute.length > 1) {
+      const coordinates = confirmedRoute.map((point) => [point.lng, point.lat]);
+      const routeGeoJson = {
+        type: 'Feature',
+        geometry: {
+          type: 'LineString',
+          coordinates,
+        },
+      };
+
+      mapRef.current.addSource(routeLayerId, { type: 'geojson', data: routeGeoJson });
+      mapRef.current.addLayer({
+        id: routeLayerId,
+        type: 'line',
+        source: routeLayerId,
+        layout: {
+          'line-join': 'round',
+          'line-cap': 'round',
+        },
+        paint: {
+          'line-color': 'rgba(255, 165, 0, 0.6)', // Мягкий оранжевый цвет
+          'line-width': 2,
+        },
+      });
+    }
+
+    // Если есть хотя бы одна точка маршрута, соединяем дроном и первую точку маршрута
+    if (confirmedRoute.length > 0) {
+      const firstPoint = confirmedRoute[0];
+      const droneToFirstPointGeoJson = {
+        type: 'Feature',
+        geometry: {
+          type: 'LineString',
+          coordinates: [
+            [dronePosition.lng, dronePosition.lat],
+            [firstPoint.lng, firstPoint.lat],
+          ],
+        },
+      };
+
+      mapRef.current.addSource('drone-to-first-point', { type: 'geojson', data: droneToFirstPointGeoJson });
+      mapRef.current.addLayer({
+        id: 'drone-to-first-point',
+        type: 'line',
+        source: 'drone-to-first-point',
+        layout: {
+          'line-join': 'round',
+          'line-cap': 'round',
+        },
+        paint: {
+          'line-color': 'rgba(255, 165, 0, 0.6)', // Мягкий оранжевый цвет для соединения
+          'line-width': 2,
+          'line-dasharray': [2, 4],
+        },
+      });
+    }
+
+    // Добавляем маркеры для каждой точки маршрута
+    markersRef.current.forEach((marker) => marker.remove());
+    markersRef.current = routePoints.map((point) => {
+      const markerElement = document.createElement('div');
+      markerElement.className = 'route-marker';
+
+      const marker = new mapboxgl.Marker({ element: markerElement })
+          .setLngLat([point.lng, point.lat])
+          .addTo(mapRef.current);
+
+      return marker;
+    });
+  };
 
   // Создаем карту только один раз
   useEffect(() => {
@@ -32,12 +119,16 @@ const MapComponent = ({ dronePosition, route: _route, is3D, cellTowers, isCovera
       mapRef.current.on('click', (e) => {
         if (isPlacingMarker) {
           const { lat, lng } = e.lngLat;
-          onMapClick(lat, lng); // Передаём координаты в App.js
+          onMapClick(lat, lng);
 
-          // Добавляем маркер на карту и сохраняем его в markersRef
-          const marker = new mapboxgl.Marker()
+          // Создаем элемент для маркера маршрута
+          const markerElement = document.createElement('div');
+          markerElement.className = 'route-marker'; // Используем стиль из geomarker_style.css
+
+          const marker = new mapboxgl.Marker({ element: markerElement })
               .setLngLat([lng, lat])
               .addTo(mapRef.current);
+
           markersRef.current.push(marker);
         }
       });
@@ -167,20 +258,97 @@ const MapComponent = ({ dronePosition, route: _route, is3D, cellTowers, isCovera
 
   // Обновление маркеров маршрута на основе изменения routePoints
   useEffect(() => {
-    // Удаляем старые маркеры перед добавлением новых
     markersRef.current.forEach(marker => marker.remove());
     markersRef.current = [];
 
     routePoints.forEach((point) => {
-      const marker = new mapboxgl.Marker({ visible: isMissionBuilding }) // Видимость по флагу
+      const markerElement = document.createElement('div');
+      markerElement.className = 'route-marker'; // Используем стиль из geomarker_style.css
+
+      const marker = new mapboxgl.Marker({ element: markerElement })
           .setLngLat([point.lng, point.lat])
           .addTo(mapRef.current);
 
-      markersRef.current.push(marker); // Добавляем маркер в список для последующего удаления
+      markersRef.current.push(marker);
     });
-  }, [routePoints, isMissionBuilding]); // Добавляем зависимость isMissionBuilding
+  }, [routePoints, isMissionBuilding]);
 
-  return <div ref={mapContainerRef} style={{ width: '100%', height: '100vh' }} />;
+  useEffect(() => {
+    if (mapRef.current && confirmedRoute.length > 1) {
+      // Удаляем существующий слой, если он есть
+      if (mapRef.current.getSource('route-line')) {
+        mapRef.current.removeLayer('route-line');
+        mapRef.current.removeSource('route-line');
+      }
+
+      const markerRadius = 0.0001; // Пример радиуса в градусах (приблизительно 10 метров на экваторе)
+
+      const getOffsetPoint = (point1, point2, radius) => {
+        // Вычисляем вектор от точки 1 к точке 2
+        const dx = point2.lng - point1.lng;
+        const dy = point2.lat - point1.lat;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+
+        // Нормализуем вектор и умножаем на радиус
+        const offsetX = (dx / distance) * radius;
+        const offsetY = (dy / distance) * radius;
+
+        return {
+          start: { lat: point1.lat + offsetY, lng: point1.lng + offsetX },
+          end: { lat: point2.lat - offsetY, lng: point2.lng - offsetX }
+        };
+      };
+
+      const coordinates = [];
+      for (let i = 0; i < confirmedRoute.length - 1; i++) {
+        const start = confirmedRoute[i];
+        const end = confirmedRoute[i + 1];
+        const { start: startOffset, end: endOffset } = getOffsetPoint(start, end, markerRadius);
+        coordinates.push([startOffset.lng, startOffset.lat], [endOffset.lng, endOffset.lat]);
+      }
+
+      const routeGeoJson = {
+        type: 'Feature',
+        geometry: {
+          type: 'LineString',
+          coordinates
+        }
+      };
+
+      mapRef.current.addSource('route-line', { type: 'geojson', data: routeGeoJson });
+      mapRef.current.addLayer({
+        id: 'route-line',
+        type: 'line',
+        source: 'route-line',
+        layout: {
+          'line-join': 'round',
+          'line-cap': 'round'
+        },
+        paint: {
+          'line-color': '#ffffff',
+          'line-width': 2
+        }
+      });
+    }
+  }, [confirmedRoute]);
+
+  // Обновляем маршрут при изменении confirmedRoute или is3D
+  useEffect(() => {
+    renderRoute();
+  }, [confirmedRoute, is3D]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (mapRef.current && mapRef.current.isStyleLoaded()) {
+        renderRoute();
+        clearInterval(interval); // Остановить проверку после загрузки стиля
+      }
+    }, 100); // Проверяем каждые 100 миллисекунд
+
+    return () => clearInterval(interval);
+  }, [confirmedRoute, is3D]);
+
+  return <div ref={mapContainerRef} style={{ width: '100%', height: '100vh', overflowX: 'hidden' }} />;
 };
 
 // Функция для добавления модели дрона
@@ -252,7 +420,7 @@ function addDroneModel(map, dronePosition) {
 // Функция для добавления маркера дрона в 2D режиме
 function addDroneMarker(map, dronePosition) {
   const markerElement = document.createElement('div');
-  markerElement.className = 'gps-marker';
+  markerElement.className = 'gps-marker'; // Используем стиль из drone_style.css
 
   return new mapboxgl.Marker({ element: markerElement, anchor: 'bottom' })
       .setLngLat([dronePosition.lng, dronePosition.lat])

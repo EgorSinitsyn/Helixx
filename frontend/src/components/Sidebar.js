@@ -10,7 +10,7 @@ const Sidebar = ({
                      onToggleSidebar
                  }) => {
     return (
-        <div style={{ ...styles.sidebar, width: isOpen ? '200px' : '50px' }}>
+        <div style={{ ...styles.sidebar, width: isOpen ? '200px' : '50px', overflowX: 'hidden' }}>
             <button style={styles.toggleButton} onClick={onToggleSidebar}>
                 {isOpen ? '<<' : '>>'}
             </button>
@@ -19,7 +19,7 @@ const Sidebar = ({
                     <h2 style={styles.centeredTitle}>Helixx</h2>
                     <button style={styles.button} onClick={onOpenSettings}>Настройки карты</button>
                     <button style={styles.button} onClick={onOpenCalibration}>Калибровка дрона</button>
-                    <button style={styles.button} onClick={onOpenMission}>Построить полетную миссию</button>
+                    <button style={styles.button} onClick={onOpenMission}>Планировщик миссий</button>
                     <button style={{...styles.button, ...styles.historyButton}} onClick={onOpenHistory}>История
                         полетов
                     </button>
@@ -39,6 +39,7 @@ const styles = {
         top: 0,
         left: 0,
         width: '200px',
+        maxWidth: '100vw',
         height: '100%',
         backgroundColor: '#333',
         color: 'white',
@@ -47,6 +48,7 @@ const styles = {
         flexDirection: 'column',
         alignItems: 'flex-start',
         zIndex: 1000,
+        overflowX: 'hidden',
     },
     toggleButton: {
         alignSelf: 'flex-end',

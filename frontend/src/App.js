@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import MapComponent from './components/MapComponent';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import Sidebar from './components/Sidebar';
@@ -19,6 +19,8 @@ const App = () => {
     altitude: CALIBRATION_ALTITUDE,
     heading: 0,
   });
+
+  const markersRef = useRef([]); // Инициализация markersRef
 
   const [newDronePosition, setNewDronePosition] = useState({ lat: '', lng: '', altitude: '' });
   const [route, setRoute] = useState([]);
@@ -67,6 +69,7 @@ const App = () => {
 
     return () => socket.close();
   }, []);
+
 
   const openSettings = useCallback(() => {
     setIsSettingsOpen(true);
@@ -165,8 +168,20 @@ const App = () => {
 
   const cancelRoute = useCallback(() => {
     setRoutePoints([]);
+    setSelectedPoint({ lat: '', lng: '', altitude: '' }); // Очищает поля
     // setIsMissionBuilding(false);
   }, []);
+
+  const removeLastPoint = () => {
+    console.log("Отмена последней точки"); // Проверка вызова функции
+    if (markersRef.current.length > 0) {
+      const lastMarker = markersRef.current.pop();
+      lastMarker.remove();
+    } else if (routePoints.length > 0) {
+      setRoutePoints((prev) => prev.slice(0, -1));
+    }
+    setSelectedPoint({ lat: '', lng: '', altitude: '' });
+  };
 
   const saveRoute = useCallback(() => {
     const geoJson = {
@@ -183,6 +198,11 @@ const App = () => {
     console.log("Маршрут в формате GeoJSON:", JSON.stringify(geoJson, null, 2));
   }, [routePoints]);
 
+  const handleConfirmRoute = useCallback(() => {
+    setRoute(routePoints); // обновляем маршрут
+  }, [routePoints]);
+
+
   return (
       <div>
         <MapComponent
@@ -195,6 +215,7 @@ const App = () => {
             updateDroneAltitude={updateDroneAltitude}
             isPlacingMarker={isMissionBuilding}
             routePoints={routePoints}
+            confirmedRoute={route}
             isMissionBuilding={isMissionBuilding}
             onMapClick={handleMapClick}
         />
@@ -223,7 +244,9 @@ const App = () => {
                 isMissionBuilding={isMissionBuilding}
                 routePoints={routePoints}
                 onSaveRoute={saveRoute}
+                onRemoveLastPoint={removeLastPoint}
                 onCancelRoute={cancelRoute}
+                onConfirmRoute={handleConfirmRoute}
                 selectedPoint={selectedPoint}
                 onAltitudeChange={(altitude) => setSelectedPoint((prev) => ({ ...prev, altitude }))}
                 onSavePoint={handleSavePoint}
