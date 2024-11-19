@@ -151,6 +151,7 @@ const App = () => {
   const startRouteBuilding = useCallback(() => {
     setIsMissionBuilding(true);
     // setIsPlacingMarker(true);
+    // setIs3D(true);
   }, []);
 
   const handleMapClick = useCallback((lat, lng) => {

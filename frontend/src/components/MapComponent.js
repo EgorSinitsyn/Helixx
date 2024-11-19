@@ -34,11 +34,9 @@ const MapComponent = ({
   const coverageSourceIdsRef = useRef([]);
   const routeLayerId = 'route-line';
 
-  // Функция для отображения маршрута в 2D режиме
-  const renderRoute2D = () => {
-    if (!mapRef.current || !mapRef.current.isStyleLoaded()) return;
 
-    const routeLayerId = 'route-line';
+  const renderRoute = () => {
+    if (!mapRef.current || !mapRef.current.isStyleLoaded()) return;
 
     // Удаляем существующие слои маршрута и линии к первой точке, если они уже есть
     if (mapRef.current.getSource(routeLayerId)) {
@@ -91,10 +89,7 @@ const MapComponent = ({
         },
       };
 
-      mapRef.current.addSource('drone-to-first-point', {
-        type: 'geojson',
-        data: droneToFirstPointGeoJson,
-      });
+      mapRef.current.addSource('drone-to-first-point', { type: 'geojson', data: droneToFirstPointGeoJson });
       mapRef.current.addLayer({
         id: 'drone-to-first-point',
         type: 'line',
@@ -112,17 +107,18 @@ const MapComponent = ({
     }
 
     // Добавляем маркеры для каждой точки маршрута
-    markersRef.current.forEach((marker) => marker.remove());
-    markersRef.current = routePoints.map((point) => {
-      const markerElement = document.createElement('div');
-      markerElement.className = 'route-marker';
+    markersRef.current = routePoints
+        .filter((point) => point.lat !== undefined && point.lng !== undefined)
+        .map((point) => {
+          const markerElement = document.createElement('div');
+          markerElement.className = 'route-marker';
 
-      const marker = new mapboxgl.Marker({ element: markerElement })
-          .setLngLat([point.lng, point.lat])
-          .addTo(mapRef.current);
+          const marker = new mapboxgl.Marker({ element: markerElement })
+              .setLngLat([point.lng, point.lat])
+              .addTo(mapRef.current);
 
-      return marker;
-    });
+          return marker;
+        });
   };
 
   // Инициализация карты
@@ -142,8 +138,10 @@ const MapComponent = ({
 
       // Обработчик клика по карте для добавления точек маршрута
       mapRef.current.on('click', (e) => {
+        console.log("Клик на карте зафиксирован:", e.lngLat); // Проверка кликов
         if (isPlacingMarker) {
           const { lat, lng } = e.lngLat;
+          console.log("Клик на карте:", lat, lng); // Отладка
           onMapClick(lat, lng);
 
           // Создаем элемент для маркера маршрута
@@ -320,10 +318,11 @@ const MapComponent = ({
     }
   }, [isCoverageEnabled, cellTowers]); // Обновляем при изменении cellTowers или isCoverageEnabled
 
-  // Обновление карты при переключении между 2D и 3D режимами
+// Обновление карты при переключении между 2D и 3D режимами
   useEffect(() => {
     if (mapRef.current) {
       const enable3DMode = () => {
+        // Установка 3D сцены
         mapRef.current.setPitch(60);
         mapRef.current.setBearing(-17.6);
 
@@ -335,52 +334,77 @@ const MapComponent = ({
             maxzoom: 14,
           });
         }
+
         mapRef.current.setTerrain({ source: 'mapbox-dem', exaggeration: 1.5 });
         mapRef.current.setLight({ anchor: 'map', intensity: 0.5 });
 
-        // Удаляем 2D маркеры и слои
-        markersRef.current.forEach((marker) => marker.remove());
-        markersRef.current = [];
-        ['route-line', 'drone-to-first-point'].forEach((layerId) => {
-          if (mapRef.current.getSource(layerId)) {
-            mapRef.current.removeLayer(layerId);
-            mapRef.current.removeSource(layerId);
-          }
-        });
-
-        // Удаляем маркер дрона в 2D режиме
+        // Удаляем маркер дрона в 2D режиме, если он есть
         if (droneMarkerRef.current) {
           droneMarkerRef.current.remove();
           droneMarkerRef.current = null;
         }
+
+        // Добавляем 3D модель дрона
+        if (!droneLayerRef.current) {
+          const customLayer = {
+            id: 'drone-model-layer',
+            type: 'custom',
+            renderingMode: '3d',
+            onAdd: function (map, gl) {
+              this.camera = new THREE.Camera();
+              this.scene = new THREE.Scene();
+              const light = new THREE.AmbientLight(0xffffff, 1);
+              this.scene.add(light);
+
+              const loader = new GLTFLoader();
+              loader.load('/drone-model.glb', (gltf) => {
+                this.drone = gltf.scene;
+                this.scene.add(this.drone);
+              });
+
+              this.renderer = new THREE.WebGLRenderer({
+                canvas: map.getCanvas(),
+                context: gl,
+                antialias: true,
+              });
+              this.renderer.autoClear = false;
+            },
+            render: function (gl, matrix) {
+              if (this.drone) {
+                const modelOrigin = [dronePosition.lng, dronePosition.lat];
+                const modelAsMercatorCoordinate = mapboxgl.MercatorCoordinate.fromLngLat(
+                    modelOrigin,
+                    dronePosition.altitude || 0
+                );
+
+                const scale = modelAsMercatorCoordinate.meterInMercatorCoordinateUnits();
+                this.drone.scale.set(scale, scale, scale);
+                this.renderer.render(this.scene, this.camera);
+              }
+            },
+          };
+
+          mapRef.current.addLayer(customLayer);
+          droneLayerRef.current = customLayer;
+        }
       };
 
       const disable3DMode = () => {
+        // Возвращаемся к 2D режиму
         mapRef.current.setPitch(0);
         mapRef.current.setBearing(0);
         mapRef.current.setTerrain(null);
 
-        // Удаляем 3D объекты
+        // Удаляем 3D модель дрона
         if (droneLayerRef.current) {
           mapRef.current.removeLayer('drone-model-layer');
           droneLayerRef.current = null;
         }
-        if (routeLineRef.current) {
-          mapRef.current.removeLayer('3d-route-line');
-          routeLineRef.current = null;
-        }
-        routePointsRef.current.forEach((obj) =>
-            mapRef.current.removeLayer(obj.layerId)
-        );
-        routePointsRef.current = [];
-
-        // Отображаем маршрут в 2D
-        renderRoute2D();
 
         // Добавляем маркер дрона в 2D режиме
         if (!droneMarkerRef.current) {
           const markerElement = document.createElement('div');
-          markerElement.className = 'gps-marker';
+          markerElement.className = 'gps-marker'; // Стиль маркера
           droneMarkerRef.current = new mapboxgl.Marker({
             element: markerElement,
             anchor: 'bottom',
@@ -390,25 +414,16 @@ const MapComponent = ({
         }
       };
 
-      if (mapRef.current.isStyleLoaded()) {
-        if (is3D) {
-          enable3DMode();
-        } else {
-          disable3DMode();
-        }
+      // Выбор режима
+      if (is3D) {
+        enable3DMode();
       } else {
-        mapRef.current.once('style.load', () => {
-          if (is3D) {
-            enable3DMode();
-          } else {
-            disable3DMode();
-          }
-        });
+        disable3DMode();
       }
     }
-  }, [is3D]);
+  }, [is3D, dronePosition]);
 
-  // Добавление модели дрона в 3D режиме
+// Добавление модели дрона в 3D режиме
   useEffect(() => {
     if (mapRef.current && is3D) {
       // Если слой уже существует, удаляем его перед добавлением
@@ -573,18 +588,6 @@ const MapComponent = ({
     });
   }, [routePoints, isMissionBuilding]);
 
-  // Обновление линии маршрута
-  useEffect(() => {
-    if (mapRef.current) {
-      if (is3D) {
-        // Здесь можно добавить код для отображения 3D линии маршрута, если необходимо
-      } else {
-        // Отображаем маршрут в 2D режиме
-        renderRoute2D();
-      }
-    }
-  }, [confirmedRoute, is3D]);
-
   useEffect(() => {
     if (mapRef.current && confirmedRoute.length > 1) {
       // Удаляем существующий слой, если он есть
@@ -644,22 +647,21 @@ const MapComponent = ({
     }
   }, [confirmedRoute]);
 
-  // Обновление маркеров при добавлении новых точек маршрута
+  // // Обновляем маршрут при изменении confirmedRoute или is3D
   useEffect(() => {
-    if (!is3D && mapRef.current) {
-      markersRef.current.forEach((marker) => marker.remove());
-      markersRef.current = routePoints.map((point) => {
-        const markerElement = document.createElement('div');
-        markerElement.className = 'route-marker';
+    renderRoute();
+  }, [confirmedRoute, is3D]);
 
-        const marker = new mapboxgl.Marker({ element: markerElement })
-            .setLngLat([point.lng, point.lat])
-            .addTo(mapRef.current);
-
-        return marker;
-      });
-    }
-  }, [routePoints, is3D]);
+  // useEffect(() => {
+  //   const interval = setInterval(() => {
+  //     if (mapRef.current && mapRef.current.isStyleLoaded()) {
+  //       renderRoute();
+  //       clearInterval(interval); // Остановить проверку после загрузки стиля
+  //     }
+  //   }, 100); // Проверяем каждые 100 миллисекунд
+  //
+  //   return () => clearInterval(interval);
+  // }, [confirmedRoute, is3D]);
 
   return (
       <div
