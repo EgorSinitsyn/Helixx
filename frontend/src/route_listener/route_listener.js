@@ -10,7 +10,7 @@ app.use(express.json());
 app.post('/save-route', (req, res) => {
     try {
         const routeData = req.body;
-        const savePath = path.join(__dirname, '../src/route/route.geojson');
+        const savePath = path.join(__dirname, '../route/route.geojson');
 
         const directory = path.dirname(savePath);
         if (!fs.existsSync(directory)) {

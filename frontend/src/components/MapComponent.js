@@ -8,7 +8,7 @@ import '../components/geomarker_style.css';
 
 mapboxgl.accessToken = process.env.REACT_APP_MAPBOX_TOKEN;
 
-const MapComponent = ({ dronePosition, route: confirmedRoute, is3D, cellTowers, isCoverageEnabled, droneHeading, isPlacingMarker, onMapClick, routePoints, isMissionBuilding }) => {
+const MapComponent = ({ dronePosition, route: confirmedRoute, is3D, cellTowers, isCoverageEnabled, droneHeading, isPlacingMarker, onMapClick, routePoints, isMissionBuilding, isMoving }) => {
   const mapContainerRef = useRef(null);
   const mapRef = useRef(null);
   const droneLayerRef = useRef(null);
@@ -352,7 +352,7 @@ const MapComponent = ({ dronePosition, route: confirmedRoute, is3D, cellTowers, 
 };
 
 // Функция для добавления модели дрона
-function addDroneModel(map, dronePosition) {
+function addDroneModel(map, dronePosition, isMoving) {
   const customLayer = {
     id: 'drone-model-layer',
     type: 'custom',
@@ -366,7 +366,7 @@ function addDroneModel(map, dronePosition) {
 
       const loader = new GLTFLoader();
       loader.load(
-          '/drone-model.glb',
+          '/drone-model.glb', // Путь к модели дрона
           (gltf) => {
             this.drone = gltf.scene;
             this.drone.rotation.set(0, 2, 0);
@@ -391,18 +391,30 @@ function addDroneModel(map, dronePosition) {
           (error) => console.error('Ошибка при загрузке модели:', error)
       );
 
-      this.renderer = new THREE.WebGLRenderer({ canvas: map.getCanvas(), context: gl, antialias: true });
+      // Рендеринг с использованием WebGL
+      this.renderer = new THREE.WebGLRenderer({
+        canvas: map.getCanvas(),
+        context: gl,
+        antialias: true });
       this.renderer.autoClear = false;
     },
     render: function (gl, matrix) {
       if (this.drone && this.dronePosition) {
-        const { lng, lat, altitude } = this.dronePosition;
+        const { lat, lng, altitude } = this.dronePosition;
         const modelOrigin = [lng, lat];
+        // Преобразуем географические координаты в Mercator
         const modelAsMercatorCoordinate = mapboxgl.MercatorCoordinate.fromLngLat(modelOrigin, altitude);
         const scale = modelAsMercatorCoordinate.meterInMercatorCoordinateUnits();
 
+        // Устанавливаем позицию модели
         this.drone.position.set(modelAsMercatorCoordinate.x, modelAsMercatorCoordinate.y, modelAsMercatorCoordinate.z);
         this.drone.scale.set(scale, scale, scale);
+
+        // Поворачиваем модель дрона по направлению только если дрон двигается
+        if (isMoving) {
+          const targetHeading = this.dronePosition.heading; // Heading = угол движения
+          this.drone.rotation.y = -Math.PI / 180 * targetHeading; // Поворачиваем модель дрона по направлению
+        }
 
         this.camera.projectionMatrix = new THREE.Matrix4().fromArray(matrix);
         this.renderer.state.reset();
