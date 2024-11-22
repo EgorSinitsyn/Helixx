@@ -248,13 +248,22 @@ const MapComponent = ({ dronePosition, route: confirmedRoute, is3D, cellTowers, 
   }, [dronePosition, is3D]);
 
   // Отдельный useEffect для обновления ориентации дрона при изменении droneHeading
+  // Используем useEffect для инициализации начального положения и ориентации дрона
   useEffect(() => {
     if (is3D && droneLayerRef.current && droneLayerRef.current.drone) {
-      const adjustedHeading = droneHeading + 90;
-      droneLayerRef.current.drone.rotation.y = THREE.MathUtils.degToRad(adjustedHeading);
-      mapRef.current.triggerRepaint();
+      // Если это первый рендер, установим начальную ориентацию
+      if (!droneLayerRef.current.initialized) {
+        const initialHeading = dronePosition.heading || 0; // Начальный угол (если не задан, используем 0)
+        droneLayerRef.current.drone.rotation.y = THREE.MathUtils.degToRad(initialHeading); // Устанавливаем ориентацию
+        droneLayerRef.current.initialized = true; // Флаг, чтобы не перезаписывать ориентацию каждый раз
+      }
+
+      // Устанавливаем новое положение и ориентацию, если дрон движется
+      const adjustedHeading = dronePosition.heading + 90;
+      droneLayerRef.current.drone.rotation.y = THREE.MathUtils.degToRad(adjustedHeading); // Поворачиваем модель по направлению
+      mapRef.current.triggerRepaint(); // Перерисовываем карту
     }
-  }, [droneHeading]);
+  }, [dronePosition, is3D]); // Обновляем ориентацию и позицию при изменении dronePosition и is3D
 
   // Обновление маркеров маршрута на основе изменения routePoints
   useEffect(() => {
@@ -386,6 +395,9 @@ function addDroneModel(map, dronePosition, isMoving) {
               }
             });
             this.scene.add(this.drone);
+
+            // Инициализация флага, чтобы не перезаписывать ориентацию
+            this.initialized = false;
           },
           undefined,
           (error) => console.error('Ошибка при загрузке модели:', error)
@@ -400,8 +412,9 @@ function addDroneModel(map, dronePosition, isMoving) {
     },
     render: function (gl, matrix) {
       if (this.drone && this.dronePosition) {
-        const { lat, lng, altitude } = this.dronePosition;
+        const { lat, lng, altitude, heading } = this.dronePosition;
         const modelOrigin = [lng, lat];
+
         // Преобразуем географические координаты в Mercator
         const modelAsMercatorCoordinate = mapboxgl.MercatorCoordinate.fromLngLat(modelOrigin, altitude);
         const scale = modelAsMercatorCoordinate.meterInMercatorCoordinateUnits();
