@@ -15,7 +15,7 @@ export const loadRoute = async () => {
             return {
                 lat,
                 lng,
-                altitude,
+                altitude: parseFloat(altitude),
             };
         });
     } catch (error) {
@@ -23,7 +23,6 @@ export const loadRoute = async () => {
         throw error;
     }
 };
-
 
 // Функция для перемещения дрона по точкам маршрута
 export const moveDroneToRoutePoints = (dronePosition, setDronePosition, routePoints, setIsMoving) => {
@@ -42,6 +41,8 @@ export const moveDroneToRoutePoints = (dronePosition, setDronePosition, routePoi
         }
 
         const target = routePoints[index];
+        const nextTarget = routePoints[index + 1] || target; // Следующая точка маршрута (или та же самая)
+
         const speed = 20; // Скорость дрона в метрах в секунду
         const refreshRate = 50; // Частота обновлений в миллисекундах
 
@@ -51,7 +52,18 @@ export const moveDroneToRoutePoints = (dronePosition, setDronePosition, routePoi
 
         const deltaLat = (target.lat - dronePosition.lat) / steps;
         const deltaLng = (target.lng - dronePosition.lng) / steps;
-        const deltaAlt = (target.altitude - dronePosition.altitude) / steps;
+
+        // Явное преобразование строковых значений в числа для высот
+        const targetAltitude = parseFloat(target.altitude); // Явное преобразование в число
+        const currentAltitude = parseFloat(dronePosition.altitude); // Явное преобразование в число
+
+        if (isNaN(targetAltitude) || isNaN(currentAltitude)) {
+            console.error('Ошибка при преобразовании высоты:', target.altitude, dronePosition.altitude);
+            return;
+        }
+
+        // Дельта высоты (чистое число, без ошибок)
+        const deltaAlt = (targetAltitude - currentAltitude) / steps;
 
         let currentStep = 0;
 
@@ -61,18 +73,43 @@ export const moveDroneToRoutePoints = (dronePosition, setDronePosition, routePoi
                 setDronePosition({
                     lat: target.lat,
                     lng: target.lng,
-                    altitude: target.altitude,
+                    altitude: targetAltitude,  // Применяем высоту следующей точки
                     heading: calculateHeading(dronePosition, target),
                 });
-                index++;
-                moveToNextPoint();
+                index++;  // Переходим к следующей точке маршрута
+
+                // Логика для перехода к следующей точке, если высота цели достигнута или превышена
+                if (Math.abs(dronePosition.altitude - targetAltitude) < 0.01) {
+                    moveToNextPoint(); // Если высота целевой точки достигнута, сразу двигаемся дальше
+                }
             } else {
-                setDronePosition((prev) => ({
-                    lat: prev.lat + deltaLat,
-                    lng: prev.lng + deltaLng,
-                    altitude: prev.altitude + deltaAlt,
-                    heading: calculateHeading(prev, target),
-                }));
+                setDronePosition((prev) => {
+                    const newAltitude = prev.altitude + deltaAlt;  // Плавно увеличиваем высоту по шагам
+
+                    // Логируем изменения для отладки
+                    console.log('Current Drone Position:', dronePosition);
+                    console.log('Target Position:', target);
+                    console.log('Delta Altitude:', deltaAlt);
+                    console.log('New Altitude after Step:', newAltitude);
+
+                    // Если дрон достиг высоты или выше, идем к следующей точке
+                    if (newAltitude >= targetAltitude) {
+                        console.log('Target altitude reached, moving to next point');
+                        return {
+                            lat: prev.lat + deltaLat,
+                            lng: prev.lng + deltaLng,
+                            altitude: targetAltitude,  // Применяем высоту целевой точки
+                            heading: calculateHeading(prev, target),
+                        };
+                    }
+
+                    return {
+                        lat: prev.lat + deltaLat,
+                        lng: prev.lng + deltaLng,
+                        altitude: newAltitude,  // Применяем новую высоту
+                        heading: calculateHeading(prev, target),
+                    };
+                });
                 currentStep++;
             }
         }, refreshRate);
