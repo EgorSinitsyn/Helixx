@@ -254,6 +254,7 @@ const App = () => {
             cellTowers={cellTowers}
             isCoverageEnabled={isCoverageEnabled}
             droneHeading={droneHeading}
+            setDroneHeading={setDroneHeading} // передаем функцию setDroneHeading
             updateDroneAltitude={updateDroneAltitude}
             isPlacingMarker={isMissionBuilding}
             routePoints={routePoints}

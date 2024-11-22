@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import towerIcon from '../assets/tower-icon.png';
 import '../components/drone_style.css';
@@ -8,7 +8,18 @@ import '../components/geomarker_style.css';
 
 mapboxgl.accessToken = process.env.REACT_APP_MAPBOX_TOKEN;
 
-const MapComponent = ({ dronePosition, route: confirmedRoute, is3D, cellTowers, isCoverageEnabled, droneHeading, isPlacingMarker, onMapClick, routePoints, isMissionBuilding, isMoving }) => {
+const MapComponent = ({ dronePosition,
+                        route: confirmedRoute,
+                        is3D,
+                        cellTowers,
+                        isCoverageEnabled,
+                        droneHeading,
+                        setDroneHeading,
+                        isPlacingMarker,
+                        onMapClick,
+                        routePoints,
+                        isMissionBuilding,
+                        isMoving }) => {
   const mapContainerRef = useRef(null);
   const mapRef = useRef(null);
   const droneLayerRef = useRef(null);
@@ -248,6 +259,43 @@ const MapComponent = ({ dronePosition, route: confirmedRoute, is3D, cellTowers, 
   }, [dronePosition, is3D]);
 
   // Отдельный useEffect для обновления ориентации дрона при изменении droneHeading
+  useEffect(() => {
+    if (isMoving && droneLayerRef.current && droneLayerRef.current.drone) {
+      // Обновление ориентации дрона на основе текущего движения
+      const adjustedHeading = droneHeading + 90;
+      droneLayerRef.current.drone.rotation.y = THREE.MathUtils.degToRad(adjustedHeading);
+      mapRef.current.triggerRepaint();
+    }
+  }, [droneHeading, isMoving]); // Следим за изменениями heading и флагом движения
+
+  // код для вычисления угла
+  const calculateHeadingFromRoute = (currentPosition, nextPosition) => {
+    const deltaLng = nextPosition.lng - currentPosition.lng;
+    const deltaLat = nextPosition.lat - currentPosition.lat;
+    const angle = Math.atan2(deltaLng, deltaLat); // Получаем угол в радианах
+
+    let heading = (angle * 180) / Math.PI; // Преобразуем угол в градусы
+
+    // Приводим угол в диапазон от 0 до 360
+    if (heading < 0) {
+      heading += 360; // Если угол отрицательный, добавляем 360
+    }
+
+    return Math.round(heading);
+  };
+
+  // юзэф для обновления угла
+  useEffect(() => {
+    if (isMoving && routePoints.length > 0) {
+      // Берем первую точку маршрута, к которой движется дрон
+      const nextPoint = routePoints[0];
+      // Вычисляем угол
+      const newHeading = calculateHeadingFromRoute(dronePosition, nextPoint);
+      // Обновляем состояние угла
+      setDroneHeading(newHeading);
+    }
+  }, [dronePosition, isMoving, routePoints, setDroneHeading]);
+
   // Используем useEffect для инициализации начального положения и ориентации дрона
   useEffect(() => {
     if (is3D && droneLayerRef.current && droneLayerRef.current.drone) {
@@ -380,6 +428,8 @@ function addDroneModel(map, dronePosition, isMoving) {
             this.drone = gltf.scene;
             this.drone.rotation.set(0, 2, 0);
             this.drone.rotation.x = Math.PI / 2;
+            this.scene.add(this.drone);
+            this.initialized = true; // Устанавливаем флаг в true после инициализации
 
             this.drone.traverse((child) => {
               if (child.isMesh && child.material) {
