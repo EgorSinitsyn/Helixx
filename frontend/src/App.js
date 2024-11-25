@@ -6,7 +6,8 @@ import Papa from 'papaparse';
 import './components/compass_style.css';
 import DraggableModal from './components/DraggableModal.js';
 import DroneInfoPanel from './components/DroneInfoPanel.js';
-import MissionPlannerSidebar from './components/MissionPlannerSidebar';
+import MissionPlannerSidebar from './components/MissionPlannerSidebar.js';
+import { loadRoute, moveDroneToRoutePoints } from './components/DroneRouteManager.js';
 
 const CALIBRATION_LATITUDE = 55.967398;
 const CALIBRATION_LONGITUDE = 93.128459;
@@ -41,11 +42,52 @@ const App = () => {
   const [isMissionBuilding, setIsMissionBuilding] = useState(false);
   const [isPlacingMarker, setIsPlacingMarker] = useState(false);
 
+
   const updateDroneAltitude = useCallback((newAltitude) => {
     setDronePosition((prev) => ({ ...prev, altitude: newAltitude }));
   }, []);
 
   const hideDroneInfoPanel = useCallback(() => setIsDroneInfoVisible(false), []);
+
+
+  const [isMoving, setIsMoving] = useState(false); // Флаг для отслеживания движения дрона
+
+  const handleStartRoute = useCallback(() => {
+    if (routePoints.length === 0) {
+      alert('Маршрут пуст!');
+      return;
+    }
+    setIsMoving(true);  // Начинаем движение
+    moveDroneToRoutePoints(dronePosition, setDronePosition, routePoints, setIsMoving); // Передаем setIsMoving
+  }, [dronePosition, routePoints]);
+
+
+  useEffect(() => {
+    const initializeRoute = async () => {
+      try {
+        const routeGeoJson = await import('./route/route.geojson');
+        const points = routeGeoJson.features.map((feature) => {
+          const [lng, lat, altitude] = feature.geometry.coordinates;
+          return {
+            lat,
+            lng,
+            altitude,
+          };
+        });
+
+        console.log('Маршрут успешно загружен:', points);
+
+        // Обновляем состояние, только если маршрут не пустой
+        if (points.length > 0) {
+          setRoutePoints(points);
+        }
+      } catch (error) {
+        console.error('Ошибка при загрузке маршрута:', error);
+      }
+    };
+
+    initializeRoute();
+  }, []);
 
   useEffect(() => {
     const socket = new WebSocket('ws://localhost:8080/telemetry');
@@ -212,12 +254,14 @@ const App = () => {
             cellTowers={cellTowers}
             isCoverageEnabled={isCoverageEnabled}
             droneHeading={droneHeading}
+            setDroneHeading={setDroneHeading} // передаем функцию setDroneHeading
             updateDroneAltitude={updateDroneAltitude}
             isPlacingMarker={isMissionBuilding}
             routePoints={routePoints}
             confirmedRoute={route}
             isMissionBuilding={isMissionBuilding}
             onMapClick={handleMapClick}
+            isMoving={isMoving}
         />
 
         {isDroneInfoVisible && (
@@ -234,6 +278,7 @@ const App = () => {
             onOpenSettings={openSettings}
             onOpenHistory={openHistory}
             onOpenMission={startRouteBuilding}
+            onStartMission={() => moveDroneToRoutePoints(dronePosition, setDronePosition, routePoints, setIsMoving)}
             isOpen={isSidebarOpen}
             onToggleSidebar={toggleSidebar}
             onOpenCalibration={openCalibration}
