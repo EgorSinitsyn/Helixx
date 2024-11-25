@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import towerIcon from '../assets/tower-icon.png';
 import '../components/drone_style.css';
@@ -8,7 +8,18 @@ import '../components/geomarker_style.css';
 
 mapboxgl.accessToken = process.env.REACT_APP_MAPBOX_TOKEN;
 
-const MapComponent = ({ dronePosition, route: confirmedRoute, is3D, cellTowers, isCoverageEnabled, droneHeading, isPlacingMarker, onMapClick, routePoints, isMissionBuilding }) => {
+const MapComponent = ({ dronePosition,
+                        route: confirmedRoute,
+                        is3D,
+                        cellTowers,
+                        isCoverageEnabled,
+                        droneHeading,
+                        setDroneHeading,
+                        isPlacingMarker,
+                        onMapClick,
+                        routePoints,
+                        isMissionBuilding,
+                        isMoving }) => {
   const mapContainerRef = useRef(null);
   const mapRef = useRef(null);
   const droneLayerRef = useRef(null);
@@ -249,12 +260,58 @@ const MapComponent = ({ dronePosition, route: confirmedRoute, is3D, cellTowers, 
 
   // Отдельный useEffect для обновления ориентации дрона при изменении droneHeading
   useEffect(() => {
-    if (is3D && droneLayerRef.current && droneLayerRef.current.drone) {
+    if (isMoving && droneLayerRef.current && droneLayerRef.current.drone) {
+      // Обновление ориентации дрона на основе текущего движения
       const adjustedHeading = droneHeading + 90;
       droneLayerRef.current.drone.rotation.y = THREE.MathUtils.degToRad(adjustedHeading);
       mapRef.current.triggerRepaint();
     }
-  }, [droneHeading]);
+  }, [droneHeading, isMoving]); // Следим за изменениями heading и флагом движения
+
+  // код для вычисления угла
+  const calculateHeadingFromRoute = (currentPosition, nextPosition) => {
+    const deltaLng = nextPosition.lng - currentPosition.lng;
+    const deltaLat = nextPosition.lat - currentPosition.lat;
+    const angle = Math.atan2(deltaLng, deltaLat); // Получаем угол в радианах
+
+    let heading = (angle * 180) / Math.PI; // Преобразуем угол в градусы
+
+    // Приводим угол в диапазон от 0 до 360
+    if (heading < 0) {
+      heading += 360; // Если угол отрицательный, добавляем 360
+    }
+
+    return Math.round(heading);
+  };
+
+  // юзэф для обновления угла
+  useEffect(() => {
+    if (isMoving && routePoints.length > 0) {
+      // Берем первую точку маршрута, к которой движется дрон
+      const nextPoint = routePoints[0];
+      // Вычисляем угол
+      const newHeading = calculateHeadingFromRoute(dronePosition, nextPoint);
+      // Обновляем состояние угла
+      setDroneHeading(newHeading);
+    }
+  }, [dronePosition, isMoving, routePoints, setDroneHeading]);
+
+  // Используем useEffect для инициализации начального положения и ориентации дрона
+  useEffect(() => {
+    if (is3D && droneLayerRef.current && droneLayerRef.current.drone) {
+      // Если это первый рендер, установим начальную ориентацию
+      if (!droneLayerRef.current.initialized) {
+        const initialHeading = dronePosition.heading || 0; // Начальный угол (если не задан, используем 0)
+        droneLayerRef.current.drone.rotation.y = THREE.MathUtils.degToRad(initialHeading); // Устанавливаем ориентацию
+        droneLayerRef.current.initialized = true; // Флаг, чтобы не перезаписывать ориентацию каждый раз
+      }
+
+      // Устанавливаем новое положение и ориентацию, если дрон движется
+      const adjustedHeading = dronePosition.heading + 90;
+      droneLayerRef.current.drone.rotation.y = THREE.MathUtils.degToRad(adjustedHeading); // Поворачиваем модель по направлению
+      mapRef.current.triggerRepaint(); // Перерисовываем карту
+    }
+  }, [dronePosition, is3D]); // Обновляем ориентацию и позицию при изменении dronePosition и is3D
 
   // Обновление маркеров маршрута на основе изменения routePoints
   useEffect(() => {
@@ -352,7 +409,7 @@ const MapComponent = ({ dronePosition, route: confirmedRoute, is3D, cellTowers, 
 };
 
 // Функция для добавления модели дрона
-function addDroneModel(map, dronePosition) {
+function addDroneModel(map, dronePosition, isMoving) {
   const customLayer = {
     id: 'drone-model-layer',
     type: 'custom',
@@ -366,11 +423,13 @@ function addDroneModel(map, dronePosition) {
 
       const loader = new GLTFLoader();
       loader.load(
-          '/drone-model.glb',
+          '/drone-model.glb', // Путь к модели дрона
           (gltf) => {
             this.drone = gltf.scene;
             this.drone.rotation.set(0, 2, 0);
             this.drone.rotation.x = Math.PI / 2;
+            this.scene.add(this.drone);
+            this.initialized = true; // Устанавливаем флаг в true после инициализации
 
             this.drone.traverse((child) => {
               if (child.isMesh && child.material) {
@@ -386,23 +445,45 @@ function addDroneModel(map, dronePosition) {
               }
             });
             this.scene.add(this.drone);
+
+            // Инициализация флага, чтобы не перезаписывать ориентацию
+            this.initialized = false;
           },
           undefined,
           (error) => console.error('Ошибка при загрузке модели:', error)
       );
 
-      this.renderer = new THREE.WebGLRenderer({ canvas: map.getCanvas(), context: gl, antialias: true });
+      // Рендеринг с использованием WebGL
+      this.renderer = new THREE.WebGLRenderer({
+        canvas: map.getCanvas(),
+        context: gl,
+        antialias: true
+      });
       this.renderer.autoClear = false;
     },
     render: function (gl, matrix) {
       if (this.drone && this.dronePosition) {
-        const { lng, lat, altitude } = this.dronePosition;
+        const { lat, lng, altitude, heading } = this.dronePosition;
         const modelOrigin = [lng, lat];
-        const modelAsMercatorCoordinate = mapboxgl.MercatorCoordinate.fromLngLat(modelOrigin, altitude);
+
+        // Convert geographic coordinates to Mercator coordinates
+        const modelAsMercatorCoordinate = updateDronePositionInMercator(map, this.dronePosition);
+
         const scale = modelAsMercatorCoordinate.meterInMercatorCoordinateUnits();
 
-        this.drone.position.set(modelAsMercatorCoordinate.x, modelAsMercatorCoordinate.y, modelAsMercatorCoordinate.z);
+        // Set the position of the drone model using Mercator z-coordinate
+        this.drone.position.set(
+            modelAsMercatorCoordinate.x,
+            modelAsMercatorCoordinate.y,
+            modelAsMercatorCoordinate.z // Use the z-coordinate from Mercator conversion
+        );
         this.drone.scale.set(scale, scale, scale);
+
+        // Rotate the drone model if it's moving
+        if (isMoving) {
+          const targetHeading = this.dronePosition.heading;
+          this.drone.rotation.y = -Math.PI / 180 * targetHeading;
+        }
 
         this.camera.projectionMatrix = new THREE.Matrix4().fromArray(matrix);
         this.renderer.state.reset();
@@ -410,11 +491,33 @@ function addDroneModel(map, dronePosition) {
         this.renderer.render(this.scene, this.camera);
         map.triggerRepaint();
       }
-    },
+    }
   };
 
   map.addLayer(customLayer);
   return customLayer;
+}
+
+// Функция для обновления позиции модели с проверкой высоты
+function updateDronePositionInMercator(map, dronePosition) {
+  const { lat, lng, altitude } = dronePosition;
+  const modelOrigin = [lng, lat];
+
+  // Преобразуем высоту в число и корректируем её
+  const adjustedAltitude = (altitude && !isNaN(altitude)) ? altitude : 0;  // Если высота корректна, используем её, иначе 0
+
+  // Логируем перед преобразованием
+  console.log('Adjusted Altitude Before Mercator:', adjustedAltitude);
+
+  // Преобразуем географические координаты в Mercator с учетом высоты
+  const modelAsMercatorCoordinate = mapboxgl.MercatorCoordinate.fromLngLat(modelOrigin, adjustedAltitude);
+
+  // Проверяем корректность Mercator координат
+  if (isNaN(modelAsMercatorCoordinate.x) || isNaN(modelAsMercatorCoordinate.y) || isNaN(modelAsMercatorCoordinate.z)) {
+    console.error('Invalid Mercator Coordinates:', modelAsMercatorCoordinate);
+  }
+
+  return modelAsMercatorCoordinate;
 }
 
 // Функция для добавления маркера дрона в 2D режиме
