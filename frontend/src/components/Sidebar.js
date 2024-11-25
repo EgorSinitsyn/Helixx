@@ -7,8 +7,7 @@ const Sidebar = ({
                      onOpenHistory,
                      onOpenMission,
                      isOpen,
-                     onToggleSidebar,
-                     onStartMission
+                     onToggleSidebar
                  }) => {
     return (
         <div style={{ ...styles.sidebar, width: isOpen ? '200px' : '50px', overflowX: 'hidden' }}>
@@ -21,16 +20,13 @@ const Sidebar = ({
                     <button style={styles.button} onClick={onOpenSettings}>Настройки карты</button>
                     <button style={styles.button} onClick={onOpenCalibration}>Калибровка дрона</button>
                     <button style={styles.button} onClick={onOpenMission}>Планировщик миссий</button>
-                    <button style={{...styles.button, ...styles.startMissionButton}} onClick={onStartMission}>
-                        Старт миссии
-                    </button>
                     <button style={{...styles.button, ...styles.historyButton}} onClick={onOpenHistory}>История
                         полетов
                     </button>
                 </>
             ) : (
                 <div style={styles.rotatedTextContainer}>
-                <div style={styles.rotatedText}>Планировщик миссий</div>
+                    <div style={styles.rotatedText}>Планировщик миссий</div>
                 </div>
             )}
         </div>
