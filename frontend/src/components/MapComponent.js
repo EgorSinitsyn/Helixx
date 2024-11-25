@@ -466,29 +466,23 @@ function addDroneModel(map, dronePosition, isMoving) {
         const { lat, lng, altitude, heading } = this.dronePosition;
         const modelOrigin = [lng, lat];
 
-        // Логируем высоту перед преобразованием
-        console.log('Before Mercator Conversion, Altitude:', altitude);
-
-        // Преобразуем координаты в Mercator с возможной корректировкой высоты
+        // Convert geographic coordinates to Mercator coordinates
         const modelAsMercatorCoordinate = updateDronePositionInMercator(map, this.dronePosition);
-
-        // Логируем координаты Mercator
-        console.log('Mercator Coordinates:', modelAsMercatorCoordinate);
 
         const scale = modelAsMercatorCoordinate.meterInMercatorCoordinateUnits();
 
-        // Корректируем высоту модели (если необходимо)
-        const adjustedAltitude = altitude;  // Пример деления для уменьшения масштаба
-        console.log('Adjusted Altitude:', adjustedAltitude);
-
-        // Устанавливаем позицию модели
-        this.drone.position.set(modelAsMercatorCoordinate.x, modelAsMercatorCoordinate.y, adjustedAltitude);
+        // Set the position of the drone model using Mercator z-coordinate
+        this.drone.position.set(
+            modelAsMercatorCoordinate.x,
+            modelAsMercatorCoordinate.y,
+            modelAsMercatorCoordinate.z // Use the z-coordinate from Mercator conversion
+        );
         this.drone.scale.set(scale, scale, scale);
 
-        // Поворачиваем модель по направлению, если дрон двигается
+        // Rotate the drone model if it's moving
         if (isMoving) {
           const targetHeading = this.dronePosition.heading;
-          this.drone.rotation.y = -Math.PI / 180 * targetHeading; // Поворачиваем модель по направлению
+          this.drone.rotation.y = -Math.PI / 180 * targetHeading;
         }
 
         this.camera.projectionMatrix = new THREE.Matrix4().fromArray(matrix);

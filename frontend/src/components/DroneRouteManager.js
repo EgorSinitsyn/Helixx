@@ -33,90 +33,69 @@ export const moveDroneToRoutePoints = (dronePosition, setDronePosition, routePoi
 
     let index = 0;
 
-    const moveToNextPoint = () => {
+    const moveToNextPoint = (currentDronePosition) => {
         if (index >= routePoints.length) {
             alert('Маршрут завершён!');
-            setIsMoving(false);  // Устанавливаем isMoving в false
+            setIsMoving(false);  // Останавливаем движение
             return;
         }
 
         const target = routePoints[index];
-        const nextTarget = routePoints[index + 1] || target; // Следующая точка маршрута (или та же самая)
-
         const speed = 20; // Скорость дрона в метрах в секунду
         const refreshRate = 50; // Частота обновлений в миллисекундах
 
-        const distanceToTarget = calculateDistance(dronePosition, target);
+        const distanceToTarget = calculateDistance(currentDronePosition, target);
         const duration = (distanceToTarget / speed) * 1000;
         const steps = Math.ceil(duration / refreshRate);
 
-        const deltaLat = (target.lat - dronePosition.lat) / steps;
-        const deltaLng = (target.lng - dronePosition.lng) / steps;
+        const deltaLat = (target.lat - currentDronePosition.lat) / steps;
+        const deltaLng = (target.lng - currentDronePosition.lng) / steps;
 
-        // Явное преобразование строковых значений в числа для высот
-        const targetAltitude = parseFloat(target.altitude); // Явное преобразование в число
-        const currentAltitude = parseFloat(dronePosition.altitude); // Явное преобразование в число
+        const targetAltitude = parseFloat(target.altitude); // Преобразование в число
+        const currentAltitude = parseFloat(currentDronePosition.altitude); // Преобразование в число
 
         if (isNaN(targetAltitude) || isNaN(currentAltitude)) {
-            console.error('Ошибка при преобразовании высоты:', target.altitude, dronePosition.altitude);
+            console.error('Ошибка при преобразовании высоты:', target.altitude, currentDronePosition.altitude);
             return;
         }
 
-        // Дельта высоты (чистое число, без ошибок)
         const deltaAlt = (targetAltitude - currentAltitude) / steps;
 
         let currentStep = 0;
 
         const intervalId = setInterval(() => {
-            if (currentStep >= steps || calculateDistance(dronePosition, target) < 0.001) {
+            if (currentStep >= steps || calculateDistance(currentDronePosition, target) < 0.001) {
                 clearInterval(intervalId);
-                setDronePosition({
+
+                const newPosition = {
                     lat: target.lat,
                     lng: target.lng,
-                    altitude: targetAltitude,  // Применяем высоту следующей точки
-                    heading: calculateHeading(dronePosition, target),
-                });
-                index++;  // Переходим к следующей точке маршрута
+                    altitude: targetAltitude,
+                    heading: calculateHeading(currentDronePosition, target),
+                };
 
-                // Логика для перехода к следующей точке, если высота цели достигнута или превышена
-                if (Math.abs(dronePosition.altitude - targetAltitude) < 0.01) {
-                    moveToNextPoint(); // Если высота целевой точки достигнута, сразу двигаемся дальше
-                }
+                setDronePosition(newPosition);
+                index++;  // Переходим к следующей точке
+
+                // Переходим к следующей точке с обновленной позицией
+                moveToNextPoint(newPosition);
             } else {
-                setDronePosition((prev) => {
-                    const newAltitude = prev.altitude + deltaAlt;  // Плавно увеличиваем высоту по шагам
+                const newPosition = {
+                    lat: currentDronePosition.lat + deltaLat,
+                    lng: currentDronePosition.lng + deltaLng,
+                    altitude: currentDronePosition.altitude + deltaAlt,
+                    heading: calculateHeading(currentDronePosition, target),
+                };
 
-                    // Логируем изменения для отладки
-                    console.log('Current Drone Position:', dronePosition);
-                    console.log('Target Position:', target);
-                    console.log('Delta Altitude:', deltaAlt);
-                    console.log('New Altitude after Step:', newAltitude);
-
-                    // Если дрон достиг высоты или выше, идем к следующей точке
-                    if (newAltitude >= targetAltitude) {
-                        console.log('Target altitude reached, moving to next point');
-                        return {
-                            lat: prev.lat + deltaLat,
-                            lng: prev.lng + deltaLng,
-                            altitude: targetAltitude,  // Применяем высоту целевой точки
-                            heading: calculateHeading(prev, target),
-                        };
-                    }
-
-                    return {
-                        lat: prev.lat + deltaLat,
-                        lng: prev.lng + deltaLng,
-                        altitude: newAltitude,  // Применяем новую высоту
-                        heading: calculateHeading(prev, target),
-                    };
-                });
+                setDronePosition(newPosition);
+                currentDronePosition = newPosition; // Обновляем текущую позицию
                 currentStep++;
             }
         }, refreshRate);
     };
 
     setIsMoving(true);  // Начинаем движение
-    moveToNextPoint();
+    moveToNextPoint(dronePosition); // Передаем начальную позицию дрона
 };
 
 // Функция для вычисления расстояния между точками (Haversine formula)
