@@ -134,6 +134,12 @@ const MapComponent = ({
 
       mapRef.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
 
+      // Находим стандартный контейнер кнопок масштаба для переноса в другое место
+      const controlsContainer = document.querySelector('.mapboxgl-ctrl-top-right');
+      if (controlsContainer) {
+        controlsContainer.classList.add('custom-map-controls'); // Добавляем класс
+      }
+
       // Слушаем клики по карте (для постановки маркеров маршрута — ваш функционал)
       mapRef.current.on('click', (e) => {
         if (isPlacingMarker) {
@@ -431,21 +437,27 @@ const MapComponent = ({
         <div ref={mapContainerRef} style={{ width: '100%', height: '100%' }} />
 
         {/* Кнопка «Линейка» внизу по центру */}
-        {/*<button*/}
-        {/*    onClick={toggleRuler}*/}
-        {/*    style={{*/}
-        {/*      position: 'absolute',*/}
-        {/*      bottom: '10px',*/}
-        {/*      left: '50%',*/}
-        {/*      transform: 'translateX(-50%)',*/}
-        {/*      zIndex: 999,*/}
-        {/*      padding: '8px 16px',*/}
-        {/*      fontSize: '16px',*/}
-        {/*      cursor: 'pointer',*/}
-        {/*    }}*/}
-        {/*>*/}
-        {/*  {isRulerOn ? 'Выключить линейку' : 'Линейка'}*/}
-        {/*</button>*/}
+        <button
+            // onClick={toggleRuler}
+            className={`leaflet-ruler ${isRulerOn ? 'leaflet-ruler-clicked' : ''}`}
+            style={{
+              position: 'absolute',
+              bottom: '10px',
+              left: '25%',
+              transform: 'translateX(-50%)',
+              zIndex: 999,
+              width: '35px',
+              height: '35px',
+              backgroundColor: '#fff',
+              border: '1px solid #ccc',
+              backgroundImage: `url(${require('../assets/icon-ruler.png')})`,
+              backgroundRepeat: 'no-repeat',
+              backgroundPosition: 'center',
+              cursor: 'pointer',
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundImage = `url(${require('../assets/icon-ruler-colored.png')})`}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundImage = `url(${require('../assets/icon-ruler.png')})`}
+        />
       </div>
   );
 };
