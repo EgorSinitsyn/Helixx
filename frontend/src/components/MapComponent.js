@@ -426,17 +426,25 @@ function addDroneModel(map, dronePosition, isMoving) {
           '/drone-model.glb', // Путь к модели дрона
           (gltf) => {
             this.drone = gltf.scene;
-            this.drone.rotation.set(0, 2, 0);
+            this.drone.rotation.set(0, 0, 0);
             this.drone.rotation.x = Math.PI / 2;
             this.scene.add(this.drone);
             this.initialized = true; // Устанавливаем флаг в true после инициализации
 
             this.drone.traverse((child) => {
               if (child.isMesh && child.material) {
+                if (child.material.map) {
+                  child.material.map.anisotropy = 100; // Улучшает качество текстур
+                  child.material.map.magFilter = THREE.NearestFilter; // Убирает размытие
+                  child.material.map.minFilter = THREE.NearestMipMapNearestFilter;
+                  child.material.map.generateMipmaps = true;
+                  child.material.map.needsUpdate = true;
+                }
                 child.material.color.setHex(0xffffff);
                 child.material.emissive = new THREE.Color(0xffffff);
                 child.material.emissiveIntensity = 1;
                 child.material.transparent = true;
+                child.material.side = THREE.DoubleSide;
                 child.material.opacity = 1.0;
                 child.material.needsUpdate = true;
                 if (child.material.map) {
@@ -469,14 +477,16 @@ function addDroneModel(map, dronePosition, isMoving) {
         // Convert geographic coordinates to Mercator coordinates
         const modelAsMercatorCoordinate = updateDronePositionInMercator(map, this.dronePosition);
 
-        const scale = modelAsMercatorCoordinate.meterInMercatorCoordinateUnits();
-
         // Set the position of the drone model using Mercator z-coordinate
         this.drone.position.set(
             modelAsMercatorCoordinate.x,
             modelAsMercatorCoordinate.y,
             modelAsMercatorCoordinate.z // Use the z-coordinate from Mercator conversion
         );
+
+        const scaleFactor = 0.5; // Уменьшение в 2 раза
+        const scale = modelAsMercatorCoordinate.meterInMercatorCoordinateUnits() * scaleFactor;
+
         this.drone.scale.set(scale, scale, scale);
 
         // Rotate the drone model if it's moving
