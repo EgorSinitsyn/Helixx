@@ -1,14 +1,17 @@
 import React, { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
-import towerIcon from '../assets/tower-icon.png';
-import '../components/drone_style.css';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three-stdlib';
+import * as turf from '@turf/turf';
+
+import towerIcon from '../assets/tower-icon.png';
+import '../components/drone_style.css';
 import '../components/geomarker_style.css';
 
 mapboxgl.accessToken = process.env.REACT_APP_MAPBOX_TOKEN;
 
-const MapComponent = ({ dronePosition,
+function MapComponent({
+                        dronePosition,
                         route: confirmedRoute,
                         is3D,
                         cellTowers,
@@ -19,18 +22,45 @@ const MapComponent = ({ dronePosition,
                         onMapClick,
                         routePoints,
                         isMissionBuilding,
-                        isMoving }) => {
+                        isMoving
+                      }) {
+  // -------------------------------
+  // REFS для карты, слоёв, линейки
+  // -------------------------------
   const mapContainerRef = useRef(null);
   const mapRef = useRef(null);
   const droneLayerRef = useRef(null);
   const droneMarkerRef = useRef(null);
-  const markersRef = useRef([]); // Массив для хранения маркеров маршрута
+  const markersRef = useRef([]); // Храним маркеры маршрута
   const routeLayerId = 'route-line';
 
+  // -------------------------------
+  // Состояния для режима ЛИНЕЙКИ
+  // -------------------------------
+  const [isRulerOn, setIsRulerOn] = useState(false);
+
+  // Храним данные для измерений
+  const geojsonRef = useRef({
+    type: 'FeatureCollection',
+    features: []
+  });
+  const lineStringRef = useRef({
+    type: 'Feature',
+    geometry: {
+      type: 'LineString',
+      coordinates: []
+    }
+  });
+  // Отображаемое расстояние
+  const [totalDistance, setTotalDistance] = useState('');
+
+  // -------------------------------
+  // ФУНКЦИЯ: построить (или обновить) маршрут
+  // -------------------------------
   const renderRoute = () => {
     if (!mapRef.current || !mapRef.current.isStyleLoaded()) return;
 
-    // Удаляем существующие слои маршрута и линии к первой точке, если они уже есть
+    // Удаляем существующие слои маршрута
     if (mapRef.current.getSource(routeLayerId)) {
       mapRef.current.removeLayer(routeLayerId);
       mapRef.current.removeSource(routeLayerId);
@@ -40,34 +70,27 @@ const MapComponent = ({ dronePosition,
       mapRef.current.removeSource('drone-to-first-point');
     }
 
-    // Создаем линию маршрута, если есть больше одной точки
+    // 1) Линия маршрута (если 2+ точек)
     if (confirmedRoute.length > 1) {
       const coordinates = confirmedRoute.map((point) => [point.lng, point.lat]);
       const routeGeoJson = {
         type: 'Feature',
-        geometry: {
-          type: 'LineString',
-          coordinates,
-        },
+        geometry: { type: 'LineString', coordinates }
       };
-
       mapRef.current.addSource(routeLayerId, { type: 'geojson', data: routeGeoJson });
       mapRef.current.addLayer({
         id: routeLayerId,
         type: 'line',
         source: routeLayerId,
-        layout: {
-          'line-join': 'round',
-          'line-cap': 'round',
-        },
+        layout: { 'line-join': 'round', 'line-cap': 'round' },
         paint: {
-          'line-color': 'rgba(255, 165, 0, 0.6)', // Мягкий оранжевый цвет
-          'line-width': 2,
-        },
+          'line-color': 'rgba(255, 165, 0, 0.6)',
+          'line-width': 2
+        }
       });
     }
 
-    // Если есть хотя бы одна точка маршрута, соединяем дроном и первую точку маршрута
+    // 2) Линия от дрона к первой точке
     if (confirmedRoute.length > 0) {
       const firstPoint = confirmedRoute[0];
       const droneToFirstPointGeoJson = {
@@ -76,43 +99,41 @@ const MapComponent = ({ dronePosition,
           type: 'LineString',
           coordinates: [
             [dronePosition.lng, dronePosition.lat],
-            [firstPoint.lng, firstPoint.lat],
-          ],
-        },
+            [firstPoint.lng, firstPoint.lat]
+          ]
+        }
       };
-
-      mapRef.current.addSource('drone-to-first-point', { type: 'geojson', data: droneToFirstPointGeoJson });
+      mapRef.current.addSource('drone-to-first-point', {
+        type: 'geojson',
+        data: droneToFirstPointGeoJson
+      });
       mapRef.current.addLayer({
         id: 'drone-to-first-point',
         type: 'line',
         source: 'drone-to-first-point',
-        layout: {
-          'line-join': 'round',
-          'line-cap': 'round',
-        },
+        layout: { 'line-join': 'round', 'line-cap': 'round' },
         paint: {
-          'line-color': 'rgba(255, 165, 0, 0.6)', // Мягкий оранжевый цвет для соединения
+          'line-color': 'rgba(255, 165, 0, 0.6)',
           'line-width': 2,
-          'line-dasharray': [2, 4],
-        },
+          'line-dasharray': [2, 4]
+        }
       });
     }
 
-    // Добавляем маркеры для каждой точки маршрута
+    // 3) Маркеры точек маршрута
     markersRef.current.forEach((marker) => marker.remove());
     markersRef.current = routePoints.map((point) => {
       const markerElement = document.createElement('div');
       markerElement.className = 'route-marker';
-
-      const marker = new mapboxgl.Marker({ element: markerElement })
+      return new mapboxgl.Marker({ element: markerElement })
           .setLngLat([point.lng, point.lat])
           .addTo(mapRef.current);
-
-      return marker;
     });
   };
 
-  // Создаем карту только один раз
+  // -------------------------------
+  // ИНИЦИАЛИЗАЦИЯ КАРТЫ
+  // -------------------------------
   useEffect(() => {
     if (!mapRef.current) {
       mapRef.current = new mapboxgl.Map({
@@ -122,35 +143,72 @@ const MapComponent = ({ dronePosition,
         zoom: 15,
         pitch: is3D ? 60 : 0,
         bearing: is3D ? -17.6 : 0,
-        antialias: true,
+        antialias: true
       });
 
       mapRef.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
 
+      // Переносим кнопки масштаба
+      const controlsContainer = document.querySelector('.mapboxgl-ctrl-top-right');
+      if (controlsContainer) {
+        controlsContainer.classList.add('custom-map-controls'); // CSS класс для сдвига
+      }
+
+      // Слушаем клики по карте (планировщик)
       mapRef.current.on('click', (e) => {
+        // Если активен режим линейки, этот обработчик не должен срабатывать
+        if (isRulerOn) return;
+
         if (isPlacingMarker) {
           const { lat, lng } = e.lngLat;
           onMapClick(lat, lng);
 
-          // Создаем элемент для маркера маршрута
+          // Добавляем маршрутный маркер
           const markerElement = document.createElement('div');
-          markerElement.className = 'route-marker'; // Используем стиль из geomarker_style.css
-
+          markerElement.className = 'route-marker';
           const marker = new mapboxgl.Marker({ element: markerElement })
               .setLngLat([lng, lat])
               .addTo(mapRef.current);
-
           markersRef.current.push(marker);
         }
       });
 
+      // Когда карта загрузилась
       mapRef.current.on('load', () => {
+        // 1) ИСТОЧНИК/СЛОИ для режима линейки
+        mapRef.current.addSource('measure-geojson', {
+          type: 'geojson',
+          data: geojsonRef.current
+        });
+        mapRef.current.addLayer({
+          id: 'measure-points',
+          type: 'circle',
+          source: 'measure-geojson',
+          paint: {
+            'circle-radius': 5,
+            'circle-color': '#000'
+          },
+          filter: ['==', '$type', 'Point']
+        });
+        mapRef.current.addLayer({
+          id: 'measure-lines',
+          type: 'line',
+          source: 'measure-geojson',
+          layout: { 'line-cap': 'round', 'line-join': 'round' },
+          paint: {
+            'line-color': '#000',
+            'line-width': 2.5
+          },
+          filter: ['==', '$type', 'LineString']
+        });
+
+        // 2) ИСТОЧНИК/СЛОИ для дрона, вышек...
         if (is3D) {
           mapRef.current.addSource('mapbox-dem', {
             type: 'raster-dem',
             url: 'mapbox://mapbox.mapbox-terrain-dem-v1',
             tileSize: 512,
-            maxzoom: 14,
+            maxzoom: 14
           });
           mapRef.current.setTerrain({ source: 'mapbox-dem', exaggeration: 1.5 });
           mapRef.current.setLight({ anchor: 'map', intensity: 0.5 });
@@ -160,17 +218,15 @@ const MapComponent = ({ dronePosition,
           droneMarkerRef.current = addDroneMarker(mapRef.current, dronePosition);
         }
 
-        // Добавляем вышки и зоны покрытия
+        // Вышки
         cellTowers.forEach((tower, index) => {
           const lat = parseFloat(tower.latitude || tower.lat);
           const lng = parseFloat(tower.longitude || tower.lng);
           const radius = (parseFloat(tower.radius) * 1000) / 10;
-
           if (isNaN(lat) || isNaN(lng) || isNaN(radius)) {
-            console.error(`Недействительные данные вышки на индексе ${index}:`, { lat, lng, radius });
+            console.error(`Недействительные данные вышки (index: ${index}):`, { lat, lng, radius });
             return;
           }
-
           const markerElement = document.createElement('div');
           markerElement.className = 'custom-marker';
           markerElement.style.backgroundImage = `url(${towerIcon})`;
@@ -186,15 +242,17 @@ const MapComponent = ({ dronePosition,
               .setLngLat([lng, lat])
               .addTo(mapRef.current);
 
+          // Если нужно отрисовать зону покрытия
           if (isCoverageEnabled) {
-            const createCirclePolygon = (center, radius, numPoints = 64) => {
+            const createCirclePolygon = (center, rad, numPoints = 64) => {
               const coords = [];
               for (let i = 0; i < numPoints; i++) {
                 const angle = (i * 360) / numPoints;
                 const radian = (angle * Math.PI) / 180;
-                const dx = radius * Math.cos(radian);
-                const dy = radius * Math.sin(radian);
-                const offsetLng = lng + (dx / 6378137) * (180 / Math.PI) / Math.cos(lat * Math.PI / 180);
+                const dx = rad * Math.cos(radian);
+                const dy = rad * Math.sin(radian);
+                const offsetLng =
+                    lng + (dx / 6378137) * (180 / Math.PI) / Math.cos((lat * Math.PI) / 180);
                 const offsetLat = lat + (dy / 6378137) * (180 / Math.PI);
                 coords.push([offsetLng, offsetLat]);
               }
@@ -204,53 +262,168 @@ const MapComponent = ({ dronePosition,
 
             const polygonCoords = [createCirclePolygon([lng, lat], radius)];
             const polygonSourceId = `tower-coverage-${index}`;
-
             mapRef.current.addSource(polygonSourceId, {
               type: 'geojson',
               data: {
                 type: 'Feature',
                 geometry: {
                   type: 'Polygon',
-                  coordinates: polygonCoords,
-                },
-              },
+                  coordinates: polygonCoords
+                }
+              }
             });
-
             mapRef.current.addLayer({
               id: `${polygonSourceId}-fill`,
               type: 'fill',
               source: polygonSourceId,
-              paint: {
-                'fill-color': '#808080',
-                'fill-opacity': 0.2,
-              },
+              paint: { 'fill-color': '#808080', 'fill-opacity': 0.2 }
             });
-
             mapRef.current.addLayer({
               id: `${polygonSourceId}-outline`,
               type: 'line',
               source: polygonSourceId,
-              paint: {
-                'line-color': '#FFFFFF',
-                'line-width': 2,
-              },
+              paint: { 'line-color': '#FFFFFF', 'line-width': 2 }
             });
           }
         });
+
+        // Подключаем клики для режима линейки
+        // mapRef.current.on('click', handleMapClickForRuler);
+        // mapRef.current.on('mousemove', handleMouseMoveForRuler);
       });
     }
 
     return () => {
       if (mapRef.current) {
+        mapRef.current.off('click', handleMapClickForRuler);
+        mapRef.current.off('mousemove', handleMouseMoveForRuler);
         mapRef.current.remove();
         mapRef.current = null;
       }
     };
+    // eslint-disable-next-line
   }, [is3D, cellTowers, isCoverageEnabled, isPlacingMarker, onMapClick]);
 
-  // Обновляем позицию дрона и ориентацию при изменении dronePosition и droneHeading
+
+  // -------------------------------
+  // ОБРАБОТЧИК КЛИКА (ЛИНЕЙКА)
+  // -------------------------------
+  const handleMapClickForRuler = (e) => {
+    if (!isRulerOn) return;
+
+    // Удаляем старый LineString
+    if (geojsonRef.current.features.length > 1) {
+      geojsonRef.current.features.pop();
+    }
+
+    // Проверяем, клик на уже существующую точку?
+    const features = mapRef.current.queryRenderedFeatures(e.point, { layers: ['measure-points'] });
+
+    if (features.length) {
+      // Удаляем точку
+      const id = features[0].properties.id;
+      geojsonRef.current.features = geojsonRef.current.features.filter(
+          (f) => f.properties.id !== id
+      );
+    } else {
+      // Добавляем новую точку
+      const point = {
+        type: 'Feature',
+        geometry: {
+          type: 'Point',
+          coordinates: [e.lngLat.lng, e.lngLat.lat]
+        },
+        properties: {
+          id: String(Date.now())
+        }
+      };
+      geojsonRef.current.features.push(point);
+    }
+
+    // Если ≥2 точек, формируем линию
+    if (geojsonRef.current.features.length > 1) {
+      lineStringRef.current.geometry.coordinates = geojsonRef.current.features.map(
+          (pt) => pt.geometry.coordinates
+      );
+      // ❗ ВАЖНО: добавляем lineStringRef.current (не .current.current)
+      geojsonRef.current.features.push(lineStringRef.current);
+
+      // Вычисление расстояния
+      const distanceKm = turf.length(lineStringRef.current); // km
+      setTotalDistance(`Total distance: ${distanceKm.toFixed(3)} km`);
+    } else {
+      setTotalDistance('');
+    }
+
+    // Обновляем источник
+    mapRef.current.getSource('measure-geojson').setData(geojsonRef.current);
+  };
+
+
+  // -------------------------------
+  // ОБРАБОТЧИК MOUSEMOVE (ЛИНЕЙКА)
+  // -------------------------------
+  const handleMouseMoveForRuler = (e) => {
+    if (!isRulerOn) {
+      mapRef.current.getCanvas().style.cursor = '';
+      return;
+    }
+    const features = mapRef.current.queryRenderedFeatures(e.point, { layers: ['measure-points'] });
+    mapRef.current.getCanvas().style.cursor = features.length ? 'pointer' : 'crosshair';
+  };
+
+  // -------------------------------
+  // ВКЛЮЧИТЬ / ВЫКЛЮЧИТЬ РЕЖИМ ЛИНЕЙКИ
+  // -------------------------------
+  const toggleRuler = () => {
+  setIsRulerOn((prev) => {
+    if (prev) {
+      // Если режим уже был включён – сбрасываем измерения и выключаем режим
+      resetMeasurements();
+      return false;
+    }
+    return true;
+  });
+};
+
+  // Очистка всех измерений
+  const resetMeasurements = () => {
+    geojsonRef.current = {
+      type: 'FeatureCollection',
+      features: []
+    };
+    setTotalDistance('');
+    if (mapRef.current?.getSource('measure-geojson')) {
+      mapRef.current.getSource('measure-geojson').setData(geojsonRef.current);
+    }
+  };
+
+    // Отдельный useEffect для обработчиков линейки:
   useEffect(() => {
-    if (is3D && droneLayerRef.current && droneLayerRef.current.drone) {
+    if (!mapRef.current) return;
+
+    if (isRulerOn) {
+      // Привязываем обработчики для режима линейки
+      mapRef.current.on('click', handleMapClickForRuler);
+      mapRef.current.on('mousemove', handleMouseMoveForRuler);
+    }
+
+    return () => {
+      if (!mapRef.current) return;
+      mapRef.current.off('click', handleMapClickForRuler);
+      mapRef.current.off('mousemove', handleMouseMoveForRuler);
+    };
+  }, [isRulerOn]);
+
+
+  // -------------------------------
+  // useEffect для ДРОНА и маршрута
+  // -------------------------------
+  useEffect(() => {
+    if (!mapRef.current) return;
+
+    // 3D или 2D
+    if (is3D && droneLayerRef.current?.drone) {
       droneLayerRef.current.dronePosition = dronePosition;
       mapRef.current.triggerRepaint();
     } else if (droneMarkerRef.current) {
@@ -258,157 +431,178 @@ const MapComponent = ({ dronePosition,
     }
   }, [dronePosition, is3D]);
 
-  // Отдельный useEffect для обновления ориентации дрона при изменении droneHeading
+  // Ориентация дрона
   useEffect(() => {
-    if (isMoving && droneLayerRef.current && droneLayerRef.current.drone) {
-      // Обновление ориентации дрона на основе текущего движения
+    if (isMoving && droneLayerRef.current?.drone) {
       const adjustedHeading = droneHeading + 90;
       droneLayerRef.current.drone.rotation.y = THREE.MathUtils.degToRad(adjustedHeading);
       mapRef.current.triggerRepaint();
     }
-  }, [droneHeading, isMoving]); // Следим за изменениями heading и флагом движения
+  }, [droneHeading, isMoving]);
 
-  // код для вычисления угла
+  // Расчёт heading
   const calculateHeadingFromRoute = (currentPosition, nextPosition) => {
-    const deltaLng = nextPosition.lng - currentPosition.lng;
-    const deltaLat = nextPosition.lat - currentPosition.lat;
-    const angle = Math.atan2(deltaLng, deltaLat); // Получаем угол в радианах
-
-    let heading = (angle * 180) / Math.PI; // Преобразуем угол в градусы
-
-    // Приводим угол в диапазон от 0 до 360
-    if (heading < 0) {
-      heading += 360; // Если угол отрицательный, добавляем 360
-    }
-
-    return Math.round(heading);
+    const dx = nextPosition.lng - currentPosition.lng;
+    const dy = nextPosition.lat - currentPosition.lat;
+    let angle = (Math.atan2(dx, dy) * 180) / Math.PI;
+    if (angle < 0) angle += 360;
+    return Math.round(angle);
   };
 
-  // юзэф для обновления угла
   useEffect(() => {
     if (isMoving && routePoints.length > 0) {
-      // Берем первую точку маршрута, к которой движется дрон
       const nextPoint = routePoints[0];
-      // Вычисляем угол
       const newHeading = calculateHeadingFromRoute(dronePosition, nextPoint);
-      // Обновляем состояние угла
       setDroneHeading(newHeading);
     }
   }, [dronePosition, isMoving, routePoints, setDroneHeading]);
 
-  // Используем useEffect для инициализации начального положения и ориентации дрона
+  // Первый рендер (3D дрон)
   useEffect(() => {
-    if (is3D && droneLayerRef.current && droneLayerRef.current.drone) {
-      // Если это первый рендер, установим начальную ориентацию
+    if (is3D && droneLayerRef.current?.drone) {
       if (!droneLayerRef.current.initialized) {
-        const initialHeading = dronePosition.heading || 0; // Начальный угол (если не задан, используем 0)
-        droneLayerRef.current.drone.rotation.y = THREE.MathUtils.degToRad(initialHeading); // Устанавливаем ориентацию
-        droneLayerRef.current.initialized = true; // Флаг, чтобы не перезаписывать ориентацию каждый раз
+        const initialHeading = dronePosition.heading || 0;
+        droneLayerRef.current.drone.rotation.y = THREE.MathUtils.degToRad(initialHeading);
+        droneLayerRef.current.initialized = true;
       }
-
-      // Устанавливаем новое положение и ориентацию, если дрон движется
-      const adjustedHeading = dronePosition.heading + 90;
-      droneLayerRef.current.drone.rotation.y = THREE.MathUtils.degToRad(adjustedHeading); // Поворачиваем модель по направлению
-      mapRef.current.triggerRepaint(); // Перерисовываем карту
+      const adjHeading = dronePosition.heading + 90;
+      droneLayerRef.current.drone.rotation.y = THREE.MathUtils.degToRad(adjHeading);
+      mapRef.current.triggerRepaint();
     }
-  }, [dronePosition, is3D]); // Обновляем ориентацию и позицию при изменении dronePosition и is3D
+  }, [dronePosition, is3D]);
 
-  // Обновление маркеров маршрута на основе изменения routePoints
+  // Маркеры routePoints
   useEffect(() => {
-    markersRef.current.forEach(marker => marker.remove());
+    markersRef.current.forEach((m) => m.remove());
     markersRef.current = [];
-
-    routePoints.forEach((point) => {
-      const markerElement = document.createElement('div');
-      markerElement.className = 'route-marker'; // Используем стиль из geomarker_style.css
-
-      const marker = new mapboxgl.Marker({ element: markerElement })
-          .setLngLat([point.lng, point.lat])
+    routePoints.forEach((pt) => {
+      const el = document.createElement('div');
+      el.className = 'route-marker';
+      const marker = new mapboxgl.Marker({ element: el })
+          .setLngLat([pt.lng, pt.lat])
           .addTo(mapRef.current);
-
       markersRef.current.push(marker);
     });
   }, [routePoints, isMissionBuilding]);
 
+  // Отрисовка route-line
   useEffect(() => {
-    if (mapRef.current && confirmedRoute.length > 1) {
-      // Удаляем существующий слой, если он есть
-      if (mapRef.current.getSource('route-line')) {
-        mapRef.current.removeLayer('route-line');
-        mapRef.current.removeSource('route-line');
-      }
+    if (!mapRef.current || confirmedRoute.length <= 1) return;
 
-      const markerRadius = 0.0001; // Пример радиуса в градусах (приблизительно 10 метров на экваторе)
-
-      const getOffsetPoint = (point1, point2, radius) => {
-        // Вычисляем вектор от точки 1 к точке 2
-        const dx = point2.lng - point1.lng;
-        const dy = point2.lat - point1.lat;
-        const distance = Math.sqrt(dx * dx + dy * dy);
-
-        // Нормализуем вектор и умножаем на радиус
-        const offsetX = (dx / distance) * radius;
-        const offsetY = (dy / distance) * radius;
-
-        return {
-          start: { lat: point1.lat + offsetY, lng: point1.lng + offsetX },
-          end: { lat: point2.lat - offsetY, lng: point2.lng - offsetX }
-        };
-      };
-
-      const coordinates = [];
-      for (let i = 0; i < confirmedRoute.length - 1; i++) {
-        const start = confirmedRoute[i];
-        const end = confirmedRoute[i + 1];
-        const { start: startOffset, end: endOffset } = getOffsetPoint(start, end, markerRadius);
-        coordinates.push([startOffset.lng, startOffset.lat], [endOffset.lng, endOffset.lat]);
-      }
-
-      const routeGeoJson = {
-        type: 'Feature',
-        geometry: {
-          type: 'LineString',
-          coordinates
-        }
-      };
-
-      mapRef.current.addSource('route-line', { type: 'geojson', data: routeGeoJson });
-      mapRef.current.addLayer({
-        id: 'route-line',
-        type: 'line',
-        source: 'route-line',
-        layout: {
-          'line-join': 'round',
-          'line-cap': 'round'
-        },
-        paint: {
-          'line-color': '#ffffff',
-          'line-width': 2
-        }
-      });
+    if (mapRef.current.getSource('route-line')) {
+      mapRef.current.removeLayer('route-line');
+      mapRef.current.removeSource('route-line');
     }
+
+    const markerRadius = 0.0001;
+    const getOffsetPoint = (p1, p2, radius) => {
+      const dx = p2.lng - p1.lng;
+      const dy = p2.lat - p1.lat;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      const offsetX = (dx / dist) * radius;
+      const offsetY = (dy / dist) * radius;
+      return {
+        start: { lat: p1.lat + offsetY, lng: p1.lng + offsetX },
+        end: { lat: p2.lat - offsetY, lng: p2.lng - offsetX }
+      };
+    };
+
+    const coords = [];
+    for (let i = 0; i < confirmedRoute.length - 1; i++) {
+      const start = confirmedRoute[i];
+      const end = confirmedRoute[i + 1];
+      const { start: so, end: eo } = getOffsetPoint(start, end, markerRadius);
+      coords.push([so.lng, so.lat], [eo.lng, eo.lat]);
+    }
+
+    const routeGeoJson = {
+      type: 'Feature',
+      geometry: { type: 'LineString', coordinates: coords }
+    };
+    mapRef.current.addSource('route-line', { type: 'geojson', data: routeGeoJson });
+    mapRef.current.addLayer({
+      id: 'route-line',
+      type: 'line',
+      source: 'route-line',
+      layout: { 'line-join': 'round', 'line-cap': 'round' },
+      paint: {
+        'line-color': '#ffffff',
+        'line-width': 2
+      }
+    });
   }, [confirmedRoute]);
 
-  // Обновляем маршрут при изменении confirmedRoute или is3D
+  // renderRoute при изменениях
   useEffect(() => {
     renderRoute();
   }, [confirmedRoute, is3D]);
 
   useEffect(() => {
     const interval = setInterval(() => {
-      if (mapRef.current && mapRef.current.isStyleLoaded()) {
+      if (mapRef.current?.isStyleLoaded()) {
         renderRoute();
-        clearInterval(interval); // Остановить проверку после загрузки стиля
+        clearInterval(interval);
       }
-    }, 100); // Проверяем каждые 100 миллисекунд
-
+    }, 100);
     return () => clearInterval(interval);
   }, [confirmedRoute, is3D]);
 
-  return <div ref={mapContainerRef} style={{ width: '100%', height: '100vh', overflowX: 'hidden' }} />;
-};
+  // -------------------------------
+  // RENDER
+  // -------------------------------
+  let IsRulerOn;
+  return (
+      <div style={{ position: 'relative', width: '100%', height: '100vh', overflowX: 'hidden' }}>
+        <div ref={mapContainerRef} style={{ width: '100%', height: '100%' }} />
 
-// Функция для добавления модели дрона
+        {/* Кнопка «Линейка» */}
+        <button
+            onClick={toggleRuler}
+            className={`leaflet-ruler ${isRulerOn ? 'leaflet-ruler-clicked' : ''}`}
+            style={{
+              position: 'absolute',
+              bottom: '10px',
+              left: '25%',
+              transform: 'translateX(-50%)',
+              zIndex: 999,
+              width: '35px',
+              height: '35px',
+              backgroundColor: '#fff',
+              border: '1px solid #ccc',
+              backgroundImage: isRulerOn
+                ? `url(${require('../assets/icon-ruler-colored.png')})`
+                : `url(${require('../assets/icon-ruler.png')})`,
+              backgroundRepeat: 'no-repeat',
+              backgroundPosition: 'center',
+              cursor: 'pointer'
+            }}
+        />
+
+        {/* Отображение дистанции (если есть) */}
+        {isRulerOn && totalDistance && (
+            <div
+                style={{
+                  position: 'absolute',
+                  top: '10px',
+                  left: '50%',
+                  transform: 'translateX(-50%)',
+                  zIndex: 999,
+                  backgroundColor: 'rgba(0,0,0,0.5)',
+                  color: '#fff',
+                  padding: '6px 10px',
+                  borderRadius: '4px'
+                }}
+            >
+              {totalDistance}
+            </div>
+        )}
+      </div>
+  );
+}
+
+// ---------------------------------------------------------
+// ФУНКЦИЯ: добавить 3D модель дрона
+// ---------------------------------------------------------
 function addDroneModel(map, dronePosition, isMoving) {
   const customLayer = {
     id: 'drone-model-layer',
@@ -423,20 +617,31 @@ function addDroneModel(map, dronePosition, isMoving) {
 
       const loader = new GLTFLoader();
       loader.load(
-          '/drone-model.glb', // Путь к модели дрона
+          '/drone-model.glb',
           (gltf) => {
             this.drone = gltf.scene;
-            this.drone.rotation.set(0, 2, 0);
+            // Начальные повороты
+            this.drone.rotation.set(0, 0, 0);
             this.drone.rotation.x = Math.PI / 2;
+
             this.scene.add(this.drone);
-            this.initialized = true; // Устанавливаем флаг в true после инициализации
+            this.initialized = true;
 
             this.drone.traverse((child) => {
               if (child.isMesh && child.material) {
+                // Настройка материала
+                if (child.material.map) {
+                  child.material.map.anisotropy = 100;
+                  child.material.map.magFilter = THREE.NearestFilter;
+                  child.material.map.minFilter = THREE.NearestMipMapNearestFilter;
+                  child.material.map.generateMipmaps = true;
+                  child.material.map.needsUpdate = true;
+                }
                 child.material.color.setHex(0xffffff);
                 child.material.emissive = new THREE.Color(0xffffff);
                 child.material.emissiveIntensity = 1;
                 child.material.transparent = true;
+                child.material.side = THREE.DoubleSide;
                 child.material.opacity = 1.0;
                 child.material.needsUpdate = true;
                 if (child.material.map) {
@@ -445,15 +650,12 @@ function addDroneModel(map, dronePosition, isMoving) {
               }
             });
             this.scene.add(this.drone);
-
-            // Инициализация флага, чтобы не перезаписывать ориентацию
             this.initialized = false;
           },
           undefined,
-          (error) => console.error('Ошибка при загрузке модели:', error)
+          (error) => console.error('Ошибка при загрузке модели дрона:', error)
       );
 
-      // Рендеринг с использованием WebGL
       this.renderer = new THREE.WebGLRenderer({
         canvas: map.getCanvas(),
         context: gl,
@@ -463,28 +665,26 @@ function addDroneModel(map, dronePosition, isMoving) {
     },
     render: function (gl, matrix) {
       if (this.drone && this.dronePosition) {
-        const { lat, lng, altitude, heading } = this.dronePosition;
-        const modelOrigin = [lng, lat];
-
-        // Convert geographic coordinates to Mercator coordinates
+        const { lat, lng, altitude } = this.dronePosition;
         const modelAsMercatorCoordinate = updateDronePositionInMercator(map, this.dronePosition);
 
-        const scale = modelAsMercatorCoordinate.meterInMercatorCoordinateUnits();
-
-        // Set the position of the drone model using Mercator z-coordinate
+        // Масштаб
+        const scaleFactor = 0.5;
+        const scale = modelAsMercatorCoordinate.meterInMercatorCoordinateUnits() * scaleFactor;
         this.drone.position.set(
             modelAsMercatorCoordinate.x,
             modelAsMercatorCoordinate.y,
-            modelAsMercatorCoordinate.z // Use the z-coordinate from Mercator conversion
+            modelAsMercatorCoordinate.z
         );
         this.drone.scale.set(scale, scale, scale);
 
-        // Rotate the drone model if it's moving
+        // Поворот при движении
         if (isMoving) {
           const targetHeading = this.dronePosition.heading;
           this.drone.rotation.y = -Math.PI / 180 * targetHeading;
         }
 
+        // Камера и рендер
         this.camera.projectionMatrix = new THREE.Matrix4().fromArray(matrix);
         this.renderer.state.reset();
         this.renderer.clearDepth();
@@ -493,41 +693,29 @@ function addDroneModel(map, dronePosition, isMoving) {
       }
     }
   };
-
   map.addLayer(customLayer);
   return customLayer;
 }
 
-// Функция для обновления позиции модели с проверкой высоты
-function updateDronePositionInMercator(map, dronePosition) {
-  const { lat, lng, altitude } = dronePosition;
-  const modelOrigin = [lng, lat];
-
-  // Преобразуем высоту в число и корректируем её
-  const adjustedAltitude = (altitude && !isNaN(altitude)) ? altitude : 0;  // Если высота корректна, используем её, иначе 0
-
-  // Логируем перед преобразованием
-  console.log('Adjusted Altitude Before Mercator:', adjustedAltitude);
-
-  // Преобразуем географические координаты в Mercator с учетом высоты
-  const modelAsMercatorCoordinate = mapboxgl.MercatorCoordinate.fromLngLat(modelOrigin, adjustedAltitude);
-
-  // Проверяем корректность Mercator координат
-  if (isNaN(modelAsMercatorCoordinate.x) || isNaN(modelAsMercatorCoordinate.y) || isNaN(modelAsMercatorCoordinate.z)) {
-    console.error('Invalid Mercator Coordinates:', modelAsMercatorCoordinate);
-  }
-
-  return modelAsMercatorCoordinate;
-}
-
-// Функция для добавления маркера дрона в 2D режиме
+// ---------------------------------------------------------
+// ФУНКЦИЯ: добавить Marker дрона в 2D
+// ---------------------------------------------------------
 function addDroneMarker(map, dronePosition) {
   const markerElement = document.createElement('div');
-  markerElement.className = 'gps-marker'; // Используем стиль из drone_style.css
-
+  markerElement.className = 'gps-marker';
   return new mapboxgl.Marker({ element: markerElement, anchor: 'bottom' })
       .setLngLat([dronePosition.lng, dronePosition.lat])
       .addTo(map);
+}
+
+// ---------------------------------------------------------
+// ФУНКЦИЯ: обновление позиции дрона в mercator
+// ---------------------------------------------------------
+function updateDronePositionInMercator(map, dronePosition) {
+  const { lat, lng, altitude } = dronePosition;
+  const alt = altitude && !isNaN(altitude) ? altitude : 0;
+  const modelAsMercatorCoordinate = mapboxgl.MercatorCoordinate.fromLngLat([lng, lat], alt);
+  return modelAsMercatorCoordinate;
 }
 
 export default MapComponent;

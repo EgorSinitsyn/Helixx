@@ -18,3 +18,21 @@
     box-sizing: border-box;
     box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
 }
+
+.custom-map-controls {
+    position: absolute !important;
+    bottom: -25px !important;
+    left: 19.2% !important;
+    right: auto !important;
+    top: auto !important;
+
+    display: flex;
+    flex-direction: column; /* Выстроить кнопки вертикально */
+    align-items: center;
+    transform: rotate(90deg); /* Повернуть контейнер */
+    transform-origin: center;
+}
+
+.custom-map-controls button {
+    transform: rotate(-90deg); /* Вернуть кнопки в нормальный вид */
+}

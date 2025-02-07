@@ -9,9 +9,9 @@ import DroneInfoPanel from './components/DroneInfoPanel.js';
 import MissionPlannerSidebar from './components/MissionPlannerSidebar.js';
 import { loadRoute, moveDroneToRoutePoints } from './components/DroneRouteManager.js';
 
-const CALIBRATION_LATITUDE = 55.967398;
-const CALIBRATION_LONGITUDE = 93.128459;
-const CALIBRATION_ALTITUDE = 370;
+const CALIBRATION_LATITUDE = 55.139592;
+const CALIBRATION_LONGITUDE = 37.962471;
+const CALIBRATION_ALTITUDE = 270;
 
 const App = () => {
   const [dronePosition, setDronePosition] = useState({
