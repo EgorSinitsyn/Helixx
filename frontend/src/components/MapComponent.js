@@ -3,10 +3,13 @@ import mapboxgl from 'mapbox-gl';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three-stdlib';
 import * as turf from '@turf/turf';
+import MapboxDraw from '@mapbox/mapbox-gl-draw';
 
 import towerIcon from '../assets/tower-icon.png';
 import '../components/drone_style.css';
 import '../components/geomarker_style.css';
+import '../components/custom_gl_draw.css';
+import '@mapbox/mapbox-gl-draw/dist/mapbox-gl-draw.css';
 
 mapboxgl.accessToken = process.env.REACT_APP_MAPBOX_TOKEN;
 
@@ -53,6 +56,33 @@ function MapComponent({
   });
   // Отображаемое расстояние
   const [totalDistance, setTotalDistance] = useState('');
+
+  // -------------------------------
+  // Состояния для режима ПЛАНИМЕРА
+  // -------------------------------
+  const [isPlanimeterOn, setIsPlanimeterOn] = useState(false);
+  const [roundedArea, setRoundedArea] = useState(null);
+
+  // Ref для экземпляра MapboxDraw
+  const drawRef = useRef(null);
+
+  const togglePlanimeter = () => {
+    setIsPlanimeterOn((prev) => {
+      if (prev) {
+        // Режим отключается: удаляем control, очищаем данные
+        if (mapRef.current && drawRef.current) {
+          // Удаляем все рисованные объекты
+          drawRef.current.deleteAll();
+          // Удаляем control с карты
+          mapRef.current.removeControl(drawRef.current);
+          drawRef.current = null;
+        }
+        setRoundedArea(null);
+        return false;
+      }
+      return true;
+    });
+  };
 
   // -------------------------------
   // ФУНКЦИЯ: построить (или обновить) маршрут
@@ -415,6 +445,61 @@ function MapComponent({
     };
   }, [isRulerOn]);
 
+  // -------------------------------
+  // ОБРАБОТЧИК КЛИКА (ПЛАНИМЕР)
+  // -------------------------------
+  useEffect(() => {
+    if (!mapRef.current) return;
+
+    if (isPlanimeterOn) {
+      // Создаём экземпляр MapboxDraw
+      const draw = new MapboxDraw({
+        displayControlsDefault: false,
+        controls: {
+          polygon: true,
+          trash: true
+        },
+        defaultMode: 'draw_polygon'
+      });
+      drawRef.current = draw;
+      mapRef.current.addControl(draw);
+
+      // Функция обновления площади
+      const updateArea = () => {
+        const data = draw.getAll();
+        if (data.features.length > 0) {
+          const area = turf.area(data);
+          setRoundedArea(Math.round(area * 100) / 100);
+        } else {
+          setRoundedArea(null);
+        }
+      };
+
+      // Подключаем обработчики событий
+      mapRef.current.on('draw.create', updateArea);
+      mapRef.current.on('draw.delete', updateArea);
+      mapRef.current.on('draw.update', updateArea);
+
+      // При очистке эффекта удаляем обработчики
+      return () => {
+        if (mapRef.current) {
+          mapRef.current.off('draw.create', updateArea);
+          mapRef.current.off('draw.delete', updateArea);
+          mapRef.current.off('draw.update', updateArea);
+        }
+      };
+    }
+  }, [isPlanimeterOn]);
+
+  const element = document.querySelector('div[style*="background-color: rgba(255, 255, 255, 0.9)"]');
+  if (element) {
+    element.style.bottom = 'auto';
+    element.style.left = 'auto';
+    element.style.top = '50%';
+    element.style.right = '50%'; // если нужно
+    element.style.transform = 'translate(-50%, -50%)';
+  }
+
 
   // -------------------------------
   // useEffect для ДРОНА и маршрута
@@ -562,7 +647,7 @@ function MapComponent({
             style={{
               position: 'absolute',
               bottom: '10px',
-              left: '25%',
+              left: '32%',
               transform: 'translateX(-50%)',
               zIndex: 999,
               width: '35px',
@@ -580,12 +665,11 @@ function MapComponent({
 
         {/* Кнопка Планирмер */}
         <button
-            // onClick={toggleRuler}
-            // className={`leaflet-ruler ${isRulerOn ? 'leaflet-ruler-clicked' : ''}`}
+            onClick={togglePlanimeter}
             style={{
               position: 'absolute',
               bottom: '10px',
-              left: '28%',
+              left: '35%',
               transform: 'translateX(-50%)',
               zIndex: 999,
               width: '35px',
@@ -617,6 +701,39 @@ function MapComponent({
                 }}
             >
               {totalDistance}
+            </div>
+        )}
+
+        {/* Панель для отображения площади (режим Планимер) */}
+        {isPlanimeterOn && (
+            <div
+                style={{
+                  position: 'absolute',
+                  bottom: '50px',
+                  left: '10px',
+                  width: '150px',
+                  height: '75px',
+                  backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                  padding: '15px',
+                  textAlign: 'center',
+                  zIndex: 999
+                }}
+            >
+              <p style={{ fontFamily: 'Open Sans', margin: 0, fontSize: 13 }}>
+                Click the map to draw a polygon.
+              </p>
+              <div>
+                {roundedArea && (
+                    <>
+                      <p style={{ fontFamily: 'Open Sans', margin: 0, fontSize: 13 }}>
+                        <strong>{roundedArea}</strong>
+                      </p>
+                      <p style={{ fontFamily: 'Open Sans', margin: 0, fontSize: 13 }}>
+                        square meters
+                      </p>
+                    </>
+                )}
+              </div>
             </div>
         )}
       </div>
