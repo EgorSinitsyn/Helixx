@@ -138,7 +138,7 @@ function MapComponent({
     if (!mapRef.current) {
       mapRef.current = new mapboxgl.Map({
         container: mapContainerRef.current,
-        style: 'mapbox://styles/mapbox/satellite-streets-v11',
+        style: 'mapbox://styles/mapbox/satellite-streets-v12',
         center: [dronePosition.lng, dronePosition.lat],
         zoom: 15,
         pitch: is3D ? 60 : 0,
@@ -577,6 +577,29 @@ function MapComponent({
               cursor: 'pointer'
             }}
         />
+
+        {/* Кнопка Планирмер */}
+        <button
+            // onClick={toggleRuler}
+            // className={`leaflet-ruler ${isRulerOn ? 'leaflet-ruler-clicked' : ''}`}
+            style={{
+              position: 'absolute',
+              bottom: '10px',
+              left: '28%',
+              transform: 'translateX(-50%)',
+              zIndex: 999,
+              width: '35px',
+              height: '35px',
+              backgroundColor: '#fff',
+              border: '1px solid #ccc',
+              backgroundImage: `url(${require('../assets/planiemer.png')})`,
+              backgroundRepeat: 'no-repeat',
+              backgroundPosition: 'center',
+              backgroundSize: 'contain',
+              cursor: 'pointer'
+            }}
+        />
+
 
         {/* Отображение дистанции (если есть) */}
         {isRulerOn && totalDistance && (
