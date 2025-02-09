@@ -1,0 +1,32 @@
+.custom-map-controls {
+    position: absolute !important;
+    bottom: -777px !important;
+    left: -2475px !important;
+    border-radius: 0;
+    display: flex;
+    flex-direction: column; /* Выстроить кнопки вертикально */
+    align-items: center;
+    transform: rotate(90deg) scale(1.21); /* Повернуть контейнер */
+    transform-origin: center;
+}
+
+
+.custom-map-controls button {
+    transform: rotate(-90deg); /* Вернуть кнопки в нормальный вид */
+    border-radius: 0 !important;
+}
+
+/*.my-planimeter-popup {*/
+/*    position: absolute !important;*/
+/*    top: 50% !important;*/
+/*    left: 50% !important;*/
+/*    bottom: auto !important;*/
+/*    right: auto !important;*/
+/*    transform: translate(-50%, -50%) !important;*/
+/*    width: 150px !important;*/
+/*    height: 75px !important;*/
+/*    !* Если нужно, можно дописать ещё свои стили *!*/
+/*}*/
+
+
+
