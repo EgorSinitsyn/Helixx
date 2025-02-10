@@ -37,10 +37,11 @@ const App = () => {
   const [isDroneInfoVisible, setIsDroneInfoVisible] = useState(false);
 
   // Для построения маршрута
-  const [routePoints, setRoutePoints] = useState([]);
+  const [routePoints, setRoutePoints] = useState([]); // для редактирования маршрута
   const [selectedPoint, setSelectedPoint] = useState({ lat: '', lng: '', altitude: '' });
   const [isMissionBuilding, setIsMissionBuilding] = useState(false);
-  const [isPlacingMarker, setIsPlacingMarker] = useState(false);
+  const [confirmedRoute, setConfirmedRoute] = useState([]);       // для подтверждённого маршрута
+  // const [isPlacingMarker, setIsPlacingMarker] = useState(false);
 
 
   const updateDroneAltitude = useCallback((newAltitude) => {
@@ -241,7 +242,8 @@ const App = () => {
   }, [routePoints]);
 
   const handleConfirmRoute = useCallback(() => {
-    setRoute(routePoints); // обновляем маршрут
+    setConfirmedRoute([...routePoints]); // обновляем маршрут
+    // setIsMissionBuilding(false);
   }, [routePoints]);
 
 
@@ -249,7 +251,7 @@ const App = () => {
       <div>
         <MapComponent
             dronePosition={dronePosition}
-            route={route}
+            route={confirmedRoute}
             is3D={is3D}
             cellTowers={cellTowers}
             isCoverageEnabled={isCoverageEnabled}
@@ -257,9 +259,10 @@ const App = () => {
             setDroneHeading={setDroneHeading} // передаем функцию setDroneHeading
             updateDroneAltitude={updateDroneAltitude}
             isPlacingMarker={isMissionBuilding}
-            routePoints={routePoints}
-            confirmedRoute={route}
             isMissionBuilding={isMissionBuilding}
+            routePoints={routePoints}
+            // confirmedRoute={route}
+            confirmedRoute={confirmedRoute}
             onMapClick={handleMapClick}
             isMoving={isMoving}
         />

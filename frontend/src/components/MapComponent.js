@@ -157,7 +157,7 @@ function MapComponent({
 
     // 3) Маркеры точек маршрута
     markersRef.current.forEach((marker) => marker.remove());
-    markersRef.current = routePoints.map((point) => {
+    markersRef.current = confirmedRoute.map((point) => {
       const markerElement = document.createElement('div');
       markerElement.className = 'route-marker';
       return new mapboxgl.Marker({ element: markerElement })
@@ -180,6 +180,7 @@ function MapComponent({
         bearing: is3D ? -17.6 : 0,
         antialias: true
       });
+
 
       mapRef.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
 
@@ -321,10 +322,6 @@ function MapComponent({
             });
           }
         });
-
-        // Подключаем клики для режима линейки
-        // mapRef.current.on('click', handleMapClickForRuler);
-        // mapRef.current.on('mousemove', handleMouseMoveForRuler);
       });
     }
 
@@ -336,7 +333,6 @@ function MapComponent({
         mapRef.current = null;
       }
     };
-    // eslint-disable-next-line
   }, [is3D, cellTowers, isCoverageEnabled, isPlacingMarker, onMapClick]);
 
 
@@ -567,7 +563,8 @@ function MapComponent({
   useEffect(() => {
     markersRef.current.forEach((m) => m.remove());
     markersRef.current = [];
-    routePoints.forEach((pt) => {
+    const dataForMarkers = isMissionBuilding ? routePoints : confirmedRoute;
+    dataForMarkers.forEach((pt) => {
       const el = document.createElement('div');
       el.className = 'route-marker';
       const marker = new mapboxgl.Marker({ element: el })
@@ -575,7 +572,7 @@ function MapComponent({
           .addTo(mapRef.current);
       markersRef.current.push(marker);
     });
-  }, [routePoints, isMissionBuilding]);
+  }, [routePoints, confirmedRoute, isMissionBuilding]);
 
   // Отрисовка route-line
   useEffect(() => {
@@ -624,11 +621,35 @@ function MapComponent({
     });
   }, [confirmedRoute]);
 
-  // renderRoute при изменениях
+
+  // -------------------------------
+  // useEffect'ы с вызовами renderRoute
+  // -------------------------------
+  // Этот эффект гарантирует, что при изменении данных маршрута или режимов (3D, планировщика) вызывается renderRoute(). Он отвечает за обновление слоёв, когда изменяются входные данные (например, подтверждённый маршрут).
   useEffect(() => {
     renderRoute();
-  }, [confirmedRoute, is3D]);
+  }, [confirmedRoute, is3D, isMissionBuilding]);
 
+  // Эффект для подписки на событие style.load
+  useEffect(() => {
+    if (!mapRef.current) return;
+
+    // Обработчик для вызова renderRoute после загрузки стиля
+    const onStyleLoad = () => {
+      renderRoute();
+    };
+
+    mapRef.current.on('style.load', onStyleLoad);
+
+    // Очистка обработчика при размонтировании
+    return () => {
+      if (mapRef.current) {
+        mapRef.current.off('style.load', onStyleLoad);
+      }
+    };
+  }, []);
+
+  // Интервал в 100 мс с проверкой загрузки стиля карты
   useEffect(() => {
     const interval = setInterval(() => {
       if (mapRef.current?.isStyleLoaded()) {
@@ -637,7 +658,7 @@ function MapComponent({
       }
     }, 100);
     return () => clearInterval(interval);
-  }, [confirmedRoute, is3D]);
+  }, [confirmedRoute, is3D, isMissionBuilding]);
 
   // -------------------------------
   // RENDER
@@ -865,4 +886,4 @@ function updateDronePositionInMercator(map, dronePosition) {
   return modelAsMercatorCoordinate;
 }
 
-export default MapComponent;
+export default React.memo(MapComponent);
