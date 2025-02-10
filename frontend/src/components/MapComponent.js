@@ -69,12 +69,15 @@ function MapComponent({
   const togglePlanimeter = () => {
     setIsPlanimeterOn((prev) => {
       if (prev) {
-        // Режим отключается: удаляем control, очищаем данные
+        // Режим отключается
         if (mapRef.current && drawRef.current) {
-          // Удаляем все рисованные объекты
-          drawRef.current.deleteAll();
-          // Удаляем control с карты
+
+          // Удалять метки при выходе не будем – исключаем deleteAll().
+          // drawRef.current.deleteAll();
+
+          // можно снять только саму «панель» управления:
           mapRef.current.removeControl(drawRef.current);
+
           drawRef.current = null;
         }
         setRoundedArea(null);
