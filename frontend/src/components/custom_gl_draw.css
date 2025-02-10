@@ -1,7 +1,7 @@
 .custom-map-controls {
-    position: absolute !important;
-    bottom: -777px !important;
-    left: -2475px !important;
+    position: fixed !important;
+    bottom: -805px !important;
+    left: -2550px !important;
     border-radius: 0;
     display: flex;
     flex-direction: column; /* Выстроить кнопки вертикально */
