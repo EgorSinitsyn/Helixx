@@ -494,14 +494,31 @@ function MapComponent({
     }
   }, [isPlanimeterOn]);
 
-  const element = document.querySelector('div[style*="background-color: rgba(255, 255, 255, 0.9)"]');
-  if (element) {
-    element.style.bottom = 'auto';
-    element.style.left = 'auto';
-    element.style.top = '50%';
-    element.style.right = '50%'; // если нужно
-    element.style.transform = 'translate(-50%, -50%)';
-  }
+  // Обработчик окна планимера
+  useEffect(() => {
+    const observer = new MutationObserver((mutationsList, obs) => {
+      const infoPanel = document.querySelector('div[style*="background-color: rgba(255, 255, 255, 0.9)"]');
+      if (infoPanel) {
+        infoPanel.style.bottom = 'auto';
+        infoPanel.style.left = 'auto';
+        infoPanel.style.top = '12%';
+        infoPanel.style.right = '36.6%';
+        infoPanel.style.transform = 'translate(-50%, -50%)';
+        infoPanel.style.width = '163px';
+        infoPanel.style.backgroundColor = 'rgba(0,0,0,0.5)';
+        infoPanel.style.color = '#fff';
+        // infoPanel.style.fontSize = '30px';
+        // infoPanel.style.padding = '6px 10px';         // отступы
+        // infoPanel.style.borderRadius = '4px';
+        // Не отключаем наблюдатель, чтобы он продолжал корректировать элемент при каждом появлении
+        // obs.disconnect();
+      }
+    });
+
+    observer.observe(document.body, { childList: true, subtree: true });
+
+    return () => observer.disconnect();
+  }, []);
 
 
   // -------------------------------
