@@ -67,6 +67,8 @@ function MapComponent({
   const drawRef = useRef(null);
 
   const togglePlanimeter = () => {
+    if (isMissionBuilding) return; // Если идёт построение миссии – пропускаем. Во избежании конфликтов
+
     setIsPlanimeterOn((prev) => {
       if (prev) {
         // Режим отключается
@@ -409,7 +411,9 @@ function MapComponent({
   // ВКЛЮЧИТЬ / ВЫКЛЮЧИТЬ РЕЖИМ ЛИНЕЙКИ
   // -------------------------------
   const toggleRuler = () => {
-  setIsRulerOn((prev) => {
+    if (isMissionBuilding) return; // Если идёт построение миссии – пропускаем. (во избежании конфликтов)
+
+    setIsRulerOn((prev) => {
     if (prev) {
       // Если режим уже был включён – сбрасываем измерения и выключаем режим
       resetMeasurements();
