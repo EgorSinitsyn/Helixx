@@ -6,6 +6,8 @@ import * as turf from '@turf/turf';
 import MapboxDraw from '@mapbox/mapbox-gl-draw';
 
 import towerIcon from '../assets/tower-icon.png';
+import galochkaIcon from '../assets/galochka-planiemer.png';
+
 import '../components/drone_style.css';
 import '../components/geomarker_style.css';
 import '../components/custom_gl_draw.css';
@@ -62,6 +64,7 @@ function MapComponent({
   // -------------------------------
   const [isPlanimeterOn, setIsPlanimeterOn] = useState(false);
   const [roundedArea, setRoundedArea] = useState(null);
+  const [savedPolygons, setSavedPolygons] = useState(null); // сохраняемые полигоны
 
   // Ref для экземпляра MapboxDraw
   const drawRef = useRef(null);
@@ -87,6 +90,19 @@ function MapComponent({
       }
       return true;
     });
+  };
+
+  // Сохраняем полигоны, размеченные через планимер
+  const handleSavePolygons = () => {
+    if (drawRef.current) {
+      const drawnData = drawRef.current.getAll();
+      if (drawnData.features && drawnData.features.length) {
+        setSavedPolygons(drawnData);
+        alert('Фигуры сохранены!');
+      } else {
+        alert('Нет нарисованных фигур для сохранения.');
+      }
+    }
   };
 
   // -------------------------------
@@ -520,6 +536,110 @@ function MapComponent({
     return () => observer.disconnect();
   }, []);
 
+  // Сохраняем полигоны планимера (добавление нового слоя)
+  useEffect(() => {
+    // Если карта не инициализирована, нет сохранившихся полигонов или массив пуст – выходим
+    if (!mapRef.current || !savedPolygons || !savedPolygons.features.length) return;
+
+    const map = mapRef.current;
+
+    // Если стиль ещё не загружен, подписываемся на событие
+    if (!map.isStyleLoaded()) {
+      const onStyleLoad = () => {
+        // Снова проверяем, что mapRef.current не null
+        if (!mapRef.current) return;
+
+        if (mapRef.current.getSource('saved-polygons')) {
+          mapRef.current.removeLayer('saved-polygons-layer');
+          mapRef.current.removeSource('saved-polygons');
+        }
+
+        mapRef.current.addSource('saved-polygons', {
+          type: 'geojson',
+          data: savedPolygons,
+        });
+        mapRef.current.addLayer({
+          id: 'saved-polygons-layer',
+          type: 'fill',
+          source: 'saved-polygons',
+          layout: {},
+          paint: {
+            'fill-color': 'rgba(0, 0, 255, 0.3)',
+            'fill-outline-color': 'rgba(0, 0, 255, 1)',
+          },
+        });
+      };
+
+      map.on('style.load', onStyleLoad);
+
+      // Функция очистки при размонтировании или пересоздании эффекта
+      return () => {
+        // Перед снятием обработчика проверяем, что карта всё ещё существует
+        if (mapRef.current) {
+          mapRef.current.off('style.load', onStyleLoad);
+        }
+      };
+    }
+
+    // Если стиль уже загружен, просто обновляем слой
+    if (map.getSource('saved-polygons')) {
+      map.removeLayer('saved-polygons-layer');
+      map.removeSource('saved-polygons');
+    }
+
+    map.addSource('saved-polygons', {
+      type: 'geojson',
+      data: savedPolygons,
+    });
+    map.addLayer({
+      id: 'saved-polygons-layer',
+      type: 'fill',
+      source: 'saved-polygons',
+      layout: {},
+      paint: {
+        'fill-color': 'rgba(0, 0, 255, 0.3)',
+        'fill-outline-color': 'rgba(0, 0, 255, 1)',
+      },
+    });
+  }, [savedPolygons, is3D, isMissionBuilding, cellTowers, isCoverageEnabled]);
+
+
+  // Добавление кнопки для сохранения полигонов в планимере
+  useEffect(() => {
+    const observer = new MutationObserver((mutationsList, obs) => {
+      const polygonButton = document.querySelector('.mapbox-gl-draw_polygon');
+      const controlsContainer = polygonButton ? polygonButton.parentElement : null;
+
+      if (controlsContainer && !document.getElementById('save-polygons-btn')) {
+        const saveButton = document.createElement('button');
+        saveButton.id = 'save-polygons-btn';
+        saveButton.className = 'mapbox-gl-draw_ctrl-draw-btn';
+        // saveButton.title = 'Сохранить полигоны';
+        // saveButton.innerText = 'Сохранить';
+
+        // Добавляем фон из galochka-planiemer.png:
+        saveButton.style.backgroundImage = `url(${galochkaIcon})`;
+        saveButton.style.backgroundRepeat = 'no-repeat';
+        saveButton.style.backgroundPosition = 'center center';
+        saveButton.style.backgroundSize = 'contain';
+
+        // При необходимости задайте размеры
+        saveButton.style.width = '32px';
+        saveButton.style.height = '32px';
+        saveButton.style.backgroundSize = '15px 15px';
+
+        // Используем нашу функцию handleSavePolygons
+        saveButton.onclick = handleSavePolygons;
+
+        controlsContainer.appendChild(saveButton);
+      }
+    });
+
+    observer.observe(document.body, { childList: true, subtree: true });
+
+    return () => observer.disconnect();
+  }, []);
+
 
   // -------------------------------
   // useEffect для ДРОНА и маршрута
@@ -691,8 +811,8 @@ function MapComponent({
             className={`leaflet-ruler ${isRulerOn ? 'leaflet-ruler-clicked' : ''}`}
             style={{
               position: 'absolute',
-              bottom: '10px',
-              left: '32%',
+              bottom: '3px',
+              left: '38.5%',
               transform: 'translateX(-50%)',
               zIndex: 999,
               width: '35px',
@@ -713,8 +833,8 @@ function MapComponent({
             onClick={togglePlanimeter}
             style={{
               position: 'absolute',
-              bottom: '10px',
-              left: '35%',
+              bottom: '3px',
+              left: '35.5%',
               transform: 'translateX(-50%)',
               zIndex: 999,
               width: '35px',
