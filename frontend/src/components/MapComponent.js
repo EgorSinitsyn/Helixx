@@ -381,7 +381,7 @@ function MapComponent({
 
       // Вычисление расстояния
       const distanceKm = turf.length(lineStringRef.current); // km
-      setTotalDistance(`Total distance: ${distanceKm.toFixed(3)} km`);
+      setTotalDistance(`Дистанция: ${distanceKm.toFixed(3)} км`);
     } else {
       setTotalDistance('');
     }
@@ -502,9 +502,9 @@ function MapComponent({
         infoPanel.style.bottom = 'auto';
         infoPanel.style.left = 'auto';
         infoPanel.style.top = '12%';
-        infoPanel.style.right = '36.6%';
+        infoPanel.style.right = '37.8%';
         infoPanel.style.transform = 'translate(-50%, -50%)';
-        infoPanel.style.width = '163px';
+        infoPanel.style.width = '145px';
         infoPanel.style.backgroundColor = 'rgba(0,0,0,0.5)';
         infoPanel.style.color = '#fff';
         // infoPanel.style.fontSize = '30px';
@@ -765,7 +765,7 @@ function MapComponent({
                 }}
             >
               <p style={{ fontFamily: 'Open Sans', margin: 0, fontSize: 13 }}>
-                Click the map to draw a polygon.
+                Нажмите на карту, чтобы разметить полигон.
               </p>
               <div>
                 {roundedArea && (
@@ -774,7 +774,7 @@ function MapComponent({
                         <strong>{roundedArea}</strong>
                       </p>
                       <p style={{ fontFamily: 'Open Sans', margin: 0, fontSize: 13 }}>
-                        square meters
+                        м²
                       </p>
                     </>
                 )}
