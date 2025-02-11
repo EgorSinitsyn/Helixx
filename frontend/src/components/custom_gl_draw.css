@@ -1,13 +1,13 @@
 .custom-map-controls {
     position: absolute !important;
-    bottom: -777px !important;
-    left: -2475px !important;
+    bottom: -819px !important;
+    left: -2465px !important;
     border-radius: 0;
-    display: flex;
+    display: flex !important;
     flex-direction: column; /* Выстроить кнопки вертикально */
     align-items: center;
     transform: rotate(90deg) scale(1.21); /* Повернуть контейнер */
-    transform-origin: center;
+    /*transform-origin: center;*/
 }
 
 

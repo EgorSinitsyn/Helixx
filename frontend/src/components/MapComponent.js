@@ -6,6 +6,8 @@ import * as turf from '@turf/turf';
 import MapboxDraw from '@mapbox/mapbox-gl-draw';
 
 import towerIcon from '../assets/tower-icon.png';
+import galochkaIcon from '../assets/galochka-planiemer.png';
+
 import '../components/drone_style.css';
 import '../components/geomarker_style.css';
 import '../components/custom_gl_draw.css';
@@ -62,19 +64,25 @@ function MapComponent({
   // -------------------------------
   const [isPlanimeterOn, setIsPlanimeterOn] = useState(false);
   const [roundedArea, setRoundedArea] = useState(null);
+  const [savedPolygons, setSavedPolygons] = useState(null); // сохраняемые полигоны
 
   // Ref для экземпляра MapboxDraw
   const drawRef = useRef(null);
 
   const togglePlanimeter = () => {
+    if (isMissionBuilding) return; // Если идёт построение миссии – пропускаем. Во избежании конфликтов
+
     setIsPlanimeterOn((prev) => {
       if (prev) {
-        // Режим отключается: удаляем control, очищаем данные
+        // Режим отключается
         if (mapRef.current && drawRef.current) {
-          // Удаляем все рисованные объекты
-          drawRef.current.deleteAll();
-          // Удаляем control с карты
+
+          // Удалять метки при выходе не будем – исключаем deleteAll().
+          // drawRef.current.deleteAll();
+
+          // можно снять только саму «панель» управления:
           mapRef.current.removeControl(drawRef.current);
+
           drawRef.current = null;
         }
         setRoundedArea(null);
@@ -82,6 +90,19 @@ function MapComponent({
       }
       return true;
     });
+  };
+
+  // Сохраняем полигоны, размеченные через планимер
+  const handleSavePolygons = () => {
+    if (drawRef.current) {
+      const drawnData = drawRef.current.getAll();
+      if (drawnData.features && drawnData.features.length) {
+        setSavedPolygons(drawnData);
+        alert('Фигуры сохранены!');
+      } else {
+        alert('Нет нарисованных фигур для сохранения.');
+      }
+    }
   };
 
   // -------------------------------
@@ -152,7 +173,7 @@ function MapComponent({
 
     // 3) Маркеры точек маршрута
     markersRef.current.forEach((marker) => marker.remove());
-    markersRef.current = routePoints.map((point) => {
+    markersRef.current = confirmedRoute.map((point) => {
       const markerElement = document.createElement('div');
       markerElement.className = 'route-marker';
       return new mapboxgl.Marker({ element: markerElement })
@@ -175,6 +196,7 @@ function MapComponent({
         bearing: is3D ? -17.6 : 0,
         antialias: true
       });
+
 
       mapRef.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
 
@@ -316,10 +338,6 @@ function MapComponent({
             });
           }
         });
-
-        // Подключаем клики для режима линейки
-        // mapRef.current.on('click', handleMapClickForRuler);
-        // mapRef.current.on('mousemove', handleMouseMoveForRuler);
       });
     }
 
@@ -331,7 +349,6 @@ function MapComponent({
         mapRef.current = null;
       }
     };
-    // eslint-disable-next-line
   }, [is3D, cellTowers, isCoverageEnabled, isPlacingMarker, onMapClick]);
 
 
@@ -380,7 +397,7 @@ function MapComponent({
 
       // Вычисление расстояния
       const distanceKm = turf.length(lineStringRef.current); // km
-      setTotalDistance(`Total distance: ${distanceKm.toFixed(3)} km`);
+      setTotalDistance(`Дистанция: ${distanceKm.toFixed(3)} км`);
     } else {
       setTotalDistance('');
     }
@@ -406,7 +423,9 @@ function MapComponent({
   // ВКЛЮЧИТЬ / ВЫКЛЮЧИТЬ РЕЖИМ ЛИНЕЙКИ
   // -------------------------------
   const toggleRuler = () => {
-  setIsRulerOn((prev) => {
+    if (isMissionBuilding) return; // Если идёт построение миссии – пропускаем. (во избежании конфликтов)
+
+    setIsRulerOn((prev) => {
     if (prev) {
       // Если режим уже был включён – сбрасываем измерения и выключаем режим
       resetMeasurements();
@@ -491,14 +510,135 @@ function MapComponent({
     }
   }, [isPlanimeterOn]);
 
-  const element = document.querySelector('div[style*="background-color: rgba(255, 255, 255, 0.9)"]');
-  if (element) {
-    element.style.bottom = 'auto';
-    element.style.left = 'auto';
-    element.style.top = '50%';
-    element.style.right = '50%'; // если нужно
-    element.style.transform = 'translate(-50%, -50%)';
-  }
+  // Обработчик окна планимера
+  useEffect(() => {
+    const observer = new MutationObserver((mutationsList, obs) => {
+      const infoPanel = document.querySelector('div[style*="background-color: rgba(255, 255, 255, 0.9)"]');
+      if (infoPanel) {
+        infoPanel.style.bottom = 'auto';
+        infoPanel.style.left = 'auto';
+        infoPanel.style.top = '12%';
+        infoPanel.style.right = '37.8%';
+        infoPanel.style.transform = 'translate(-50%, -50%)';
+        infoPanel.style.width = '145px';
+        infoPanel.style.backgroundColor = 'rgba(0,0,0,0.5)';
+        infoPanel.style.color = '#fff';
+        // infoPanel.style.fontSize = '30px';
+        // infoPanel.style.padding = '6px 10px';         // отступы
+        // infoPanel.style.borderRadius = '4px';
+        // Не отключаем наблюдатель, чтобы он продолжал корректировать элемент при каждом появлении
+        // obs.disconnect();
+      }
+    });
+
+    observer.observe(document.body, { childList: true, subtree: true });
+
+    return () => observer.disconnect();
+  }, []);
+
+  // Сохраняем полигоны планимера (добавление нового слоя)
+  useEffect(() => {
+    // Если карта не инициализирована, нет сохранившихся полигонов или массив пуст – выходим
+    if (!mapRef.current || !savedPolygons || !savedPolygons.features.length) return;
+
+    const map = mapRef.current;
+
+    // Если стиль ещё не загружен, подписываемся на событие
+    if (!map.isStyleLoaded()) {
+      const onStyleLoad = () => {
+        // Снова проверяем, что mapRef.current не null
+        if (!mapRef.current) return;
+
+        if (mapRef.current.getSource('saved-polygons')) {
+          mapRef.current.removeLayer('saved-polygons-layer');
+          mapRef.current.removeSource('saved-polygons');
+        }
+
+        mapRef.current.addSource('saved-polygons', {
+          type: 'geojson',
+          data: savedPolygons,
+        });
+        mapRef.current.addLayer({
+          id: 'saved-polygons-layer',
+          type: 'fill',
+          source: 'saved-polygons',
+          layout: {},
+          paint: {
+            'fill-color': 'rgba(0, 0, 255, 0.3)',
+            'fill-outline-color': 'rgba(0, 0, 255, 1)',
+          },
+        });
+      };
+
+      map.on('style.load', onStyleLoad);
+
+      // Функция очистки при размонтировании или пересоздании эффекта
+      return () => {
+        // Перед снятием обработчика проверяем, что карта всё ещё существует
+        if (mapRef.current) {
+          mapRef.current.off('style.load', onStyleLoad);
+        }
+      };
+    }
+
+    // Если стиль уже загружен, просто обновляем слой
+    if (map.getSource('saved-polygons')) {
+      map.removeLayer('saved-polygons-layer');
+      map.removeSource('saved-polygons');
+    }
+
+    map.addSource('saved-polygons', {
+      type: 'geojson',
+      data: savedPolygons,
+    });
+    map.addLayer({
+      id: 'saved-polygons-layer',
+      type: 'fill',
+      source: 'saved-polygons',
+      layout: {},
+      paint: {
+        'fill-color': 'rgba(0, 0, 255, 0.3)',
+        'fill-outline-color': 'rgba(0, 0, 255, 1)',
+      },
+    });
+  }, [savedPolygons, is3D, isMissionBuilding, cellTowers, isCoverageEnabled]);
+
+
+  // Добавление кнопки для сохранения полигонов в планимере
+  useEffect(() => {
+    const observer = new MutationObserver((mutationsList, obs) => {
+      const polygonButton = document.querySelector('.mapbox-gl-draw_polygon');
+      const controlsContainer = polygonButton ? polygonButton.parentElement : null;
+
+      if (controlsContainer && !document.getElementById('save-polygons-btn')) {
+        const saveButton = document.createElement('button');
+        saveButton.id = 'save-polygons-btn';
+        saveButton.className = 'mapbox-gl-draw_ctrl-draw-btn';
+        // saveButton.title = 'Сохранить полигоны';
+        // saveButton.innerText = 'Сохранить';
+
+        // Добавляем фон из galochka-planiemer.png:
+        saveButton.style.backgroundImage = `url(${galochkaIcon})`;
+        saveButton.style.backgroundRepeat = 'no-repeat';
+        saveButton.style.backgroundPosition = 'center center';
+        saveButton.style.backgroundSize = 'contain';
+
+        // При необходимости задайте размеры
+        saveButton.style.width = '32px';
+        saveButton.style.height = '32px';
+        saveButton.style.backgroundSize = '15px 15px';
+
+        // Используем нашу функцию handleSavePolygons
+        saveButton.onclick = handleSavePolygons;
+
+        controlsContainer.appendChild(saveButton);
+      }
+    });
+
+    observer.observe(document.body, { childList: true, subtree: true });
+
+    return () => observer.disconnect();
+  }, []);
 
 
   // -------------------------------
@@ -560,7 +700,8 @@ function MapComponent({
   useEffect(() => {
     markersRef.current.forEach((m) => m.remove());
     markersRef.current = [];
-    routePoints.forEach((pt) => {
+    const dataForMarkers = isMissionBuilding ? routePoints : confirmedRoute;
+    dataForMarkers.forEach((pt) => {
       const el = document.createElement('div');
       el.className = 'route-marker';
       const marker = new mapboxgl.Marker({ element: el })
@@ -568,7 +709,7 @@ function MapComponent({
           .addTo(mapRef.current);
       markersRef.current.push(marker);
     });
-  }, [routePoints, isMissionBuilding]);
+  }, [routePoints, confirmedRoute, isMissionBuilding]);
 
   // Отрисовка route-line
   useEffect(() => {
@@ -617,11 +758,35 @@ function MapComponent({
     });
   }, [confirmedRoute]);
 
-  // renderRoute при изменениях
+
+  // -------------------------------
+  // useEffect'ы с вызовами renderRoute
+  // -------------------------------
+  // Этот эффект гарантирует, что при изменении данных маршрута или режимов (3D, планировщика) вызывается renderRoute(). Он отвечает за обновление слоёв, когда изменяются входные данные (например, подтверждённый маршрут).
   useEffect(() => {
     renderRoute();
-  }, [confirmedRoute, is3D]);
+  }, [confirmedRoute, is3D, isMissionBuilding]);
 
+  // Эффект для подписки на событие style.load
+  useEffect(() => {
+    if (!mapRef.current) return;
+
+    // Обработчик для вызова renderRoute после загрузки стиля
+    const onStyleLoad = () => {
+      renderRoute();
+    };
+
+    mapRef.current.on('style.load', onStyleLoad);
+
+    // Очистка обработчика при размонтировании
+    return () => {
+      if (mapRef.current) {
+        mapRef.current.off('style.load', onStyleLoad);
+      }
+    };
+  }, []);
+
+  // Интервал в 100 мс с проверкой загрузки стиля карты
   useEffect(() => {
     const interval = setInterval(() => {
       if (mapRef.current?.isStyleLoaded()) {
@@ -630,7 +795,7 @@ function MapComponent({
       }
     }, 100);
     return () => clearInterval(interval);
-  }, [confirmedRoute, is3D]);
+  }, [confirmedRoute, is3D, isMissionBuilding]);
 
   // -------------------------------
   // RENDER
@@ -646,8 +811,8 @@ function MapComponent({
             className={`leaflet-ruler ${isRulerOn ? 'leaflet-ruler-clicked' : ''}`}
             style={{
               position: 'absolute',
-              bottom: '10px',
-              left: '32%',
+              bottom: '3px',
+              left: '38.5%',
               transform: 'translateX(-50%)',
               zIndex: 999,
               width: '35px',
@@ -668,8 +833,8 @@ function MapComponent({
             onClick={togglePlanimeter}
             style={{
               position: 'absolute',
-              bottom: '10px',
-              left: '35%',
+              bottom: '3px',
+              left: '35.5%',
               transform: 'translateX(-50%)',
               zIndex: 999,
               width: '35px',
@@ -720,7 +885,7 @@ function MapComponent({
                 }}
             >
               <p style={{ fontFamily: 'Open Sans', margin: 0, fontSize: 13 }}>
-                Click the map to draw a polygon.
+                Нажмите на карту, чтобы разметить полигон.
               </p>
               <div>
                 {roundedArea && (
@@ -729,7 +894,7 @@ function MapComponent({
                         <strong>{roundedArea}</strong>
                       </p>
                       <p style={{ fontFamily: 'Open Sans', margin: 0, fontSize: 13 }}>
-                        square meters
+                        м²
                       </p>
                     </>
                 )}
@@ -858,4 +1023,4 @@ function updateDronePositionInMercator(map, dronePosition) {
   return modelAsMercatorCoordinate;
 }
 
-export default MapComponent;
+export default React.memo(MapComponent);
