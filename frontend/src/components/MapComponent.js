@@ -7,6 +7,8 @@ import MapboxDraw from '@mapbox/mapbox-gl-draw';
 
 import towerIcon from '../assets/tower-icon.png';
 import galochkaIcon from '../assets/galochka-planiemer.png';
+import treesImg from '../assets/trees.png';
+import parsingTreesImg from '../assets/parsing-trees.png';
 
 import '../components/drone_style.css';
 import '../components/geomarker_style.css';
@@ -58,6 +60,12 @@ function MapComponent({
   });
   // Отображаемое расстояние
   const [totalDistance, setTotalDistance] = useState('');
+
+  // Состояние для показа дополнительных кнопок при нажатии на кнопку с деревьями
+  const [showModeButtons, setShowModeButtons] = useState(false);
+  const toggleModeButtons = () => {
+    setShowModeButtons((prev) => !prev);
+  };
 
   // -------------------------------
   // Состояния для режима ПЛАНИМЕРА
@@ -849,6 +857,74 @@ function MapComponent({
             }}
         />
 
+        {/* Кнопка для входа в режим с разметкой 🌳 */}
+        <button
+            onClick= {toggleModeButtons}
+            style={{
+              position: 'absolute',
+              bottom: '3px',
+              left: '41.5%', // немного левее чем кнопка "Линейка" (которая на 38.5%)
+              transform: 'translateX(-50%)',
+              zIndex: 999,
+              width: '35px',
+              height: '35px',
+              backgroundColor: '#fff',
+              border: '1px solid #ccc',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '20px', // чтобы символ был хорошо виден
+              cursor: 'pointer'
+            }}
+        >
+          🌳
+        </button>
+            {/* Дополнительные кнопки, появляющиеся при нажатии */}
+            {showModeButtons && (
+              <>
+              <button
+              onClick={() => console.log('Переключить режим 1')}
+            style={{
+              position: 'absolute',
+              bottom: '75px', // располагаем выше основной кнопки
+              left: '41.5%',    // немного смещаем влево
+              transform: 'translateX(-50%)',
+              borderRadius: '50%',
+              zIndex: 998,
+              width: '35px',
+              height: '35px',
+              backgroundColor: '#fff',
+              border: '1px solid #ccc',
+              backgroundImage: `url(${treesImg})`,
+              backgroundRepeat: 'no-repeat',
+              backgroundSize: '120%',
+              backgroundPosition: 'center center',
+              cursor: 'pointer',
+            }}
+        />
+
+        <button
+            onClick={() => console.log('Переключить режим 2')}
+            style={{
+              position: 'absolute',
+              bottom: '40px', // также располагаем выше основной кнопки
+              left: '41.5%',    // смещаем вправо от основной кнопки
+              transform: 'translateX(-50%)',
+              borderRadius: '50%',
+              zIndex: 998,
+              width: '35px',
+              height: '35px',
+              backgroundColor: '#fff',
+              border: '1px solid #ccc',
+              backgroundImage: `url(${parsingTreesImg})`,
+              backgroundRepeat: 'no-repeat',
+              backgroundPosition: 'center center',
+              backgroundSize: '70%',
+              cursor: 'pointer',
+            }}
+        />
+              </>
+            )}
 
         {/* Отображение дистанции (если есть) */}
         {isRulerOn && totalDistance && (
