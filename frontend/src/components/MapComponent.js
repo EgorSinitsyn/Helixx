@@ -636,6 +636,7 @@ function MapComponent({
       layout: {},
       paint: {
         'fill-color': 'rgba(0, 0, 255, 0.3)',
+        'fill-opacity': 0.5,
         'fill-outline-color': 'rgba(0, 0, 255, 1)',
       },
     });
