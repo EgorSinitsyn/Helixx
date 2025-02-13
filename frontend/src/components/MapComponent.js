@@ -42,6 +42,18 @@ function MapComponent({
   const routeLayerId = 'route-line';
 
   // -------------------------------
+  // Состояния для включения по кнопке режима с расстановкой деревьев
+  // ------------------------------
+  // Состояние для показа дополнительных кнопок при нажатии на кнопку с деревьями
+  const [showModeButtons, setShowModeButtons] = useState(false);
+  // Состояние для активации расстановки «деревьев» (маркеров)
+  const [isTreePlacingActive, setIsTreePlacingActive] = useState(false);
+  // кнопка вызова расстановки деревьев
+  const toggleModeButtons = () => {
+    setShowModeButtons((prev) => !prev);
+  };
+
+  // -------------------------------
   // Состояния для режима ЛИНЕЙКИ
   // -------------------------------
   const [isRulerOn, setIsRulerOn] = useState(false);
@@ -61,11 +73,6 @@ function MapComponent({
   // Отображаемое расстояние
   const [totalDistance, setTotalDistance] = useState('');
 
-  // Состояние для показа дополнительных кнопок при нажатии на кнопку с деревьями
-  const [showModeButtons, setShowModeButtons] = useState(false);
-  const toggleModeButtons = () => {
-    setShowModeButtons((prev) => !prev);
-  };
 
   // -------------------------------
   // Состояния для режима ПЛАНИМЕРА
@@ -216,9 +223,31 @@ function MapComponent({
 
       // Слушаем клики по карте (планировщик)
       mapRef.current.on('click', (e) => {
-        // Если активен режим линейки, этот обработчик не должен срабатывать
+        // 1) Если активен режим линейки, этот обработчик не должен срабатывать
         if (isRulerOn) return;
 
+        // 2) Если активен режим расстановки деревьев – ставим «дерево»
+        if (isRulerOn) return;
+        if (isTreePlacingActive) {
+          console.log('Режим деревьев активен');
+          const { lng, lat } = e.lngLat;
+          const newFeature = {
+            type: 'Feature',
+            geometry: {
+              type: 'Point',
+              coordinates: [lng, lat]
+            },
+            properties: {}
+          };
+          setTreeMarkers((prev) => {
+            const updated = [...prev, newFeature];
+            console.log('Обновлённый treeMarkers:', updated);
+            return updated;
+          });
+          return;
+        }
+
+        // 3) Если включён режим «Планировщика маршрута» (isPlacingMarker), то ставим маршрутный маркер.
         if (isPlacingMarker) {
           const { lat, lng } = e.lngLat;
           onMapClick(lat, lng);
@@ -357,7 +386,7 @@ function MapComponent({
         mapRef.current = null;
       }
     };
-  }, [is3D, cellTowers, isCoverageEnabled, isPlacingMarker, onMapClick]);
+  }, [is3D, cellTowers, isCoverageEnabled, isPlacingMarker, onMapClick, isTreePlacingActive]);
 
 
   // -------------------------------
@@ -648,6 +677,66 @@ function MapComponent({
     return () => observer.disconnect();
   }, []);
 
+  // -------------------------------
+  // useEffect для деревьев
+  // -------------------------------
+  // Состояние для хранения дерева-маркеров
+  const [treeMarkers, setTreeMarkers] = useState([]);
+
+  useEffect(() => {
+    if (!mapRef.current) return;
+
+    const map = mapRef.current;
+
+    const createOrUpdateTreeLayer = () => {
+      // 1. Убедимся, что стиль точно загружен
+      if (!map.isStyleLoaded()) return;
+
+      // 2. Либо обновляем существующий источник, либо создаём заново
+      const source = map.getSource('tree-circle-source');
+      if (source) {
+        source.setData({
+          type: 'FeatureCollection',
+          features: treeMarkers,
+        });
+      } else {
+        map.addSource('tree-circle-source', {
+          type: 'geojson',
+          data: {
+            type: 'FeatureCollection',
+            features: treeMarkers,
+          },
+        });
+        map.addLayer({
+          id: 'tree-circle-layer',
+          type: 'circle',
+          source: 'tree-circle-source',
+          paint: {
+            'circle-radius': 6,
+            'circle-color': '#81a85a',
+            'circle-stroke-width': 2,
+            'circle-stroke-color': '#fff',
+          },
+        });
+      }
+    };
+
+    // 3. Если стиль уже загружен (чаще всего при первом монтировании),
+    //    обновим/создадим слой прямо сейчас
+    if (map.isStyleLoaded()) {
+      createOrUpdateTreeLayer();
+    }
+
+    // 4. Также подпишемся на событие style.load — вдруг стиль перезагрузится
+    map.on('style.load', createOrUpdateTreeLayer);
+
+    // Очистка подписки при размонтировании
+    return () => {
+      map.off('style.load', createOrUpdateTreeLayer);
+    };
+  }, [treeMarkers]);
+
+
 
   // -------------------------------
   // useEffect для ДРОНА и маршрута
@@ -808,7 +897,7 @@ function MapComponent({
   // -------------------------------
   // RENDER
   // -------------------------------
-  let IsRulerOn;
+  // let IsRulerOn;
   return (
       <div style={{ position: 'relative', width: '100%', height: '100vh', overflowX: 'hidden' }}>
         <div ref={mapContainerRef} style={{ width: '100%', height: '100%' }} />
@@ -883,7 +972,7 @@ function MapComponent({
             {showModeButtons && (
               <>
               <button
-              onClick={() => console.log('Переключить режим 1')}
+                  onClick={() => { setIsTreePlacingActive(prev => !prev); }}
             style={{
               position: 'absolute',
               bottom: '75px', // располагаем выше основной кнопки
@@ -1098,5 +1187,6 @@ function updateDronePositionInMercator(map, dronePosition) {
   const modelAsMercatorCoordinate = mapboxgl.MercatorCoordinate.fromLngLat([lng, lat], alt);
   return modelAsMercatorCoordinate;
 }
+
 
 export default React.memo(MapComponent);
