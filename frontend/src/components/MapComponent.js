@@ -8,6 +8,7 @@ import MapboxDraw from '@mapbox/mapbox-gl-draw';
 import towerIcon from '../assets/tower-icon.png';
 import galochkaIcon from '../assets/galochka-planiemer.png';
 import treesImg from '../assets/trees.png';
+import greenCircle from '../assets/green_circle.png';
 import parsingTreesImg from '../assets/parsing-trees.png';
 
 import '../components/drone_style.css';
@@ -689,50 +690,67 @@ function MapComponent({
     const map = mapRef.current;
 
     const createOrUpdateTreeLayer = () => {
-      // 1. Убедимся, что стиль точно загружен
       if (!map.isStyleLoaded()) return;
 
-      // 2. Либо обновляем существующий источник, либо создаём заново
-      const source = map.getSource('tree-circle-source');
+      const source = map.getSource('tree-marker-source');
+
       if (source) {
         source.setData({
           type: 'FeatureCollection',
           features: treeMarkers,
         });
       } else {
-        map.addSource('tree-circle-source', {
-          type: 'geojson',
-          data: {
-            type: 'FeatureCollection',
-            features: treeMarkers,
-          },
-        });
-        map.addLayer({
-          id: 'tree-circle-layer',
-          type: 'circle',
-          source: 'tree-circle-source',
-          paint: {
-            'circle-radius': 6,
-            'circle-color': '#81a85a',
-            'circle-stroke-width': 2,
-            'circle-stroke-color': '#fff',
-          },
+        map.loadImage(greenCircle, (error, image) => {
+          if (error) {
+            console.error("Ошибка загрузки иконки дерева:", error);
+            return;
+          }
+
+          if (!map.hasImage('tree-icon')) {
+            map.addImage('tree-icon', image);
+          }
+
+          map.addSource('tree-marker-source', {
+            type: 'geojson',
+            data: {
+              type: 'FeatureCollection',
+              features: treeMarkers,
+            },
+          });
+
+          map.addLayer({
+            id: 'tree-marker-layer',
+            type: 'symbol',
+            source: 'tree-marker-source',
+            layout: {
+              'icon-image': 'tree-icon', // Используем кастомную иконку
+              // 'icon-size': 0.07, // Отключает масштабирование при зуме
+              'icon-anchor': 'center', // Центр иконки совпадает с координатами
+              'icon-allow-overlap': true, // Иконки могут перекрываться
+              'icon-ignore-placement': true, // Не учитывать в расчёте размещения
+              'icon-rotation-alignment': 'map',// Зафиксировано относительно карты (не поворачивается)
+              'symbol-placement': 'point', // Фиксированное расположение
+              'icon-size': 0.030
+            },
+              paint: {
+                'icon-opacity': 1, // Отключаем полупрозрачность
+                'icon-translate': [0, 0],
+              }
+          });
         });
       }
     };
 
-    // 3. Если стиль уже загружен (чаще всего при первом монтировании),
-    //    обновим/создадим слой прямо сейчас
     if (map.isStyleLoaded()) {
       createOrUpdateTreeLayer();
     }
 
-    // 4. Также подпишемся на событие style.load — вдруг стиль перезагрузится
     map.on('style.load', createOrUpdateTreeLayer);
 
-    // Очистка подписки при размонтировании
     return () => {
-      map.off('style.load', createOrUpdateTreeLayer);
+      if (map) {
+        map.off('style.load', createOrUpdateTreeLayer);
+      }
     };
   }, [treeMarkers]);
 
