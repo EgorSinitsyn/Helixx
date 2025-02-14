@@ -114,6 +114,14 @@ const App = () => {
   }, []);
 
 
+  //  состояние для отображения кнопок для разметки деревьев
+  const [isTreePlacingActive, setIsTreePlacingActive] = useState(false);
+  // Функция для переключения режима расстановки деревьев
+  const toggleTreePlacing = useCallback(() => {
+    setIsTreePlacingActive(prev => !prev);
+  }, []);
+
+
   const openSettings = useCallback(() => {
     setIsSettingsOpen(true);
     setNewDronePosition({
@@ -260,8 +268,8 @@ const App = () => {
             updateDroneAltitude={updateDroneAltitude}
             isPlacingMarker={isMissionBuilding}
             isMissionBuilding={isMissionBuilding}
+            isTreePlacingActive={isTreePlacingActive}
             routePoints={routePoints}
-            // confirmedRoute={route}
             confirmedRoute={confirmedRoute}
             onMapClick={handleMapClick}
             isMoving={isMoving}
@@ -283,6 +291,7 @@ const App = () => {
             onOpenMission={startRouteBuilding}
             onStartMission={() => moveDroneToRoutePoints(dronePosition, setDronePosition, routePoints, setIsMoving)}
             isOpen={isSidebarOpen}
+            onToggleTreePlacing={toggleTreePlacing}
             onToggleSidebar={toggleSidebar}
             onOpenCalibration={openCalibration}
         />

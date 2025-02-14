@@ -30,6 +30,7 @@ function MapComponent({
                         onMapClick,
                         routePoints,
                         isMissionBuilding,
+                        isTreePlacingActive,
                         isMoving
                       }) {
   // -------------------------------
@@ -42,17 +43,6 @@ function MapComponent({
   const markersRef = useRef([]); // Храним маркеры маршрута
   const routeLayerId = 'route-line';
 
-  // -------------------------------
-  // Состояния для включения по кнопке режима с расстановкой деревьев
-  // ------------------------------
-  // Состояние для показа дополнительных кнопок при нажатии на кнопку с деревьями
-  const [showModeButtons, setShowModeButtons] = useState(false);
-  // Состояние для активации расстановки «деревьев» (маркеров)
-  const [isTreePlacingActive, setIsTreePlacingActive] = useState(false);
-  // кнопка вызова расстановки деревьев
-  const toggleModeButtons = () => {
-    setShowModeButtons((prev) => !prev);
-  };
 
   // -------------------------------
   // Состояния для режима ЛИНЕЙКИ
@@ -484,6 +474,7 @@ function MapComponent({
       mapRef.current.getSource('measure-geojson').setData(geojsonRef.current);
     }
   };
+
 
     // Отдельный useEffect для обработчиков линейки:
   useEffect(() => {
@@ -964,75 +955,6 @@ function MapComponent({
               cursor: 'pointer'
             }}
         />
-
-        {/* Кнопка для входа в режим с разметкой 🌳 */}
-        <button
-            onClick= {toggleModeButtons}
-            style={{
-              position: 'absolute',
-              bottom: '3px',
-              left: '41.5%', // немного левее чем кнопка "Линейка" (которая на 38.5%)
-              transform: 'translateX(-50%)',
-              zIndex: 999,
-              width: '35px',
-              height: '35px',
-              backgroundColor: '#fff',
-              border: '1px solid #ccc',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '20px', // чтобы символ был хорошо виден
-              cursor: 'pointer'
-            }}
-        >
-          🌳
-        </button>
-            {/* Дополнительные кнопки, появляющиеся при нажатии */}
-            {showModeButtons && (
-              <>
-              <button
-                  onClick={() => { setIsTreePlacingActive(prev => !prev); }}
-            style={{
-              position: 'absolute',
-              bottom: '75px', // располагаем выше основной кнопки
-              left: '41.5%',    // немного смещаем влево
-              transform: 'translateX(-50%)',
-              borderRadius: '50%',
-              zIndex: 998,
-              width: '35px',
-              height: '35px',
-              backgroundColor: '#fff',
-              border: '1px solid #ccc',
-              backgroundImage: `url(${treesImg})`,
-              backgroundRepeat: 'no-repeat',
-              backgroundSize: '120%',
-              backgroundPosition: 'center center',
-              cursor: 'pointer',
-            }}
-        />
-
-        <button
-            onClick={() => console.log('Переключить режим 2')}
-            style={{
-              position: 'absolute',
-              bottom: '40px', // также располагаем выше основной кнопки
-              left: '41.5%',    // смещаем вправо от основной кнопки
-              transform: 'translateX(-50%)',
-              borderRadius: '50%',
-              zIndex: 998,
-              width: '35px',
-              height: '35px',
-              backgroundColor: '#fff',
-              border: '1px solid #ccc',
-              backgroundImage: `url(${parsingTreesImg})`,
-              backgroundRepeat: 'no-repeat',
-              backgroundPosition: 'center center',
-              backgroundSize: '70%',
-              cursor: 'pointer',
-            }}
-        />
-              </>
-            )}
 
         {/* Отображение дистанции (если есть) */}
         {isRulerOn && totalDistance && (

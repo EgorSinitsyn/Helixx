@@ -7,7 +7,7 @@ const Sidebar = ({
                      onOpenCalibration,
                      onOpenHistory,
                      onOpenMission,
-                     onOpenTrees,
+                     onToggleTreePlacing,
                      isOpen,
                      onToggleSidebar,
                      onStartMission
@@ -31,7 +31,7 @@ const Sidebar = ({
                             backgroundPosition: 'center',
                             backgroundSize: 'contain',
                         }}
-                        onClick={onOpenTrees ? onOpenTrees : () => console.log('Кнопка "Деревья" нажата')}
+                        onClick={onToggleTreePlacing}
                     >
                     </button>
                     <button style={styles.button} onClick={onOpenMission}>Планировщик миссий</button>
