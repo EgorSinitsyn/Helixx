@@ -43,6 +43,12 @@ function MapComponent({
   const markersRef = useRef([]); // Храним маркеры маршрута
   const routeLayerId = 'route-line';
 
+  // -------------------------------
+  // REFS для маркеров деревьев
+  // -------------------------------
+  const [treeMarkers, setTreeMarkers] = useState([]);   // Состояние для хранения дерева-маркеров
+  const frozenTreeMarkersRef = useRef([]); // Рефы для заморозки маркеров при активации линейки или планомера
+
 
   // -------------------------------
   // Состояния для режима ЛИНЕЙКИ
@@ -212,47 +218,6 @@ function MapComponent({
         controlsContainer.classList.add('custom-map-controls'); // CSS класс для сдвига
       }
 
-      // Слушаем клики по карте (планировщик)
-      mapRef.current.on('click', (e) => {
-        // 1) Если активен режим линейки, этот обработчик не должен срабатывать
-        if (isRulerOn) return;
-
-        // 2) Если активен режим расстановки деревьев – ставим «дерево»
-        if (isRulerOn) return;
-        if (isTreePlacingActive) {
-          console.log('Режим деревьев активен');
-          const { lng, lat } = e.lngLat;
-          const newFeature = {
-            type: 'Feature',
-            geometry: {
-              type: 'Point',
-              coordinates: [lng, lat]
-            },
-            properties: {}
-          };
-          setTreeMarkers((prev) => {
-            const updated = [...prev, newFeature];
-            console.log('Обновлённый treeMarkers:', updated);
-            return updated;
-          });
-          return;
-        }
-
-        // 3) Если включён режим «Планировщика маршрута» (isPlacingMarker), то ставим маршрутный маркер.
-        if (isPlacingMarker) {
-          const { lat, lng } = e.lngLat;
-          onMapClick(lat, lng);
-
-          // Добавляем маршрутный маркер
-          const markerElement = document.createElement('div');
-          markerElement.className = 'route-marker';
-          const marker = new mapboxgl.Marker({ element: markerElement })
-              .setLngLat([lng, lat])
-              .addTo(mapRef.current);
-          markersRef.current.push(marker);
-        }
-      });
-
       // Когда карта загрузилась
       mapRef.current.on('load', () => {
         // 1) ИСТОЧНИК/СЛОИ для режима линейки
@@ -379,6 +344,58 @@ function MapComponent({
     };
   }, [is3D, cellTowers, isCoverageEnabled, isPlacingMarker, onMapClick, isTreePlacingActive]);
 
+
+  // -------------------------------
+  // ОБРАБОТЧИК КЛИКОВ
+  // -------------------------------
+  useEffect(() => {
+    if (!mapRef.current) return;
+
+    const handleMapClick = (e) => {
+      // Если включён режим линейки или планимера – выход, чтобы не обрабатывать клики
+      if (isRulerOn || isPlanimeterOn) return;
+
+      // Если активен режим расстановки деревьев – ставим «дерево»
+      if (isTreePlacingActive) {
+        console.log('Режим деревьев активен');
+        const { lng, lat } = e.lngLat;
+        const newFeature = {
+          type: 'Feature',
+          geometry: {
+            type: 'Point',
+            coordinates: [lng, lat]
+          },
+          properties: {}
+        };
+        setTreeMarkers((prev) => {
+          const updated = [...prev, newFeature];
+          console.log('Обновлённый treeMarkers:', updated);
+          return updated;
+        });
+        return;
+      }
+
+      // Если включён режим планировщика маршрута – ставим маршрутный маркер
+      if (isPlacingMarker) {
+        const { lat, lng } = e.lngLat;
+        onMapClick(lat, lng);
+
+        const markerElement = document.createElement('div');
+        markerElement.className = 'route-marker';
+        const marker = new mapboxgl.Marker({ element: markerElement })
+            .setLngLat([lng, lat])
+            .addTo(mapRef.current);
+        markersRef.current.push(marker);
+      }
+    };
+
+    mapRef.current.on('click', handleMapClick);
+    return () => {
+      if (mapRef.current) {
+        mapRef.current.off('click', handleMapClick);
+      }
+    };
+  }, [isRulerOn, isPlanimeterOn, isTreePlacingActive, isPlacingMarker, onMapClick]);
 
   // -------------------------------
   // ОБРАБОТЧИК КЛИКА (ЛИНЕЙКА)
@@ -673,23 +690,21 @@ function MapComponent({
   // -------------------------------
   // useEffect для деревьев
   // -------------------------------
-  // Состояние для хранения дерева-маркеров
-  const [treeMarkers, setTreeMarkers] = useState([]);
-
   useEffect(() => {
     if (!mapRef.current) return;
-
     const map = mapRef.current;
 
     const createOrUpdateTreeLayer = () => {
       if (!map.isStyleLoaded()) return;
 
-      const source = map.getSource('tree-marker-source');
+      // Если режимы активны, используем зафиксированные маркеры, иначе - актуальные treeMarkers
+      const markersData = (isRulerOn || isPlanimeterOn) ? frozenTreeMarkersRef.current : treeMarkers;
 
+      const source = map.getSource('tree-marker-source');
       if (source) {
         source.setData({
           type: 'FeatureCollection',
-          features: treeMarkers,
+          features: markersData,
         });
       } else {
         map.loadImage(greenCircle, (error, image) => {
@@ -706,7 +721,7 @@ function MapComponent({
             type: 'geojson',
             data: {
               type: 'FeatureCollection',
-              features: treeMarkers,
+              features: markersData,
             },
           });
 
@@ -716,18 +731,17 @@ function MapComponent({
             source: 'tree-marker-source',
             layout: {
               'icon-image': 'tree-icon', // Используем кастомную иконку
-              // 'icon-size': 0.07, // Отключает масштабирование при зуме
               'icon-anchor': 'center', // Центр иконки совпадает с координатами
-              'icon-allow-overlap': true, // Иконки могут перекрываться
-              'icon-ignore-placement': true, // Не учитывать в расчёте размещения
-              'icon-rotation-alignment': 'map',// Зафиксировано относительно карты (не поворачивается)
-              'symbol-placement': 'point', // Фиксированное расположение
-              'icon-size': 0.030
+              'icon-allow-overlap': true,
+              'icon-ignore-placement': true,
+              'icon-rotation-alignment': 'map',
+              'symbol-placement': 'point',
+              'icon-size': 0.030,
             },
-              paint: {
-                'icon-opacity': 1, // Отключаем полупрозрачность
-                'icon-translate': [0, 0],
-              }
+            paint: {
+              'icon-opacity': 1,
+              'icon-translate': [0, 0],
+            }
           });
         });
       }
@@ -736,7 +750,6 @@ function MapComponent({
     if (map.isStyleLoaded()) {
       createOrUpdateTreeLayer();
     }
-
     map.on('style.load', createOrUpdateTreeLayer);
 
     return () => {
@@ -744,7 +757,16 @@ function MapComponent({
         map.off('style.load', createOrUpdateTreeLayer);
       }
     };
-  }, [treeMarkers]);
+  }, [treeMarkers, isRulerOn, isPlanimeterOn]);
+
+    // Заморозка маркеров деревьев
+  useEffect(() => {
+    // Если ни режим линейки, ни режим планиметра не активны,
+    // обновляем зафиксированный набор маркеров.
+    if (!(isRulerOn || isPlanimeterOn)) {
+      frozenTreeMarkersRef.current = treeMarkers;
+    }
+  }, [treeMarkers, isRulerOn, isPlanimeterOn]);
 
 
 
