@@ -28,7 +28,9 @@ function MapComponent({
                         setDroneHeading,
                         isPlacingMarker,
                         onMapClick,
+                        onTreeMapClick,
                         routePoints,
+                        plantationPoints,
                         isMissionBuilding,
                         isTreePlacingActive,
                         isMoving
@@ -48,6 +50,7 @@ function MapComponent({
   // -------------------------------
   const [treeMarkers, setTreeMarkers] = useState([]);   // Состояние для хранения дерева-маркеров
   const frozenTreeMarkersRef = useRef([]); // Рефы для заморозки маркеров при активации линейки или планомера
+  const plantationMarkersRef = useRef([]);
 
 
   // -------------------------------
@@ -359,6 +362,11 @@ function MapComponent({
       if (isTreePlacingActive) {
         console.log('Режим деревьев активен');
         const { lng, lat } = e.lngLat;
+        // Вызываем callback для обновления координат в родительском компоненте
+        if (typeof onTreeMapClick === 'function') {
+          onTreeMapClick(lat, lng);
+        }
+         // Если нужно, можно добавить визуальный маркер на карте
         const newFeature = {
           type: 'Feature',
           geometry: {
@@ -367,11 +375,12 @@ function MapComponent({
           },
           properties: {}
         };
-        setTreeMarkers((prev) => {
-          const updated = [...prev, newFeature];
-          console.log('Обновлённый treeMarkers:', updated);
-          return updated;
-        });
+        setTreeMarkers((prev) => [...prev, newFeature]);
+        // setTreeMarkers((prev) => {
+        //   const updated = [...prev, newFeature];
+        //   console.log('Обновлённый treeMarkers:', updated);
+        //   return updated;
+        // });
         return;
       }
 
@@ -761,14 +770,54 @@ function MapComponent({
 
     // Заморозка маркеров деревьев
   useEffect(() => {
-    // Если ни режим линейки, ни режим планиметра не активны,
-    // обновляем зафиксированный набор маркеров.
-    if (!(isRulerOn || isPlanimeterOn)) {
-      frozenTreeMarkersRef.current = treeMarkers;
-    }
-  }, [treeMarkers, isRulerOn, isPlanimeterOn]);
+  if (!mapRef.current) return;
 
+  console.log("Обновление маркеров насаждений, plantationPoints:", plantationPoints);
 
+  // Удаляем предыдущие маркеры
+  if (plantationMarkersRef.current.length > 0) {
+    console.log("Удаляем", plantationMarkersRef.current.length, "маркер(ов)");
+    plantationMarkersRef.current.forEach(marker => {
+      marker.remove();
+      // Явно удаляем DOM-элемент маркера, если он остался
+      const markerEl = marker.getElement();
+      if (markerEl && markerEl.parentNode) {
+        markerEl.parentNode.removeChild(markerEl);
+      }
+    });
+    plantationMarkersRef.current = [];
+  }
+
+  // Создаём новые маркеры для актуальных plantationPoints
+  plantationPoints.forEach(point => {
+    const markerEl = document.createElement('div');
+    markerEl.className = 'plantation-marker';
+    markerEl.style.width = '20px';
+    markerEl.style.height = '20px';
+    markerEl.style.backgroundImage = 'url(/path/to/plantation-icon.png)'; // проверьте корректность пути
+    markerEl.style.backgroundSize = 'cover';
+    markerEl.style.borderRadius = '50%';
+
+    const marker = new mapboxgl.Marker({ element: markerEl })
+      .setLngLat([point.lng, point.lat])
+      .addTo(mapRef.current);
+    plantationMarkersRef.current.push(marker);
+  });
+
+  console.log("Новых маркеров создано:", plantationMarkersRef.current.length);
+
+  // Cleanup: удаление маркеров при размонтировании или перед следующим запуском эффекта
+  return () => {
+    plantationMarkersRef.current.forEach(marker => {
+      marker.remove();
+      const markerEl = marker.getElement();
+      if (markerEl && markerEl.parentNode) {
+        markerEl.parentNode.removeChild(markerEl);
+      }
+    });
+    plantationMarkersRef.current = [];
+  };
+}, [plantationPoints]);
 
   // -------------------------------
   // useEffect для ДРОНА и маршрута

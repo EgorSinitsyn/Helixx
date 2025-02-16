@@ -1,3 +1,5 @@
+// App.js
+
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import MapComponent from './components/MapComponent';
 import 'mapbox-gl/dist/mapbox-gl.css';
@@ -7,6 +9,8 @@ import './components/compass_style.css';
 import DraggableModal from './components/DraggableModal.js';
 import DroneInfoPanel from './components/DroneInfoPanel.js';
 import MissionPlannerSidebar from './components/MissionPlannerSidebar.js';
+import PlantationPlanner from './components/PlantationPlanner';
+import mapboxgl from 'mapbox-gl';
 import { loadRoute, moveDroneToRoutePoints } from './components/DroneRouteManager.js';
 
 const CALIBRATION_LATITUDE = 55.139592;
@@ -41,15 +45,21 @@ const App = () => {
   const [selectedPoint, setSelectedPoint] = useState({ lat: '', lng: '', altitude: '' });
   const [isMissionBuilding, setIsMissionBuilding] = useState(false);
   const [confirmedRoute, setConfirmedRoute] = useState([]);       // для подтверждённого маршрута
-  // const [isPlacingMarker, setIsPlacingMarker] = useState(false);
+
+  // --- Новые состояния для PlantationPlanner ---
+  const [isTreePlacingActive, setIsTreePlacingActive] = useState(false);
+  const [selectedTreePoint, setSelectedTreePoint] = useState({ lat: '', lng: '', height: '', crownSize: '' });
+  const [plantationPoints, setPlantationPoints] = useState([]);
+  const [confirmedPlantationPoints, setConfirmedPlantationPoints] = useState([]);
+  const plantationMarkersRef = useRef([]);
 
 
+  // Определяем callback для обновления координат точки насаждения
   const updateDroneAltitude = useCallback((newAltitude) => {
     setDronePosition((prev) => ({ ...prev, altitude: newAltitude }));
   }, []);
 
   const hideDroneInfoPanel = useCallback(() => setIsDroneInfoVisible(false), []);
-
 
   const [isMoving, setIsMoving] = useState(false); // Флаг для отслеживания движения дрона
 
@@ -59,9 +69,8 @@ const App = () => {
       return;
     }
     setIsMoving(true);  // Начинаем движение
-    moveDroneToRoutePoints(dronePosition, setDronePosition, routePoints, setIsMoving); // Передаем setIsMoving
+    moveDroneToRoutePoints(dronePosition, setDronePosition, routePoints, setIsMoving);
   }, [dronePosition, routePoints]);
-
 
   useEffect(() => {
     const initializeRoute = async () => {
@@ -78,7 +87,6 @@ const App = () => {
 
         console.log('Маршрут успешно загружен:', points);
 
-        // Обновляем состояние, только если маршрут не пустой
         if (points.length > 0) {
           setRoutePoints(points);
         }
@@ -113,15 +121,98 @@ const App = () => {
     return () => socket.close();
   }, []);
 
+  // --- Обработчики для PlantationPlanner ---
 
-  //  состояние для отображения кнопок для разметки деревьев
-  const [isTreePlacingActive, setIsTreePlacingActive] = useState(false);
-  // Функция для переключения режима расстановки деревьев
+  // Переключение режима расстановки насаждений
   const toggleTreePlacing = useCallback(() => {
     setIsTreePlacingActive(prev => !prev);
   }, []);
 
+  // Обновление выбранной точки (например, при клике по карте можно установить lat и lng)
+  const handleTreeMapClick = useCallback((lat, lng) => {
+    setSelectedTreePoint((prev) => ({ ...prev, lat, lng }));
+  }, []);
 
+  const handleTreeHeightChange = useCallback((height) => {
+    setSelectedTreePoint(prev => ({ ...prev, height }));
+  }, []);
+
+  const handleCrownSizeChange = useCallback((crownSize) => {
+    setSelectedTreePoint(prev => ({ ...prev, crownSize }));
+  }, []);
+
+
+  const handleCancelTreePoint = useCallback(() => {
+  setPlantationPoints(prev => {
+    const newPoints = prev.slice(0, -1);
+    console.log('Новый массив plantationPoints после удаления:', newPoints);
+    return newPoints;
+  });
+}, []);
+
+//   const handleCancelTreePoint = useCallback(() => {
+//   console.log("Отмена последней точки насаждения");
+//   if (plantationPoints.length > 0) {
+//     // Удаляем последнюю точку из состояния
+//     setPlantationPoints(prev => prev.slice(0, -1));
+//     // Если соответствующий маркер существует, удаляем его
+//     if (plantationMarkersRef.current.length > 0) {
+//       const lastMarker = plantationMarkersRef.current.pop();
+//       lastMarker.remove();
+//     }
+//   } else {
+//     // Если список точек пуст, то удаляем оставшиеся маркеры (если они ещё есть)
+//     while (plantationMarkersRef.current.length > 0) {
+//       const marker = plantationMarkersRef.current.pop();
+//       marker.remove();
+//     }
+//   }
+// }, [plantationPoints]);
+
+  const handleSaveTreePoint = useCallback(() => {
+  const { lat, lng, height, crownSize } = selectedTreePoint;
+  if (lat && lng && height && crownSize) {
+    setPlantationPoints(prev => [...prev, selectedTreePoint]);
+    setSelectedTreePoint({ lat: '', lng: '', height: '', crownSize: '' });
+  } else {
+    alert('Введите корректные данные для точки насаждения.');
+  }
+}, [selectedTreePoint]);
+
+//   const handleSaveTreePoint = useCallback(() => {
+//   const { lat, lng, height, crownSize } = selectedTreePoint;
+//   if (lat && lng && height && crownSize) {
+//     // Создаём маркер (предполагается, что у вас есть доступ к экземпляру карты)
+//     const markerElement = document.createElement('div');
+//     markerElement.className = 'plantation-marker'; // задайте нужные стили через CSS
+//     const marker = new mapboxgl.Marker({ element: markerElement })
+//       .setLngLat([lng, lat])
+//       .addTo(mapRef.current); // mapRef – ссылка на карту в MapComponent
+//     plantationMarkersRef.current.push(marker);
+//
+//     // Добавляем точку в массив сохранённых
+//     setPlantationPoints(prev => [...prev, selectedTreePoint]);
+//     // Сбрасываем выбранную точку
+//     setSelectedTreePoint({ lat: '', lng: '', height: '', crownSize: '' });
+//   } else {
+//     alert('Введите корректные данные для точки насаждения.');
+//   }
+// }, [selectedTreePoint]);
+
+  // const handleCancelTreePoint = useCallback(() => {
+  //   setSelectedTreePoint({ lat: '', lng: '', height: '', crownSize: '' });
+  // }, []);
+
+
+
+  const handleConfirmPlantation = useCallback(() => {
+    setConfirmedPlantationPoints(plantationPoints);
+    setIsTreePlacingActive(false);
+    alert('Насаждения подтверждены и сохранены.');
+  }, [plantationPoints]);
+
+
+  // --- Остальные обработчики (для миссий и настроек) ---
   const openSettings = useCallback(() => {
     setIsSettingsOpen(true);
     setNewDronePosition({
@@ -158,16 +249,16 @@ const App = () => {
       dynamicTyping: true,
       complete: (results) => {
         const towers = results.data
-            .map(row => ({
-              lat: parseFloat(row.latitude),
-              lng: parseFloat(row.longitude),
-              radius: parseFloat(row.radius),
-            }))
-            .filter(tower =>
-                !isNaN(tower.lat) &&
-                !isNaN(tower.lng) &&
-                !isNaN(tower.radius)
-            );
+          .map(row => ({
+            lat: parseFloat(row.latitude),
+            lng: parseFloat(row.longitude),
+            radius: parseFloat(row.radius),
+          }))
+          .filter(tower =>
+            !isNaN(tower.lat) &&
+            !isNaN(tower.lng) &&
+            !isNaN(tower.radius)
+          );
         setCellTowers(towers);
       },
       error: (error) => console.error("Ошибка при обработке CSV:", error),
@@ -201,12 +292,15 @@ const App = () => {
 
   const startRouteBuilding = useCallback(() => {
     setIsMissionBuilding(true);
-    // setIsPlacingMarker(true);
   }, []);
 
   const handleMapClick = useCallback((lat, lng) => {
     setSelectedPoint({ lat, lng, altitude: '' });
-  }, []);
+    // Если требуется, можно также установить координаты для выбранной точки насаждения:
+    if (isTreePlacingActive) {
+      setSelectedTreePoint({ lat, lng, height: '', crownSize: '' });
+    }
+  }, [isTreePlacingActive]);
 
   const handleSavePoint = useCallback(() => {
     if (selectedPoint.lat && selectedPoint.lng && selectedPoint.altitude) {
@@ -217,14 +311,14 @@ const App = () => {
     }
   }, [selectedPoint]);
 
+
   const cancelRoute = useCallback(() => {
     setRoutePoints([]);
-    setSelectedPoint({ lat: '', lng: '', altitude: '' }); // Очищает поля
-    // setIsMissionBuilding(false);
+    setSelectedPoint({ lat: '', lng: '', altitude: '' });
   }, []);
 
   const removeLastPoint = () => {
-    console.log("Отмена последней точки"); // Проверка вызова функции
+    console.log("Отмена последней точки");
     if (markersRef.current.length > 0) {
       const lastMarker = markersRef.current.pop();
       lastMarker.remove();
@@ -250,152 +344,166 @@ const App = () => {
   }, [routePoints]);
 
   const handleConfirmRoute = useCallback(() => {
-    setConfirmedRoute([...routePoints]); // обновляем маршрут
-    // setIsMissionBuilding(false);
+    setConfirmedRoute([...routePoints]);
   }, [routePoints]);
 
-
   return (
-      <div>
-        <MapComponent
-            dronePosition={dronePosition}
-            route={confirmedRoute}
-            is3D={is3D}
-            cellTowers={cellTowers}
-            isCoverageEnabled={isCoverageEnabled}
-            droneHeading={droneHeading}
-            setDroneHeading={setDroneHeading} // передаем функцию setDroneHeading
-            updateDroneAltitude={updateDroneAltitude}
-            isPlacingMarker={isMissionBuilding}
-            isMissionBuilding={isMissionBuilding}
-            isTreePlacingActive={isTreePlacingActive}
-            routePoints={routePoints}
-            confirmedRoute={confirmedRoute}
-            onMapClick={handleMapClick}
-            isMoving={isMoving}
+    <div>
+      <MapComponent
+        dronePosition={dronePosition}
+        route={confirmedRoute}
+        is3D={is3D}
+        cellTowers={cellTowers}
+        isCoverageEnabled={isCoverageEnabled}
+        droneHeading={droneHeading}
+        setDroneHeading={setDroneHeading}
+        updateDroneAltitude={updateDroneAltitude}
+        isPlacingMarker={isMissionBuilding}
+        isMissionBuilding={isMissionBuilding}
+        isTreePlacingActive={isTreePlacingActive}
+        routePoints={routePoints}
+        plantationPoints={plantationPoints}
+        confirmedRoute={confirmedRoute}
+        onMapClick={handleMapClick}
+        onTreeMapClick={handleTreeMapClick}
+        isMoving={isMoving}
+      />
+
+      {isDroneInfoVisible && (
+        <DroneInfoPanel
+          latitude={dronePosition.lat}
+          longitude={dronePosition.lng}
+          altitude={dronePosition.altitude}
+          heading={droneHeading}
+          onHide={hideDroneInfoPanel}
         />
+      )}
 
-        {isDroneInfoVisible && (
-            <DroneInfoPanel
-                latitude={dronePosition.lat}
-                longitude={dronePosition.lng}
-                altitude={dronePosition.altitude}
-                heading={droneHeading}
-                onHide={hideDroneInfoPanel}
-            />
-        )}
+      <Sidebar
+        onOpenSettings={openSettings}
+        onOpenCalibration={openCalibration}
+        onOpenHistory={openHistory}
+        onOpenMission={startRouteBuilding}
+        onToggleTreePlacing={toggleTreePlacing}
+        isOpen={isSidebarOpen}
+        onToggleSidebar={toggleSidebar}
+        onStartMission={() => moveDroneToRoutePoints(dronePosition, setDronePosition, routePoints, setIsMoving)}
+      />
 
-        <Sidebar
-            onOpenSettings={openSettings}
-            onOpenHistory={openHistory}
-            onOpenMission={startRouteBuilding}
-            onStartMission={() => moveDroneToRoutePoints(dronePosition, setDronePosition, routePoints, setIsMoving)}
-            isOpen={isSidebarOpen}
-            onToggleTreePlacing={toggleTreePlacing}
-            onToggleSidebar={toggleSidebar}
-            onOpenCalibration={openCalibration}
+      {isMissionBuilding && (
+        <MissionPlannerSidebar
+          isMissionBuilding={isMissionBuilding}
+          routePoints={routePoints}
+          onSaveRoute={saveRoute}
+          onRemoveLastPoint={removeLastPoint}
+          onCancelRoute={cancelRoute}
+          onConfirmRoute={handleConfirmRoute}
+          selectedPoint={selectedPoint}
+          onAltitudeChange={(altitude) => setSelectedPoint((prev) => ({ ...prev, altitude }))}
+          onSavePoint={handleSavePoint}
+          onClose={() => setIsMissionBuilding(false)}
         />
+      )}
 
-        {isMissionBuilding && (
-            <MissionPlannerSidebar
-                isMissionBuilding={isMissionBuilding}
-                routePoints={routePoints}
-                onSaveRoute={saveRoute}
-                onRemoveLastPoint={removeLastPoint}
-                onCancelRoute={cancelRoute}
-                onConfirmRoute={handleConfirmRoute}
-                selectedPoint={selectedPoint}
-                onAltitudeChange={(altitude) => setSelectedPoint((prev) => ({ ...prev, altitude }))}
-                onSavePoint={handleSavePoint}
-                onClose={() => setIsMissionBuilding(false)}
-            />
-        )}
+      {/* Модальное окно для настроек карты */}
+      <DraggableModal key="settings" isOpen={isSettingsOpen} onClose={closeSettings}>
+        <h2>Настройки карты</h2>
+        <div style={styles.selectorContainer}>
+          <label style={styles.label}>Режим сцены</label>
+          <select
+            value={is3D ? "3D" : "2D"}
+            onChange={(e) => setIs3D(e.target.value === "3D")}
+            style={styles.selector}
+          >
+            <option value="2D">2D</option>
+            <option value="3D">3D</option>
+          </select>
+        </div>
+        <div style={{ marginTop: '20px' }}>
+          <p>Импортировать локации сотовых вышек (CSV):</p>
+          <input type="file" accept=".csv" onChange={handleFileUpload} />
+        </div>
+        <div style={styles.coverageControl}>
+          <span>ВКЛ. отображение сигнала вышек</span>
+          <button onClick={() => setIsCoverageEnabled(!isCoverageEnabled)} style={styles.toggleButton}>
+            {isCoverageEnabled ? '✔' : '✖'}
+          </button>
+        </div>
+      </DraggableModal>
 
-        {/* Модальное окно для настроек карты */}
-        <DraggableModal key="settings" isOpen={isSettingsOpen} onClose={closeSettings}>
-          <h2>Настройки карты</h2>
-          <div style={styles.selectorContainer}>
-            <label style={styles.label}>Режим сцены</label>
-            <select
-                value={is3D ? "3D" : "2D"}
-                onChange={(e) => setIs3D(e.target.value === "3D")}
-                style={styles.selector}
+      {/* Модальное окно для калибровки дрона */}
+      <DraggableModal key="calibration" isOpen={isCalibrationOpen} onClose={closeCalibration}>
+        <h3>Калибровка дрона</h3>
+        <input
+          type="number"
+          placeholder="Широта"
+          value={newDronePosition.lat}
+          onChange={(e) => setNewDronePosition({ ...newDronePosition, lat: e.target.value })}
+        />
+        <input
+          type="number"
+          placeholder="Долгота"
+          value={newDronePosition.lng}
+          onChange={(e) => setNewDronePosition({ ...newDronePosition, lng: e.target.value })}
+        />
+        <input
+          type="number"
+          placeholder="Высота"
+          value={newDronePosition.altitude}
+          onChange={(e) => setNewDronePosition({ ...newDronePosition, altitude: e.target.value })}
+        />
+        <div className="compass-container">
+          <div className="compass">
+            <div className="compass-center"></div>
+            <div className="arrow-south"></div>
+            <div className="arrow"></div>
+            <div
+              className="compass-rotatable"
+              style={{ transform: `rotate(${-droneHeading}deg)` }}
             >
-              <option value="2D">2D</option>
-              <option value="3D">3D</option>
-            </select>
-          </div>
-          <div style={{ marginTop: '20px' }}>
-            <p>Импортировать локации сотовых вышек (CSV):</p>
-            <input type="file" accept=".csv" onChange={handleFileUpload} />
-          </div>
-          <div style={styles.coverageControl}>
-            <span>ВКЛ. отображение сигнала вышек</span>
-            <button onClick={() => setIsCoverageEnabled(!isCoverageEnabled)} style={styles.toggleButton}>
-              {isCoverageEnabled ? '✔' : '✖'}
-            </button>
-          </div>
-        </DraggableModal>
-
-        {/* Модальное окно для калибровки дрона */}
-        <DraggableModal key="calibration" isOpen={isCalibrationOpen} onClose={closeCalibration}>
-          <h3>Калибровка дрона</h3>
-          <input
-              type="number"
-              placeholder="Широта"
-              value={newDronePosition.lat}
-              onChange={(e) => setNewDronePosition({ ...newDronePosition, lat: e.target.value })}
-          />
-          <input
-              type="number"
-              placeholder="Долгота"
-              value={newDronePosition.lng}
-              onChange={(e) => setNewDronePosition({ ...newDronePosition, lng: e.target.value })}
-          />
-          <input
-              type="number"
-              placeholder="Высота"
-              value={newDronePosition.altitude}
-              onChange={(e) => setNewDronePosition({ ...newDronePosition, altitude: e.target.value })}
-          />
-          <div className="compass-container">
-            <div className="compass">
-              <div className="compass-center"></div>
-              <div className="arrow-south"></div>
-              <div className="arrow"></div>
-              <div
-                  className="compass-rotatable"
-                  style={{ transform: `rotate(${-droneHeading}deg)` }}
-              >
-                <div className="tick tick-0"></div>
-                <div className="tick tick-45"></div>
-                <div className="tick tick-90"></div>
-                <div className="tick tick-135"></div>
-                <div className="tick tick-180"></div>
-                <div className="tick tick-225"></div>
-                <div className="tick tick-270"></div>
-                <div className="tick tick-315"></div>
-                <div className="compass-directions">
-                  <div className="north">С</div>
-                  <div className="east">В</div>
-                  <div className="south">Ю</div>
-                  <div className="west">З</div>
-                </div>
+              <div className="tick tick-0"></div>
+              <div className="tick tick-45"></div>
+              <div className="tick tick-90"></div>
+              <div className="tick tick-135"></div>
+              <div className="tick tick-180"></div>
+              <div className="tick tick-225"></div>
+              <div className="tick tick-270"></div>
+              <div className="tick tick-315"></div>
+              <div className="compass-directions">
+                <div className="north">С</div>
+                <div className="east">В</div>
+                <div className="south">Ю</div>
+                <div className="west">З</div>
               </div>
             </div>
-            <input
-                type="range"
-                min="0"
-                max="360"
-                value={droneHeading}
-                onChange={(e) => handleHeadingChange(parseFloat(e.target.value))}
-                className="slider"
-            />
-            <p>Направление: {droneHeading}°</p>
           </div>
-          <button onClick={handleConfirmDronePosition} style={styles.confirmButton}>Подтвердить местоположение</button>
-        </DraggableModal>
-      </div>
+          <input
+            type="range"
+            min="0"
+            max="360"
+            value={droneHeading}
+            onChange={(e) => handleHeadingChange(parseFloat(e.target.value))}
+            className="slider"
+          />
+          <p>Направление: {droneHeading}°</p>
+        </div>
+        <button onClick={handleConfirmDronePosition} style={styles.confirmButton}>Подтвердить местоположение</button>
+      </DraggableModal>
+
+      {/* Отображение PlantationPlanner, если включён режим расстановки насаждений */}
+      {isTreePlacingActive && (
+        <PlantationPlanner
+          selectedPoint={selectedTreePoint}
+          onTreeHeightChange={handleTreeHeightChange}
+          onCrownSizeChange={handleCrownSizeChange}
+          onSavePoint={handleSaveTreePoint}
+          onCancelPoint={handleCancelTreePoint}
+          onConfirmPlantation={handleConfirmPlantation}
+          treePoints={plantationPoints}
+          onClose={() => setIsTreePlacingActive(false)}
+        />
+      )}
+    </div>
   );
 };
 
