@@ -31,6 +31,7 @@ function MapComponent({
                         onTreeMapClick,
                         routePoints,
                         plantationPoints,
+                        tempTreePoints,
                         isMissionBuilding,
                         isTreePlacingActive,
                         isMoving
@@ -362,6 +363,8 @@ function MapComponent({
       if (isTreePlacingActive) {
         console.log('Режим деревьев активен');
         const { lng, lat } = e.lngLat;
+        onTreeMapClick(lat, lng);
+
         // Вызываем callback для обновления координат в родительском компоненте
         if (typeof onTreeMapClick === 'function') {
           onTreeMapClick(lat, lng);
@@ -404,7 +407,7 @@ function MapComponent({
         mapRef.current.off('click', handleMapClick);
       }
     };
-  }, [isRulerOn, isPlanimeterOn, isTreePlacingActive, isPlacingMarker, onMapClick]);
+  }, [isRulerOn, isPlanimeterOn, isTreePlacingActive, isPlacingMarker, onMapClick, onTreeMapClick]);
 
   // -------------------------------
   // ОБРАБОТЧИК КЛИКА (ЛИНЕЙКА)
@@ -518,6 +521,7 @@ function MapComponent({
       mapRef.current.off('mousemove', handleMouseMoveForRuler);
     };
   }, [isRulerOn]);
+
 
   // -------------------------------
   // ОБРАБОТЧИК КЛИКА (ПЛАНИМЕР)
@@ -696,77 +700,122 @@ function MapComponent({
     return () => observer.disconnect();
   }, []);
 
+
   // -------------------------------
   // useEffect для деревьев
   // -------------------------------
+
   useEffect(() => {
-    if (!mapRef.current) return;
-    const map = mapRef.current;
+  if (!mapRef.current) return;
+  const map = mapRef.current;
 
-    const createOrUpdateTreeLayer = () => {
-      if (!map.isStyleLoaded()) return;
+  const createOrUpdateTreeLayer = () => {
+    if (!map.isStyleLoaded()) return;
 
-      // Если режимы активны, используем зафиксированные маркеры, иначе - актуальные treeMarkers
-      const markersData = (isRulerOn || isPlanimeterOn) ? frozenTreeMarkersRef.current : treeMarkers;
+    // 1) Формируем массив Feature из tempTreePoints и plantationPoints
+    const features = [];
 
-      const source = map.getSource('tree-marker-source');
-      if (source) {
-        source.setData({
-          type: 'FeatureCollection',
-          features: markersData,
-        });
-      } else {
-        map.loadImage(greenCircle, (error, image) => {
-          if (error) {
-            console.error("Ошибка загрузки иконки дерева:", error);
-            return;
-          }
+    // Временные (не подтверждённые) точки
+    tempTreePoints.forEach(pt => {
+      features.push({
+        type: 'Feature',
+        geometry: {
+          type: 'Point',
+          coordinates: [pt.lng, pt.lat],
+        },
+        properties: {
+          status: 'temp', // Можем хранить «статус» (пригодится для фильтра или выражений)
+        },
+      });
+    });
 
-          if (!map.hasImage('tree-icon')) {
-            map.addImage('tree-icon', image);
-          }
+    // Сохранённые точки
+    plantationPoints.forEach(pt => {
+      features.push({
+        type: 'Feature',
+        geometry: {
+          type: 'Point',
+          coordinates: [pt.lng, pt.lat],
+        },
+        properties: {
+          status: 'saved',
+        },
+      });
+    });
 
-          map.addSource('tree-marker-source', {
-            type: 'geojson',
-            data: {
-              type: 'FeatureCollection',
-              features: markersData,
-            },
-          });
-
-          map.addLayer({
-            id: 'tree-marker-layer',
-            type: 'symbol',
-            source: 'tree-marker-source',
-            layout: {
-              'icon-image': 'tree-icon', // Используем кастомную иконку
-              'icon-anchor': 'center', // Центр иконки совпадает с координатами
-              'icon-allow-overlap': true,
-              'icon-ignore-placement': true,
-              'icon-rotation-alignment': 'map',
-              'symbol-placement': 'point',
-              'icon-size': 0.030,
-            },
-            paint: {
-              'icon-opacity': 1,
-              'icon-translate': [0, 0],
-            }
-          });
-        });
-      }
+    const geojsonData = {
+      type: 'FeatureCollection',
+      features: features,
     };
 
-    if (map.isStyleLoaded()) {
-      createOrUpdateTreeLayer();
+    // 2) Проверяем, есть ли уже источник 'tree-marker-source'
+    const source = map.getSource('tree-marker-source');
+    if (source) {
+      // Если есть — просто обновляем данные
+      source.setData(geojsonData);
+    } else {
+      // Если нет — создаём источник и слой
+
+      // Загружаем PNG-иконку (например, greenCircle или любую другую)
+      map.loadImage(greenCircle, (error, image) => {
+        if (error) {
+          console.error('Ошибка загрузки иконки дерева:', error);
+          return;
+        }
+
+        if (!map.hasImage('tree-icon')) {
+          map.addImage('tree-icon', image);
+          // Вы регистрируете иконку под ключом 'tree-icon',
+          // которую ниже используете в "icon-image": 'tree-icon'.
+        }
+
+        // Создаём источник
+        map.addSource('tree-marker-source', {
+          type: 'geojson',
+          data: geojsonData,
+        });
+
+        // Добавляем слой
+        map.addLayer({
+          id: 'tree-marker-layer',
+          type: 'symbol',
+          source: 'tree-marker-source',
+          layout: {
+            'icon-image': 'tree-icon',
+            'icon-anchor': 'center',
+            'icon-allow-overlap': true,
+            'icon-ignore-placement': true,
+            'icon-rotation-alignment': 'map',
+            'symbol-placement': 'point',
+            'icon-size': 0.03,
+          },
+          paint: {
+            'icon-opacity': 1,
+          },
+        });
+      });
     }
-    map.on('style.load', createOrUpdateTreeLayer);
+  };
 
-    return () => {
-      if (map) {
-        map.off('style.load', createOrUpdateTreeLayer);
-      }
-    };
-  }, [treeMarkers, isRulerOn, isPlanimeterOn]);
+  // Если стиль уже загружен, подгружаем слой сразу
+  if (map.isStyleLoaded()) {
+    createOrUpdateTreeLayer();
+  }
+  // На случай, если в будущем пользователь переключит стиль
+  map.on('style.load', createOrUpdateTreeLayer);
+
+  return () => {
+    if (map) {
+      map.off('style.load', createOrUpdateTreeLayer);
+    }
+  };
+}, [
+    tempTreePoints,
+    plantationPoints,
+    isRulerOn,
+    isPlanimeterOn
+]);
+
 
     // Заморозка маркеров деревьев
   useEffect(() => {
@@ -818,6 +867,8 @@ function MapComponent({
     plantationMarkersRef.current = [];
   };
 }, [plantationPoints]);
+
+
 
   // -------------------------------
   // useEffect для ДРОНА и маршрута

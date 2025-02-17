@@ -50,8 +50,10 @@ const App = () => {
   const [isTreePlacingActive, setIsTreePlacingActive] = useState(false);
   const [selectedTreePoint, setSelectedTreePoint] = useState({ lat: '', lng: '', height: '', crownSize: '' });
   const [plantationPoints, setPlantationPoints] = useState([]);
-  const [confirmedPlantationPoints, setConfirmedPlantationPoints] = useState([]);
-  const plantationMarkersRef = useRef([]);
+  // const [confirmedPlantationPoints, setConfirmedPlantationPoints] = useState([]);
+  // const plantationMarkersRef = useRef([]);
+  // Временные (не сохранённые ещё) точки
+  const [tempTreePoints, setTempTreePoints] = useState([]);
 
 
   // Определяем callback для обновления координат точки насаждения
@@ -128,9 +130,14 @@ const App = () => {
     setIsTreePlacingActive(prev => !prev);
   }, []);
 
-  // Обновление выбранной точки (например, при клике по карте можно установить lat и lng)
+
+  // Когда пользователь кликает по карте в режиме посадки деревьев
   const handleTreeMapClick = useCallback((lat, lng) => {
-    setSelectedTreePoint((prev) => ({ ...prev, lat, lng }));
+    // Добавляем во временный массив
+    setTempTreePoints((prev) => [
+      ...prev,
+      { lat, lng, height: '', crownSize: '' },
+    ]);
   }, []);
 
   const handleTreeHeightChange = useCallback((height) => {
@@ -142,74 +149,44 @@ const App = () => {
   }, []);
 
 
-  const handleCancelTreePoint = useCallback(() => {
-  setPlantationPoints(prev => {
-    const newPoints = prev.slice(0, -1);
-    console.log('Новый массив plantationPoints после удаления:', newPoints);
-    return newPoints;
-  });
-}, []);
-
-//   const handleCancelTreePoint = useCallback(() => {
-//   console.log("Отмена последней точки насаждения");
-//   if (plantationPoints.length > 0) {
-//     // Удаляем последнюю точку из состояния
-//     setPlantationPoints(prev => prev.slice(0, -1));
-//     // Если соответствующий маркер существует, удаляем его
-//     if (plantationMarkersRef.current.length > 0) {
-//       const lastMarker = plantationMarkersRef.current.pop();
-//       lastMarker.remove();
-//     }
-//   } else {
-//     // Если список точек пуст, то удаляем оставшиеся маркеры (если они ещё есть)
-//     while (plantationMarkersRef.current.length > 0) {
-//       const marker = plantationMarkersRef.current.pop();
-//       marker.remove();
-//     }
-//   }
-// }, [plantationPoints]);
-
+  // Сохранение текущей точки из temp в «plantationPoints»
   const handleSaveTreePoint = useCallback(() => {
-  const { lat, lng, height, crownSize } = selectedTreePoint;
-  if (lat && lng && height && crownSize) {
-    setPlantationPoints(prev => [...prev, selectedTreePoint]);
-    setSelectedTreePoint({ lat: '', lng: '', height: '', crownSize: '' });
-  } else {
-    alert('Введите корректные данные для точки насаждения.');
-  }
-}, [selectedTreePoint]);
+    // Берём последнюю (или выбранную) «временную» точку
+    // Можно брать selectedPoint, если он отличается от последней
+    // Для примера берём последнюю:
+    if (tempTreePoints.length > 0) {
+      const lastTempPoint = tempTreePoints[tempTreePoints.length - 1];
 
-//   const handleSaveTreePoint = useCallback(() => {
-//   const { lat, lng, height, crownSize } = selectedTreePoint;
-//   if (lat && lng && height && crownSize) {
-//     // Создаём маркер (предполагается, что у вас есть доступ к экземпляру карты)
-//     const markerElement = document.createElement('div');
-//     markerElement.className = 'plantation-marker'; // задайте нужные стили через CSS
-//     const marker = new mapboxgl.Marker({ element: markerElement })
-//       .setLngLat([lng, lat])
-//       .addTo(mapRef.current); // mapRef – ссылка на карту в MapComponent
-//     plantationMarkersRef.current.push(marker);
-//
-//     // Добавляем точку в массив сохранённых
-//     setPlantationPoints(prev => [...prev, selectedTreePoint]);
-//     // Сбрасываем выбранную точку
-//     setSelectedTreePoint({ lat: '', lng: '', height: '', crownSize: '' });
-//   } else {
-//     alert('Введите корректные данные для точки насаждения.');
-//   }
-// }, [selectedTreePoint]);
-
-  // const handleCancelTreePoint = useCallback(() => {
-  //   setSelectedTreePoint({ lat: '', lng: '', height: '', crownSize: '' });
-  // }, []);
+      setPlantationPoints((prev) => [...prev, lastTempPoint]);
+      setTempTreePoints((prev) => prev.slice(0, -1));
+    } else {
+      alert('Нет точки для сохранения');
+    }
+  }, [tempTreePoints]);
 
 
+  // Отмена последней точки
+  const handleCancelTreePoint = useCallback(() => {
+    // Если есть хотя бы одна несохранённая (temp)
+    if (tempTreePoints.length > 0) {
+      // Убираем именно последнюю «несохранённую»
+      setTempTreePoints(prev => prev.slice(0, -1));
+    }
+    // Иначе (если temp пуст), но есть сохранённые
+    else if (plantationPoints.length > 0) {
+      // Удаляем последнюю сохранённую
+      setPlantationPoints(prev => prev.slice(0, -1));
+    }
+  }, [tempTreePoints, plantationPoints]);
 
+
+  // Подтверждаем все насаждения
   const handleConfirmPlantation = useCallback(() => {
-    setConfirmedPlantationPoints(plantationPoints);
+    // При необходимости можно «перенести» все оставшиеся tempTreePoints в plantationPoints
+    // или просто завершить режим, не забудьте отобразить уведомление
+    alert('Насаждения подтверждены и сохранены!');
     setIsTreePlacingActive(false);
-    alert('Насаждения подтверждены и сохранены.');
-  }, [plantationPoints]);
+  }, []);
 
 
   // --- Остальные обработчики (для миссий и настроек) ---
@@ -361,11 +338,15 @@ const App = () => {
         isPlacingMarker={isMissionBuilding}
         isMissionBuilding={isMissionBuilding}
         isTreePlacingActive={isTreePlacingActive}
-        routePoints={routePoints}
         plantationPoints={plantationPoints}
+        tempTreePoints={tempTreePoints}
+        onTreeMapClick={handleTreeMapClick}
+        // isTreePlacingActive={isTreePlacingActive}
+        routePoints={routePoints}
+        // plantationPoints={plantationPoints}
         confirmedRoute={confirmedRoute}
         onMapClick={handleMapClick}
-        onTreeMapClick={handleTreeMapClick}
+        // onTreeMapClick={handleTreeMapClick}
         isMoving={isMoving}
       />
 
@@ -493,13 +474,32 @@ const App = () => {
       {/* Отображение PlantationPlanner, если включён режим расстановки насаждений */}
       {isTreePlacingActive && (
         <PlantationPlanner
-          selectedPoint={selectedTreePoint}
-          onTreeHeightChange={handleTreeHeightChange}
-          onCrownSizeChange={handleCrownSizeChange}
+          selectedPoint={
+            tempTreePoints.length
+              ? tempTreePoints[tempTreePoints.length - 1] // берем последнюю из temp
+              : { lat: '', lng: '', height: '', crownSize: '' }
+          }
+          onTreeHeightChange={(newHeight) => {
+            // Меняем height в последней temp-точке (или иной логикой)
+            setTempTreePoints((prev) => {
+              if (!prev.length) return [];
+              const updated = [...prev];
+              updated[updated.length - 1].height = newHeight;
+              return updated;
+            });
+          }}
+          onCrownSizeChange={(newCrownSize) => {
+            setTempTreePoints((prev) => {
+              if (!prev.length) return [];
+              const updated = [...prev];
+              updated[updated.length - 1].crownSize = newCrownSize;
+              return updated;
+            });
+          }}
           onSavePoint={handleSaveTreePoint}
           onCancelPoint={handleCancelTreePoint}
           onConfirmPlantation={handleConfirmPlantation}
-          treePoints={plantationPoints}
+          treePoints={plantationPoints} // т.к. это «сохранённые» точки
           onClose={() => setIsTreePlacingActive(false)}
         />
       )}
