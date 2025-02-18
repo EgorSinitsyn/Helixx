@@ -728,7 +728,7 @@ function MapComponent({
     });
 
     // Сохранённые точки
-    plantationPoints.forEach(pt => {
+    plantationPoints.forEach((pt, index) => {
       features.push({
         type: 'Feature',
         geometry: {
@@ -736,6 +736,9 @@ function MapComponent({
           coordinates: [pt.lng, pt.lat],
         },
         properties: {
+          number: pt.number || (index + 1),
+          height: pt.height,      // Высота дерева
+          crownSize: pt.crownSize, // Размер кроны
           status: 'saved',
         },
       });
@@ -813,6 +816,64 @@ function MapComponent({
     plantationPoints,
     is3D
 ]);
+
+
+  // Всплывающая аннотация об объекте насаждений при наведении курсором
+  useEffect(() => {
+  if (!mapRef.current) return;
+  const map = mapRef.current;
+
+  const onMouseEnter = (e) => {
+    map.getCanvas().style.cursor = 'pointer';
+    const feature = e.features[0];
+    const coordinates = feature.geometry.coordinates.slice();
+    const { height, crownSize, number } = feature.properties;
+
+    const description = `
+      <div style="font-size:12px;">
+        <strong>Насаждение №${number}</strong><br/>
+        Широта: ${coordinates[1].toFixed(5)}<br/>
+        Долгота: ${coordinates[0].toFixed(5)}<br/>
+        Высота: ${height || 'нет данных'}<br/>
+        Размер кроны: ${crownSize || 'нет данных'}
+      </div>
+    `;
+
+    while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
+      coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
+    }
+
+    const popup = new mapboxgl.Popup({
+      closeButton: false,
+      closeOnClick: false
+    })
+      .setLngLat(coordinates)
+      .setHTML(description)
+      .addTo(map);
+
+    map.getCanvas()._currentTreePopup = popup;
+  };
+
+  const onMouseLeave = () => {
+    map.getCanvas().style.cursor = '';
+    const popup = map.getCanvas()._currentTreePopup;
+    if (popup) {
+      popup.remove();
+      map.getCanvas()._currentTreePopup = null;
+    }
+  };
+
+  map.on('mouseenter', 'tree-marker-layer', onMouseEnter);
+  map.on('mouseleave', 'tree-marker-layer', onMouseLeave);
+
+  return () => {
+    if (map) {
+      map.off('mouseenter', 'tree-marker-layer', onMouseEnter);
+      map.off('mouseleave', 'tree-marker-layer', onMouseLeave);
+    }
+  };
+}, []);
+
 
 
   // -------------------------------
