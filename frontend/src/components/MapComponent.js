@@ -7,9 +7,8 @@ import MapboxDraw from '@mapbox/mapbox-gl-draw';
 
 import towerIcon from '../assets/tower-icon.png';
 import galochkaIcon from '../assets/galochka-planiemer.png';
-import treesImg from '../assets/trees.png';
 import greenCircle from '../assets/green_circle.png';
-import parsingTreesImg from '../assets/parsing-trees.png';
+
 
 import '../components/drone_style.css';
 import '../components/geomarker_style.css';
@@ -122,7 +121,7 @@ function MapComponent({
   };
 
   // -------------------------------
-  // ФУНКЦИЯ: построить (или обновить) маршрут
+  // ФУНКЦИЯ: построить (или обновить) маршрут / маркеры
   // -------------------------------
   const renderRoute = () => {
     if (!mapRef.current || !mapRef.current.isStyleLoaded()) return;
@@ -342,11 +341,11 @@ function MapComponent({
       if (mapRef.current) {
         mapRef.current.off('click', handleMapClickForRuler);
         mapRef.current.off('mousemove', handleMouseMoveForRuler);
-        mapRef.current.remove();
+        mapRef.current?.remove();
         mapRef.current = null;
       }
     };
-  }, [is3D, cellTowers, isCoverageEnabled, isPlacingMarker, onMapClick, isTreePlacingActive]);
+  }, [is3D, cellTowers, isCoverageEnabled]);
 
 
   // -------------------------------
@@ -407,7 +406,7 @@ function MapComponent({
         mapRef.current.off('click', handleMapClick);
       }
     };
-  }, [isRulerOn, isPlanimeterOn, isTreePlacingActive, isPlacingMarker, onMapClick, onTreeMapClick]);
+  }, [isRulerOn, isPlanimeterOn, isPlacingMarker, onMapClick, onTreeMapClick]);
 
   // -------------------------------
   // ОБРАБОТЧИК КЛИКА (ЛИНЕЙКА)
@@ -661,7 +660,7 @@ function MapComponent({
         'fill-outline-color': 'rgba(0, 0, 255, 1)',
       },
     });
-  }, [savedPolygons, is3D, isMissionBuilding, cellTowers, isCoverageEnabled]);
+  }, [savedPolygons, is3D, cellTowers, isCoverageEnabled]);
 
 
   // Добавление кнопки для сохранения полигонов в планимере
@@ -801,6 +800,7 @@ function MapComponent({
   if (map.isStyleLoaded()) {
     createOrUpdateTreeLayer();
   }
+
   // На случай, если в будущем пользователь переключит стиль
   map.on('style.load', createOrUpdateTreeLayer);
 
@@ -812,62 +812,9 @@ function MapComponent({
 }, [
     tempTreePoints,
     plantationPoints,
-    isRulerOn,
-    isPlanimeterOn
+    // isMissionBuilding,
+    // isTreePlacingActive
 ]);
-
-
-    // Заморозка маркеров деревьев
-  useEffect(() => {
-  if (!mapRef.current) return;
-
-  console.log("Обновление маркеров насаждений, plantationPoints:", plantationPoints);
-
-  // Удаляем предыдущие маркеры
-  if (plantationMarkersRef.current.length > 0) {
-    console.log("Удаляем", plantationMarkersRef.current.length, "маркер(ов)");
-    plantationMarkersRef.current.forEach(marker => {
-      marker.remove();
-      // Явно удаляем DOM-элемент маркера, если он остался
-      const markerEl = marker.getElement();
-      if (markerEl && markerEl.parentNode) {
-        markerEl.parentNode.removeChild(markerEl);
-      }
-    });
-    plantationMarkersRef.current = [];
-  }
-
-  // Создаём новые маркеры для актуальных plantationPoints
-  plantationPoints.forEach(point => {
-    const markerEl = document.createElement('div');
-    markerEl.className = 'plantation-marker';
-    markerEl.style.width = '20px';
-    markerEl.style.height = '20px';
-    markerEl.style.backgroundImage = 'url(/path/to/plantation-icon.png)'; // проверьте корректность пути
-    markerEl.style.backgroundSize = 'cover';
-    markerEl.style.borderRadius = '50%';
-
-    const marker = new mapboxgl.Marker({ element: markerEl })
-      .setLngLat([point.lng, point.lat])
-      .addTo(mapRef.current);
-    plantationMarkersRef.current.push(marker);
-  });
-
-  console.log("Новых маркеров создано:", plantationMarkersRef.current.length);
-
-  // Cleanup: удаление маркеров при размонтировании или перед следующим запуском эффекта
-  return () => {
-    plantationMarkersRef.current.forEach(marker => {
-      marker.remove();
-      const markerEl = marker.getElement();
-      if (markerEl && markerEl.parentNode) {
-        markerEl.parentNode.removeChild(markerEl);
-      }
-    });
-    plantationMarkersRef.current = [];
-  };
-}, [plantationPoints]);
-
 
 
   // -------------------------------

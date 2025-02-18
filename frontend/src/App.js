@@ -50,10 +50,7 @@ const App = () => {
   const [isTreePlacingActive, setIsTreePlacingActive] = useState(false);
   const [selectedTreePoint, setSelectedTreePoint] = useState({ lat: '', lng: '', height: '', crownSize: '' });
   const [plantationPoints, setPlantationPoints] = useState([]);
-  // const [confirmedPlantationPoints, setConfirmedPlantationPoints] = useState([]);
-  // const plantationMarkersRef = useRef([]);
-  // Временные (не сохранённые ещё) точки
-  const [tempTreePoints, setTempTreePoints] = useState([]);
+  const [tempTreePoints, setTempTreePoints] = useState([]); // Временные (не сохранённые ещё) точки
 
 
   // Определяем callback для обновления координат точки насаждения
@@ -123,10 +120,15 @@ const App = () => {
     return () => socket.close();
   }, []);
 
+
+
   // --- Обработчики для PlantationPlanner ---
 
   // Переключение режима расстановки насаждений
   const toggleTreePlacing = useCallback(() => {
+    // При активации режима насаждений выключаем режим миссий
+    setIsMissionBuilding(false);
+    setTempTreePoints([]);
     setIsTreePlacingActive(prev => !prev);
   }, []);
 
@@ -149,44 +151,56 @@ const App = () => {
   }, []);
 
 
-  // Сохранение текущей точки из temp в «plantationPoints»
+  // Сохранение текущей точки из tempTreePoints в plantationPoints
+  const confirmPlantation = useCallback(() => {
+  // Очищаем все оставшиеся временные точки (если нужно)
+  setTempTreePoints([]);
+  // alert('Насаждения подтверждены и сохранены!');
+  // setIsTreePlacingActive(false);
+  }, [tempTreePoints]);
+  // Подтверждаем все насаждения по кнопке
+  const handleConfirmPlantation = useCallback(() => {
+  confirmPlantation();
+}, [confirmPlantation]);
+  // Подтверждаем все насаждения при закрытии режима
+  const handleClosePlanner = useCallback(() => {
+  // Вызываем подтверждение насаждений
+    setTempTreePoints([]);
+    confirmPlantation();
+    setIsTreePlacingActive(false);
+    }, [confirmPlantation]);
+
+
   const handleSaveTreePoint = useCallback(() => {
-    // Берём последнюю (или выбранную) «временную» точку
-    // Можно брать selectedPoint, если он отличается от последней
-    // Для примера берём последнюю:
     if (tempTreePoints.length > 0) {
       const lastTempPoint = tempTreePoints[tempTreePoints.length - 1];
 
-      setPlantationPoints((prev) => [...prev, lastTempPoint]);
-      setTempTreePoints((prev) => prev.slice(0, -1));
+      // Проверяем, что поля "height" и "crownSize" не пустые
+      if (!lastTempPoint.height || !lastTempPoint.crownSize) {
+        alert('Введите корректные данные');
+        return;
+      }
+
+      // Переносим последнюю временную точку в "сохранённые"
+      setPlantationPoints(prev => [...prev, lastTempPoint]);
+      // Убираем её из списка временных
+      setTempTreePoints(prev => prev.slice(0, -1));
     } else {
       alert('Нет точки для сохранения');
     }
   }, [tempTreePoints]);
 
-
   // Отмена последней точки
   const handleCancelTreePoint = useCallback(() => {
-    // Если есть хотя бы одна несохранённая (temp)
     if (tempTreePoints.length > 0) {
-      // Убираем именно последнюю «несохранённую»
+      // Если есть несохранённые — удаляем последнюю из temp
       setTempTreePoints(prev => prev.slice(0, -1));
-    }
-    // Иначе (если temp пуст), но есть сохранённые
-    else if (plantationPoints.length > 0) {
-      // Удаляем последнюю сохранённую
+    } else if (plantationPoints.length > 0) {
+      // Иначе убираем последнюю сохранённую
       setPlantationPoints(prev => prev.slice(0, -1));
     }
   }, [tempTreePoints, plantationPoints]);
 
-
-  // Подтверждаем все насаждения
-  const handleConfirmPlantation = useCallback(() => {
-    // При необходимости можно «перенести» все оставшиеся tempTreePoints в plantationPoints
-    // или просто завершить режим, не забудьте отобразить уведомление
-    alert('Насаждения подтверждены и сохранены!');
-    setIsTreePlacingActive(false);
-  }, []);
 
 
   // --- Остальные обработчики (для миссий и настроек) ---
@@ -268,6 +282,8 @@ const App = () => {
   }, []);
 
   const startRouteBuilding = useCallback(() => {
+    // При активации режима миссий выключаем режим насаждений
+    setIsTreePlacingActive(false);
     setIsMissionBuilding(true);
   }, []);
 
@@ -499,8 +515,8 @@ const App = () => {
           onSavePoint={handleSaveTreePoint}
           onCancelPoint={handleCancelTreePoint}
           onConfirmPlantation={handleConfirmPlantation}
-          treePoints={plantationPoints} // т.к. это «сохранённые» точки
-          onClose={() => setIsTreePlacingActive(false)}
+          treePoints={plantationPoints}
+          onClose= {handleClosePlanner}
         />
       )}
     </div>
