@@ -85,7 +85,7 @@ function MapComponent({
   const drawRef = useRef(null);
 
   const togglePlanimeter = () => {
-    if (isMissionBuilding) return; // Если идёт построение миссии – пропускаем. Во избежании конфликтов
+    // if (isMissionBuilding) return; // Если идёт построение миссии – пропускаем. Во избежании конфликтов
 
     setIsPlanimeterOn((prev) => {
       if (prev) {
@@ -475,11 +475,12 @@ function MapComponent({
     mapRef.current.getCanvas().style.cursor = features.length ? 'pointer' : 'crosshair';
   };
 
+
   // -------------------------------
   // ВКЛЮЧИТЬ / ВЫКЛЮЧИТЬ РЕЖИМ ЛИНЕЙКИ
   // -------------------------------
   const toggleRuler = () => {
-    if (isMissionBuilding) return; // Если идёт построение миссии – пропускаем. (во избежании конфликтов)
+    // if (isMissionBuilding) return; // Если идёт построение миссии – пропускаем. (во избежании конфликтов)
 
     setIsRulerOn((prev) => {
     if (prev) {
@@ -503,8 +504,7 @@ function MapComponent({
     }
   };
 
-
-    // Отдельный useEffect для обработчиков линейки:
+  // Отдельный useEffect для обработчиков линейки:
   useEffect(() => {
     if (!mapRef.current) return;
 
@@ -703,7 +703,6 @@ function MapComponent({
   // -------------------------------
   // useEffect для деревьев
   // -------------------------------
-
   useEffect(() => {
   if (!mapRef.current) return;
   const map = mapRef.current;
@@ -812,8 +811,7 @@ function MapComponent({
 }, [
     tempTreePoints,
     plantationPoints,
-    // isMissionBuilding,
-    // isTreePlacingActive
+    is3D
 ]);
 
 
