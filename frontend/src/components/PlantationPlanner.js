@@ -23,7 +23,7 @@ const PlantationPlanner = ({
         <p>Добавить точку насаждения</p>
 
         <div style={styles.inputRow}>
-          <label>Широта:</label>
+          <label style={styles.label}>Широта:</label>
           <input
             type="number"
             value={selectedPoint.lat}
@@ -33,7 +33,7 @@ const PlantationPlanner = ({
         </div>
 
         <div style={styles.inputRow}>
-          <label>Долгота:</label>
+          <label style={styles.label}>Долгота:</label>
           <input
             type="number"
             value={selectedPoint.lng}
@@ -43,7 +43,7 @@ const PlantationPlanner = ({
         </div>
 
         <div style={styles.inputRow}>
-          <label>Высота дерева (м):</label>
+          <label style={styles.label}>Высота дерева:</label>
           <input
             type="number"
             value={selectedPoint.height || ''}
@@ -54,7 +54,7 @@ const PlantationPlanner = ({
         </div>
 
         <div style={styles.inputRow}>
-          <label>Размер кроны (м):</label>
+          <label style={styles.label}>Размер кроны:</label>
           <input
             type="number"
             value={selectedPoint.crownSize || ''}
@@ -107,8 +107,6 @@ const styles = {
     color: 'white',
     padding: '10px',
     zIndex: 1000,
-    overflowX: 'hidden',
-    overflowY: 'auto',
   },
   closeButton: {
     position: 'absolute',
@@ -127,13 +125,20 @@ const styles = {
   pointInputContainer: {
     marginBottom: '20px',
   },
+  // Используем flex-ряд с фиксированной шириной для метки
   inputRow: {
     display: 'flex',
-    flexDirection: 'column',
+    alignItems: 'center',
     marginBottom: '8px',
   },
+  // Фиксированная ширина для меток позволит инпутам сохранять одинаковый размер
+  label: {
+    width: '80px',
+    fontSize: '12px',
+  },
+  // Фиксированная ширина поля ввода (аналог 50% от 200px в MissionPlannerSidebar)
   input: {
-    width: '100%',
+    width: '100px',
     padding: '6px',
     fontSize: '12px',
     textAlign: 'right',
@@ -146,7 +151,7 @@ const styles = {
   saveButton: {
     width: '45%',
     padding: '8px',
-    fontSize: '14px',
+    fontSize: '16px',
     backgroundColor: '#444',
     color: 'white',
     border: 'none',
@@ -155,7 +160,7 @@ const styles = {
   cancelButton: {
     width: '45%',
     padding: '8px',
-    fontSize: '14px',
+    fontSize: '16px',
     backgroundColor: '#555',
     color: 'white',
     border: 'none',
@@ -165,7 +170,7 @@ const styles = {
     width: '100%',
     marginTop: '10px',
     padding: '8px',
-    fontSize: '14px',
+    fontSize: '16px',
     backgroundColor: '#008CBA',
     color: 'white',
     border: 'none',
