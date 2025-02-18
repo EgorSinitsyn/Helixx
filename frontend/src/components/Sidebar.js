@@ -1,11 +1,13 @@
 // src/components/Sidebar.js
 import React from 'react';
+import treesImg from '../assets/trees.png';
 
 const Sidebar = ({
                      onOpenSettings,
                      onOpenCalibration,
                      onOpenHistory,
                      onOpenMission,
+                     onToggleTreePlacing,
                      isOpen,
                      onToggleSidebar,
                      onStartMission
@@ -20,6 +22,18 @@ const Sidebar = ({
                     <h2 style={styles.centeredTitle}>Helixx</h2>
                     <button style={styles.button} onClick={onOpenSettings}>Настройки карты</button>
                     <button style={styles.button} onClick={onOpenCalibration}>Калибровка дрона</button>
+                    <button
+                        style={{
+                            ...styles.button,
+                            height: '40px',
+                            backgroundImage: `url(${treesImg})`,
+                            backgroundRepeat: 'no-repeat',
+                            backgroundPosition: 'center',
+                            backgroundSize: 'contain',
+                        }}
+                        onClick={onToggleTreePlacing}
+                    >
+                    </button>
                     <button style={styles.button} onClick={onOpenMission}>Планировщик миссий</button>
                     <button style={{...styles.button, ...styles.startMissionButton}} onClick={onStartMission}>
                         Старт миссии
