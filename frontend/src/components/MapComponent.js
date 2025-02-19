@@ -52,6 +52,8 @@ function MapComponent({
   const frozenTreeMarkersRef = useRef([]); // Рефы для заморозки маркеров при активации линейки или планомера
   const plantationMarkersRef = useRef([]);
 
+  // состояние для управления камерой в 2d режиме
+  const [userAdjusted, setUserAdjusted] = useState(false);
 
   // -------------------------------
   // Состояния для режима ЛИНЕЙКИ
@@ -198,7 +200,7 @@ function MapComponent({
   };
 
   // -------------------------------
-  // ИНИЦИАЛИЗАЦИЯ КАРТЫ
+  // ИНИЦИАЛИЗАЦИЯ КАРТЫ (Создается 1 раз)
   // -------------------------------
   useEffect(() => {
     if (!mapRef.current) {
@@ -211,7 +213,6 @@ function MapComponent({
         bearing: is3D ? -17.6 : 0,
         antialias: true
       });
-
 
       mapRef.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
 
@@ -250,7 +251,7 @@ function MapComponent({
           filter: ['==', '$type', 'LineString']
         });
 
-        // 2) ИСТОЧНИК/СЛОИ для дрона, вышек...
+        // 2) ИСТОЧНИК/СЛОИ для дрона
         if (is3D) {
           mapRef.current.addSource('mapbox-dem', {
             type: 'raster-dem',
@@ -265,87 +266,201 @@ function MapComponent({
         } else {
           droneMarkerRef.current = addDroneMarker(mapRef.current, dronePosition);
         }
-
-        // Вышки
-        cellTowers.forEach((tower, index) => {
-          const lat = parseFloat(tower.latitude || tower.lat);
-          const lng = parseFloat(tower.longitude || tower.lng);
-          const radius = (parseFloat(tower.radius) * 1000) / 10;
-          if (isNaN(lat) || isNaN(lng) || isNaN(radius)) {
-            console.error(`Недействительные данные вышки (index: ${index}):`, { lat, lng, radius });
-            return;
-          }
-          const markerElement = document.createElement('div');
-          markerElement.className = 'custom-marker';
-          markerElement.style.backgroundImage = `url(${towerIcon})`;
-          markerElement.style.width = '40px';
-          markerElement.style.height = '40px';
-          markerElement.style.backgroundSize = 'contain';
-          markerElement.style.backgroundRepeat = 'no-repeat';
-          markerElement.style.backgroundColor = 'transparent';
-          markerElement.style.position = 'absolute';
-          markerElement.style.filter = 'invert(100%)';
-
-          new mapboxgl.Marker({ element: markerElement })
-              .setLngLat([lng, lat])
-              .addTo(mapRef.current);
-
-          // Если нужно отрисовать зону покрытия
-          if (isCoverageEnabled) {
-            const createCirclePolygon = (center, rad, numPoints = 64) => {
-              const coords = [];
-              for (let i = 0; i < numPoints; i++) {
-                const angle = (i * 360) / numPoints;
-                const radian = (angle * Math.PI) / 180;
-                const dx = rad * Math.cos(radian);
-                const dy = rad * Math.sin(radian);
-                const offsetLng =
-                    lng + (dx / 6378137) * (180 / Math.PI) / Math.cos((lat * Math.PI) / 180);
-                const offsetLat = lat + (dy / 6378137) * (180 / Math.PI);
-                coords.push([offsetLng, offsetLat]);
-              }
-              coords.push(coords[0]);
-              return coords;
-            };
-
-            const polygonCoords = [createCirclePolygon([lng, lat], radius)];
-            const polygonSourceId = `tower-coverage-${index}`;
-            mapRef.current.addSource(polygonSourceId, {
-              type: 'geojson',
-              data: {
-                type: 'Feature',
-                geometry: {
-                  type: 'Polygon',
-                  coordinates: polygonCoords
-                }
-              }
-            });
-            mapRef.current.addLayer({
-              id: `${polygonSourceId}-fill`,
-              type: 'fill',
-              source: polygonSourceId,
-              paint: { 'fill-color': '#808080', 'fill-opacity': 0.2 }
-            });
-            mapRef.current.addLayer({
-              id: `${polygonSourceId}-outline`,
-              type: 'line',
-              source: polygonSourceId,
-              paint: { 'line-color': '#FFFFFF', 'line-width': 2 }
-            });
-          }
-        });
       });
     }
 
     return () => {
       if (mapRef.current) {
-        mapRef.current.off('click', handleMapClickForRuler);
-        mapRef.current.off('mousemove', handleMouseMoveForRuler);
         mapRef.current?.remove();
         mapRef.current = null;
       }
     };
-  }, [is3D, cellTowers, isCoverageEnabled]);
+  }, []);
+
+
+  // UseEffect для режима 3D (is3D)
+  useEffect(() => {
+    if (!mapRef.current) return;
+    const map = mapRef.current;
+
+    if (is3D) {
+      // 1) Если стиль УЖЕ загружен, сразу вызываем setTerrain
+      if (map.isStyleLoaded()) {
+        enable3D(map);
+      }
+      // 2) Если нет, ждём событие style.load
+      else {
+        const onLoad = () => {
+          enable3D(map);
+          map.off('style.load', onLoad);
+        };
+        map.on('style.load', onLoad);
+      }
+    } else {
+      // Для отключения 3D аналогично
+      if (map.isStyleLoaded()) {
+        disable3D(map);
+      } else {
+        const onLoad = () => {
+          disable3D(map);
+          map.off('style.load', onLoad);
+        };
+        map.on('style.load', onLoad);
+      }
+    }
+  }, [is3D]);
+
+  function enable3D(map) {
+    if (!map.getSource('mapbox-dem')) {
+      map.addSource('mapbox-dem', {
+        type: 'raster-dem',
+        url: 'mapbox://mapbox.mapbox-terrain-dem-v1',
+        tileSize: 512,
+        maxzoom: 14
+      });
+    }
+    map.setTerrain({ source: 'mapbox-dem', exaggeration: 1.5 });
+    mapRef.current.setLight({ anchor: 'map', intensity: 0.5 });
+  }
+
+  function disable3D(map) {
+    // Устанавливаем terrain в null
+    map.setTerrain(null);
+
+    // Если переключение только что произошло, сбрасываем pitch и bearing,
+    // иначе оставляем пользовательские значения.
+    // if (!map._userAdjusted) {
+    //   map.setPitch(0);
+    //   map.setBearing(0);
+    // }
+
+    if (map.getSource('mapbox-dem')) {
+      map.removeSource('mapbox-dem');
+    }
+  }
+
+  // Подпишитесь на события карты, которые сигнализируют о начале управления камерой (например, ‘dragstart’ или ‘rotatestart’):
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    const handleUserAdjust = () => {
+      setUserAdjusted(true);
+    };
+
+    // События, сигнализирующие о начале перемещения или поворота
+    map.on('dragstart', handleUserAdjust);
+    map.on('rotatestart', handleUserAdjust);
+
+    // Не забудьте убрать слушатели при размонтировании
+    return () => {
+      map.off('dragstart', handleUserAdjust);
+      map.off('rotatestart', handleUserAdjust);
+    };
+  }, []);
+
+  // При переходе в 2D режим сбрасывайте угол и наклон только один раз, если пользователь ещё не вмешивался:
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!is3D && map && !userAdjusted) {
+      // Сброс только при переходе в 2D и если пользователь ещё не изменял камеру
+      map.setPitch(0);
+      map.setBearing(0);
+    }
+  }, [is3D, userAdjusted]);
+
+
+  // useEffect для расставления вышек и зон покрытия
+  useEffect(() => {
+    if (!mapRef.current) return;
+    const map = mapRef.current;
+
+    // Метод A: если стиль еще не загружен, прекращаем выполнение эффекта
+    if (!map.isStyleLoaded()) return;
+
+    // Удаляем старые слои/источники вышек (если есть)
+    map.getStyle().layers?.forEach((layer) => {
+      if (layer.id.startsWith('tower-coverage-')) {
+        map.removeLayer(layer.id);
+      }
+    });
+    Object.keys(map.getStyle().sources || {}).forEach((srcId) => {
+      if (srcId.startsWith('tower-coverage-')) {
+        map.removeSource(srcId);
+      }
+    });
+
+    // Если массив cellTowers пуст, выходим
+    if (!cellTowers || !cellTowers.length) return;
+
+    // Рисуем вышки
+    cellTowers.forEach((tower, index) => {
+      const lat = parseFloat(tower.latitude || tower.lat);
+      const lng = parseFloat(tower.longitude || tower.lng);
+      if (isNaN(lat) || isNaN(lng)) return;
+
+      // Ставим иконку вышки
+      const markerElement = document.createElement('div');
+      markerElement.className = 'custom-marker';
+      markerElement.style.backgroundImage = `url(${towerIcon})`;
+      markerElement.style.width = '40px';
+      markerElement.style.height = '40px';
+      markerElement.style.backgroundSize = 'contain';
+      markerElement.style.backgroundRepeat = 'no-repeat';
+      markerElement.style.backgroundColor = 'transparent';
+      markerElement.style.position = 'absolute';
+      markerElement.style.filter = 'invert(100%)';
+
+      new mapboxgl.Marker({ element: markerElement })
+          .setLngLat([lng, lat])
+          .addTo(map);
+
+      // Если включено isCoverageEnabled, рисуем зону покрытия
+      if (isCoverageEnabled && tower.radius) {
+        const radius = (parseFloat(tower.radius) * 1000) / 10;
+        const polygonCoords = [createCirclePolygon([lng, lat], radius)];
+        const polygonSourceId = `tower-coverage-${index}`;
+
+        map.addSource(polygonSourceId, {
+          type: 'geojson',
+          data: {
+            type: 'Feature',
+            geometry: {
+              type: 'Polygon',
+              coordinates: polygonCoords
+            }
+          }
+        });
+        map.addLayer({
+          id: `${polygonSourceId}-fill`,
+          type: 'fill',
+          source: polygonSourceId,
+          paint: { 'fill-color': '#808080', 'fill-opacity': 0.2 }
+        });
+        map.addLayer({
+          id: `${polygonSourceId}-outline`,
+          type: 'line',
+          source: polygonSourceId,
+          paint: { 'line-color': '#FFFFFF', 'line-width': 2 }
+        });
+      }
+    });
+
+    function createCirclePolygon([lng, lat], radius, numPoints = 64) {
+      const coords = [];
+      for (let i = 0; i < numPoints; i++) {
+        const angle = (i * 360) / numPoints;
+        const radian = (angle * Math.PI) / 180;
+        const dx = radius * Math.cos(radian);
+        const dy = radius * Math.sin(radian);
+        const offsetLng = lng + (dx / 6378137) * (180 / Math.PI) / Math.cos((lat * Math.PI) / 180);
+        const offsetLat = lat + (dy / 6378137) * (180 / Math.PI);
+        coords.push([offsetLng, offsetLat]);
+      }
+      coords.push(coords[0]);
+      return coords;
+    }
+  }, [cellTowers, isCoverageEnabled]);
 
 
   // -------------------------------
@@ -378,11 +493,7 @@ function MapComponent({
           properties: {}
         };
         setTreeMarkers((prev) => [...prev, newFeature]);
-        // setTreeMarkers((prev) => {
-        //   const updated = [...prev, newFeature];
-        //   console.log('Обновлённый treeMarkers:', updated);
-        //   return updated;
-        // });
+
         return;
       }
 
@@ -407,6 +518,7 @@ function MapComponent({
       }
     };
   }, [isRulerOn, isPlanimeterOn, isPlacingMarker, onMapClick, onTreeMapClick]);
+
 
   // -------------------------------
   // ОБРАБОТЧИК КЛИКА (ЛИНЕЙКА)
@@ -881,6 +993,7 @@ function MapComponent({
   // -------------------------------
   useEffect(() => {
     if (!mapRef.current) return;
+    const map = mapRef.current;
 
     // 3D или 2D
     if (is3D && droneLayerRef.current?.drone) {
@@ -889,7 +1002,46 @@ function MapComponent({
     } else if (droneMarkerRef.current) {
       droneMarkerRef.current.setLngLat([dronePosition.lng, dronePosition.lat]);
     }
-  }, [dronePosition, is3D]);
+
+    if (is3D) {
+      // Если карта уже загружена, включаем 3D
+      if (map.isStyleLoaded()) {
+        enable3D(map);
+      } else {
+        map.on('style.load', () => enable3D(map));
+      }
+      // Удаляем 2D-маркер, если он есть
+      if (droneMarkerRef.current) {
+        droneMarkerRef.current.remove();
+        droneMarkerRef.current = null;
+      }
+      // Добавляем 3D-модель, если её еще нет
+      if (!droneLayerRef.current) {
+        droneLayerRef.current = addDroneModel(map, dronePosition);
+      }
+    } else {
+      // Если режим 2D, выключаем 3D
+      if (map.isStyleLoaded()) {
+        disable3D(map);
+      } else {
+        map.on('style.load', () => disable3D(map));
+      }
+      // Удаляем 3D-модель, если она существует
+      if (droneLayerRef.current) {
+        if (map.getLayer(droneLayerRef.current.id)) {
+          map.removeLayer(droneLayerRef.current.id);
+        }
+        if (map.getSource('drone-model-layer')) {
+          map.removeSource('drone-model-layer');
+        }
+        droneLayerRef.current = null;
+      }
+      // Добавляем 2D-маркер, если его нет
+      if (!droneMarkerRef.current) {
+        droneMarkerRef.current = addDroneMarker(map, dronePosition);
+      }
+    }
+  }, [is3D, dronePosition]);
 
   // Ориентация дрона
   useEffect(() => {
@@ -1031,6 +1183,7 @@ function MapComponent({
     }, 100);
     return () => clearInterval(interval);
   }, [confirmedRoute, is3D, isMissionBuilding]);
+
 
   // -------------------------------
   // RENDER

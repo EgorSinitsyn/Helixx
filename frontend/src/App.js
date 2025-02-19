@@ -10,7 +10,6 @@ import DraggableModal from './components/DraggableModal.js';
 import DroneInfoPanel from './components/DroneInfoPanel.js';
 import MissionPlannerSidebar from './components/MissionPlannerSidebar.js';
 import PlantationPlanner from './components/PlantationPlanner';
-import mapboxgl from 'mapbox-gl';
 import { loadRoute, moveDroneToRoutePoints } from './components/DroneRouteManager.js';
 
 const CALIBRATION_LATITUDE = 55.139592;
@@ -204,6 +203,7 @@ const App = () => {
 
 
   // --- Остальные обработчики (для миссий и настроек) ---
+
   const openSettings = useCallback(() => {
     setIsSettingsOpen(true);
     setNewDronePosition({
