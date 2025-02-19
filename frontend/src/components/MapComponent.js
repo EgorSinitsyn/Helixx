@@ -872,7 +872,7 @@ function MapComponent({
       map.off('mouseleave', 'tree-marker-layer', onMouseLeave);
     }
   };
-}, []);
+}, [is3D, cellTowers, isCoverageEnabled, savedPolygons]);
 
 
 
