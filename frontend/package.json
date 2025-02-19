@@ -16,6 +16,7 @@
     "@testing-library/user-event": "^14.6.1",
     "@turf/turf": "^7.2.0",
     "cors": "^2.8.5",
+    "lodash": "^4.17.21",
     "luma.gl": "^7.3.2",
     "mapbox-gl": "^3.9.4",
     "math.gl": "^4.1.0",
