@@ -357,12 +357,9 @@ const App = () => {
         plantationPoints={plantationPoints}
         tempTreePoints={tempTreePoints}
         onTreeMapClick={handleTreeMapClick}
-        // isTreePlacingActive={isTreePlacingActive}
         routePoints={routePoints}
-        // plantationPoints={plantationPoints}
         confirmedRoute={confirmedRoute}
         onMapClick={handleMapClick}
-        // onTreeMapClick={handleTreeMapClick}
         isMoving={isMoving}
       />
 
