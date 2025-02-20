@@ -43,29 +43,16 @@ function createTrunkLayer(treeData) {
             bottomRadius: 1.0,
             height: 1,
             nradial: 6
-            // по желанию можно добавить параметр nradial (кол-во граней)
-            // например, nradial: 6 — тогда основание будет гексагональное
         }),
         coordinateSystem: COORDINATE_SYSTEM.LNGLAT,
 
-        // Позиция (lng, lat, altitude)
+        // Позиция: базовая точка смещена так, чтобы основание ствола было на уровне земли.
         getPosition: d => [d.lng, d.lat, d.trunkHeight / 2],
 
-        // Ориентация. Если хотим, чтобы конус «рос» по оси Y (как в luma.gl),
-        // но в Deck.gl ось Z — вертикаль, обычно делают поворот на ±90° вокруг X.
-        // Если при [0,0,0] у вас получается вертикальный ствол — оставляйте так.
-        // Если лежит на боку, укажите [90,0,0] или [-90,0,0].
+        // Ориентация: корректировка для соответствия вертикали Deck.gl.
         getOrientation: [0, 0, 90],
 
-        // Масштаб: [радиус_по_X, радиус_по_Y, высота_по_Z]
-        // С учётом того, что TruncatedConeGeometry «вытягивается» по Y:
-        //   - высота: идёт в компоненты, связанные с Y (или Z, если повернули)
-        //   - радиусы: по X и Z.
-        // Ниже пример, если NO поворота (orientation: [0,0,0]):
-        //   → высота идёт по Y, значит => (X=trunkDiameter, Y=trunkHeight, Z=trunkDiameter).
-        // Если поворот [90,0,0], тогда Y->Z, значит (X=..., Y=..., Z=trunkHeight).
-        // getScale: d => [d.trunkDiameter, d.trunkHeight, d.trunkDiameter],
-
+        // Масштаб: [радиус по X, высота по Y, радиус по Z].
         getScale: d => {
             const radius = d.trunkDiameter / 2;
             return [radius, d.trunkHeight, radius];
@@ -87,29 +74,18 @@ function createCrownLayer(treeData) {
         coordinateSystem: COORDINATE_SYSTEM.LNGLAT,
         texture: crownTexture,
 
-        // Ставим центр сферы над вершиной ствола:
-        // ствол высотой trunkHeight, у кроны радиус crownRadius
-        // getPosition: d => [d.lng, d.lat, d.trunkHeight + (d.crownRadius * 0.25)],
-
-        // Центр сферы на (вершина ствола) + (радиус сферы),
-        // т. е. d.trunkHeight + d.crownDiameter/2
-        getPosition: d => {
-            // const crownRadius = d.crownDiameter / 2;
-            return [d.lng, d.lat, d.trunkHeight];
-        },
+        // Центр сферы располагается на вершине ствола.
+        getPosition: d => [d.lng, d.lat, d.trunkHeight],
 
         getOrientation: [0, 0, 90],
 
-        // Масштаб (три одинаковых значения, т.к. сфера).
-        // Если crownDiameter=6 => радиус=3 => scale = [6,6,6].
+        // Масштаб: задаём диаметр кроны по всем осям.
         getScale: d => [d.crownDiameter, d.crownDiameter, d.crownDiameter],
 
         getColor: [175, 216, 142],
         opacity: 1
     });
 }
-
-
 
 /**
  * Создаём Overlay из двух слоёв (ствол + крона).
@@ -124,19 +100,15 @@ function createTreeOverlay(treeData) {
 }
 
 /**
- * Инициализирует и добавляет 3D overlay деревьев на карту.
+ * Инициализирует и добавляет 3D‑overlay деревьев на карту.
  */
 export function initTree3DLayers(map, plantationPoints) {
     if (!map || !plantationPoints || !plantationPoints.length) return;
 
-    // Подготавливаем данные
     const treeData = prepareTreeData(plantationPoints);
     console.log('[Tree3D] Data:', treeData);
 
-    // Создаём overlay
     const overlay = createTreeOverlay(treeData);
-
-    // Добавляем overlay на карту
     map.addControl(overlay);
     return overlay;
 }
@@ -164,4 +136,53 @@ export function removeTree3DLayers(map, overlay) {
         overlay.finalize();
     }
     map.removeControl(overlay);
+}
+
+/**
+ * Устанавливает динамическое отображение 3D‑слоя в зависимости от зума.
+ * При зуме ниже threshold (например, 12) 3D‑слой удаляется, а при зуме выше —
+ * создаётся, если его ещё нет.
+ *
+ * Возвращает функцию для очистки (удаления слушателя).
+ */
+export function setupTree3DZoomVisibility(map, plantationPoints, zoomThreshold = 12) {
+    // Переменная для хранения текущего 3D‑оверлея
+    let tree3DOverlay = null;
+
+    const updateOverlayVisibility = () => {
+        const currentZoom = map.getZoom();
+        console.log('Текущий зум в setupTree3DZoomVisibility:', currentZoom);
+        if (currentZoom < zoomThreshold) {
+            // Если зум ниже порога — удаляем overlay, если он существует
+            if (tree3DOverlay) {
+                removeTree3DLayers(map, tree3DOverlay);
+                tree3DOverlay = null;
+                console.log('3D overlay удалён');
+            }
+        } else {
+            // Если зум выше порога — создаём overlay, если его ещё нет, или обновляем его
+            if (!tree3DOverlay) {
+                tree3DOverlay = initTree3DLayers(map, plantationPoints);
+                console.log('3D overlay создан');
+            } else {
+                tree3DOverlay = updateTree3DLayers(map, plantationPoints, tree3DOverlay);
+                console.log('3D overlay обновлён');
+            }
+        }
+    };
+
+    // Вызываем функцию сразу для установки начального состояния
+    updateOverlayVisibility();
+
+    // Регистрируем обработчик зума
+    map.on('zoomend', updateOverlayVisibility);
+
+    // Возвращаем функцию очистки, которая удаляет обработчик и, при необходимости, overlay
+    return () => {
+        map.off('zoomend', updateOverlayVisibility);
+        if (tree3DOverlay) {
+            removeTree3DLayers(map, tree3DOverlay);
+            tree3DOverlay = null;
+        }
+    };
 }
