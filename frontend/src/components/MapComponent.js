@@ -9,7 +9,7 @@ import towerIcon from '../assets/tower-icon.png';
 import galochkaIcon from '../assets/galochka-planiemer.png';
 import greenCircle from '../assets/green_circle.png';
 
-
+import { initTree3DLayers, updateTree3DLayers, removeTree3DLayers } from '../components/trees3D.js';
 import '../components/drone_style.css';
 import '../components/geomarker_style.css';
 import '../components/custom_gl_draw.css';
@@ -319,7 +319,7 @@ function MapComponent({
         maxzoom: 14
       });
     }
-    map.setTerrain({ source: 'mapbox-dem', exaggeration: 1.5 });
+    // map.setTerrain({ source: 'mapbox-dem', exaggeration: 1.5 });
     mapRef.current.setLight({ anchor: 'map', intensity: 0.5 });
   }
 
@@ -819,7 +819,7 @@ function MapComponent({
   if (!mapRef.current) return;
   const map = mapRef.current;
 
-  const createOrUpdateTreeLayer = () => {
+  const createOrUpdate2DTreeLayer = () => {
     if (!map.isStyleLoaded()) return;
 
     // 1) Формируем массив Feature из tempTreePoints и plantationPoints
@@ -910,17 +910,42 @@ function MapComponent({
     }
   };
 
-  // Если стиль уже загружен, подгружаем слой сразу
-  if (map.isStyleLoaded()) {
-    createOrUpdateTreeLayer();
-  }
+    // Если режим 3D активен – работаем с 3D моделями
+    if (is3D) {
+      // Удаляем 2D‑слой, если он существует
+      if (map.getLayer('tree-marker-layer')) {
+        map.removeLayer('tree-marker-layer');
+      }
+      if (map.getSource('tree-marker-source')) {
+        map.removeSource('tree-marker-source');
+      }
+      // Если 3D‑слои уже добавлены, обновляем их; иначе инициализируем
+      if (map.getLayer('tree-trunk-layer') && map.getLayer('tree-crown-layer')) {
+        updateTree3DLayers(map, plantationPoints);
+      } else {
+        initTree3DLayers(map, plantationPoints);
+      }
+    } else {
+      // Если 3D режим выключен – удаляем 3D‑слои (если есть) и создаем 2D‑слой
+      removeTree3DLayers(map);
+      if (map.isStyleLoaded()) {
+        createOrUpdate2DTreeLayer();
+      }
+      map.on('style.load', createOrUpdate2DTreeLayer);
+    }
 
-  // На случай, если в будущем пользователь переключит стиль
-  map.on('style.load', createOrUpdateTreeLayer);
+
+  // // Если стиль уже загружен, подгружаем слой сразу
+  // if (map.isStyleLoaded()) {
+  //   createOrUpdateTreeLayer();
+  // }
+  //
+  // // На случай, если в будущем пользователь переключит стиль
+  // map.on('style.load', createOrUpdateTreeLayer);
 
   return () => {
     if (map) {
-      map.off('style.load', createOrUpdateTreeLayer);
+      map.off('style.load', createOrUpdate2DTreeLayer);
     }
   };
 }, [
@@ -1309,26 +1334,15 @@ function addDroneModel(map, dronePosition, isMoving) {
 
       const loader = new GLTFLoader();
       loader.load(
-          '/drone-model.glb',
+          'drone-model.glb', // Убедись, что путь к модели корректен
           (gltf) => {
             this.drone = gltf.scene;
-            // Начальные повороты
-            this.drone.rotation.set(0, 0, 0);
-            this.drone.rotation.x = Math.PI / 2;
-
+            this.drone.rotation.set(Math.PI / 2, 0, 0); // Корректируем ориентацию
             this.scene.add(this.drone);
             this.initialized = true;
 
             this.drone.traverse((child) => {
-              if (child.isMesh && child.material) {
-                // Настройка материала
-                if (child.material.map) {
-                  child.material.map.anisotropy = 100;
-                  child.material.map.magFilter = THREE.NearestFilter;
-                  child.material.map.minFilter = THREE.NearestMipMapNearestFilter;
-                  child.material.map.generateMipmaps = true;
-                  child.material.map.needsUpdate = true;
-                }
+              if (child.isMesh) {
                 child.material.color.setHex(0xffffff);
                 child.material.emissive = new THREE.Color(0xffffff);
                 child.material.emissiveIntensity = 1;
@@ -1336,13 +1350,8 @@ function addDroneModel(map, dronePosition, isMoving) {
                 child.material.side = THREE.DoubleSide;
                 child.material.opacity = 1.0;
                 child.material.needsUpdate = true;
-                if (child.material.map) {
-                  child.material.map = null;
-                }
               }
             });
-            this.scene.add(this.drone);
-            this.initialized = false;
           },
           undefined,
           (error) => console.error('Ошибка при загрузке модели дрона:', error)
@@ -1360,8 +1369,9 @@ function addDroneModel(map, dronePosition, isMoving) {
         const { lat, lng, altitude } = this.dronePosition;
         const modelAsMercatorCoordinate = updateDronePositionInMercator(map, this.dronePosition);
 
-        // Масштаб
-        const scaleFactor = 0.5;
+        if (!modelAsMercatorCoordinate) return;
+
+        const scaleFactor = 1;
         const scale = modelAsMercatorCoordinate.meterInMercatorCoordinateUnits() * scaleFactor;
         this.drone.position.set(
             modelAsMercatorCoordinate.x,
@@ -1370,13 +1380,11 @@ function addDroneModel(map, dronePosition, isMoving) {
         );
         this.drone.scale.set(scale, scale, scale);
 
-        // Поворот при движении
         if (isMoving) {
-          const targetHeading = this.dronePosition.heading;
+          const targetHeading = this.dronePosition.heading || 0;
           this.drone.rotation.y = -Math.PI / 180 * targetHeading;
         }
 
-        // Камера и рендер
         this.camera.projectionMatrix = new THREE.Matrix4().fromArray(matrix);
         this.renderer.state.reset();
         this.renderer.clearDepth();
