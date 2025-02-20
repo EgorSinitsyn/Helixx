@@ -49,8 +49,7 @@ function MapComponent({
   // REFS для маркеров деревьев
   // -------------------------------
   const [treeMarkers, setTreeMarkers] = useState([]);   // Состояние для хранения дерева-маркеров
-  const frozenTreeMarkersRef = useRef([]); // Рефы для заморозки маркеров при активации линейки или планомера
-  const plantationMarkersRef = useRef([]);
+  const [treeOverlay, setTreeOverlay] = useState(null);  // Храним ссылку на текущий 3D overlay для деревьев для удаления при 2d
 
   // состояние для управления камерой в 2d режиме
   const [userAdjusted, setUserAdjusted] = useState(false);
@@ -337,6 +336,7 @@ function MapComponent({
     if (map.getSource('mapbox-dem')) {
       map.removeSource('mapbox-dem');
     }
+
   }
 
   // Подпишитесь на события карты, которые сигнализируют о начале управления камерой (например, ‘dragstart’ или ‘rotatestart’):
@@ -815,144 +815,115 @@ function MapComponent({
   // -------------------------------
   // useEffect для деревьев
   // -------------------------------
+
+  // Функция для добавления symbols деревьев
   useEffect(() => {
-  if (!mapRef.current) return;
-  const map = mapRef.current;
+    const map = mapRef.current;
+    if (!map) return;
 
-  const createOrUpdate2DTreeLayer = () => {
-    if (!map.isStyleLoaded()) return;
+    const createOrUpdate2DTreeLayer = () => {
+      if (!map.isStyleLoaded()) return;
 
-    // 1) Формируем массив Feature из tempTreePoints и plantationPoints
-    const features = [];
-
-    // Временные (не подтверждённые) точки
-    tempTreePoints.forEach(pt => {
-      features.push({
-        type: 'Feature',
-        geometry: {
-          type: 'Point',
-          coordinates: [pt.lng, pt.lat],
-        },
-        properties: {
-          status: 'temp', // Можем хранить «статус» (пригодится для фильтра или выражений)
-        },
+      // Собираем features из tempTreePoints + plantationPoints
+      const features = [];
+      tempTreePoints.forEach((pt) => {
+        features.push({
+          type: 'Feature',
+          geometry: { type: 'Point', coordinates: [pt.lng, pt.lat] },
+          properties: { status: 'temp' }
+        });
       });
-    });
-
-    // Сохранённые точки
-    plantationPoints.forEach((pt, index) => {
-      features.push({
-        type: 'Feature',
-        geometry: {
-          type: 'Point',
-          coordinates: [pt.lng, pt.lat],
-        },
-        properties: {
-          number: pt.number || (index + 1),
-          height: pt.height,      // Высота дерева
-          crownSize: pt.crownSize, // Размер кроны
-          status: 'saved',
-        },
+      plantationPoints.forEach((pt, idx) => {
+        features.push({
+          type: 'Feature',
+          geometry: { type: 'Point', coordinates: [pt.lng, pt.lat] },
+          properties: {
+            status: 'saved',
+            number: pt.number ?? (idx + 1),
+            height: pt.height,
+            crownSize: pt.crownSize
+          }
+        });
       });
-    });
 
-    const geojsonData = {
-      type: 'FeatureCollection',
-      features: features,
+      const geojsonData = {
+        type: 'FeatureCollection',
+        features
+      };
+
+      // Проверяем, есть ли уже источник
+      const source = map.getSource('tree-marker-source');
+      if (source) {
+        source.setData(geojsonData);
+      } else {
+        map.loadImage(greenCircle, (error, image) => {
+          if (error) {
+            console.error('Ошибка загрузки иконки дерева:', error);
+            return;
+          }
+          if (!map.hasImage('tree-icon')) {
+            map.addImage('tree-icon', image);
+          }
+          map.addSource('tree-marker-source', {
+            type: 'geojson',
+            data: geojsonData
+          });
+          map.addLayer({
+            id: 'tree-marker-layer',
+            type: 'symbol',
+            source: 'tree-marker-source',
+            layout: {
+              'icon-image': 'tree-icon',
+              'icon-anchor': 'center',
+              'icon-allow-overlap': true,
+              'icon-ignore-placement': true,
+              'icon-rotation-alignment': 'map',
+              'symbol-placement': 'point',
+              'icon-size': 0.03
+            }
+          });
+        });
+      }
     };
 
-    // 2) Проверяем, есть ли уже источник 'tree-marker-source'
-    const source = map.getSource('tree-marker-source');
-    if (source) {
-      // Если есть — просто обновляем данные
-      source.setData(geojsonData);
-    } else {
-      // Если нет — создаём источник и слой
-
-      // Загружаем PNG-иконку (например, greenCircle или любую другую)
-      map.loadImage(greenCircle, (error, image) => {
-        if (error) {
-          console.error('Ошибка загрузки иконки дерева:', error);
-          return;
-        }
-
-        if (!map.hasImage('tree-icon')) {
-          map.addImage('tree-icon', image);
-          // Вы регистрируете иконку под ключом 'tree-icon',
-          // которую ниже используете в "icon-image": 'tree-icon'.
-        }
-
-        // Создаём источник
-        map.addSource('tree-marker-source', {
-          type: 'geojson',
-          data: geojsonData,
-        });
-
-        // Добавляем слой
-        map.addLayer({
-          id: 'tree-marker-layer',
-          type: 'symbol',
-          source: 'tree-marker-source',
-          layout: {
-            'icon-image': 'tree-icon',
-            'icon-anchor': 'center',
-            'icon-allow-overlap': true,
-            'icon-ignore-placement': true,
-            'icon-rotation-alignment': 'map',
-            'symbol-placement': 'point',
-            'icon-size': 0.03,
-          },
-          paint: {
-            'icon-opacity': 1,
-          },
-        });
-      });
-    }
-  };
-
-    // Если режим 3D активен – работаем с 3D моделями
-    if (is3D) {
-      // Удаляем 2D‑слой, если он существует
-      if (map.getLayer('tree-marker-layer')) {
-        map.removeLayer('tree-marker-layer');
-      }
-      if (map.getSource('tree-marker-source')) {
-        map.removeSource('tree-marker-source');
-      }
-      // Если 3D‑слои уже добавлены, обновляем их; иначе инициализируем
-      if (map.getLayer('tree-trunk-layer') && map.getLayer('tree-crown-layer')) {
-        updateTree3DLayers(map, plantationPoints);
-      } else {
-        initTree3DLayers(map, plantationPoints);
-      }
-    } else {
-      // Если 3D режим выключен – удаляем 3D‑слои (если есть) и создаем 2D‑слой
-      removeTree3DLayers(map);
-      if (map.isStyleLoaded()) {
-        createOrUpdate2DTreeLayer();
-      }
-      map.on('style.load', createOrUpdate2DTreeLayer);
+    // Вызвать сразу
+    if (map.isStyleLoaded()) {
+      createOrUpdate2DTreeLayer();
     }
 
+    // На случай, если стиль будет перезагружаться
+    map.on('style.load', createOrUpdate2DTreeLayer);
 
-  // // Если стиль уже загружен, подгружаем слой сразу
-  // if (map.isStyleLoaded()) {
-  //   createOrUpdateTreeLayer();
-  // }
-  //
-  // // На случай, если в будущем пользователь переключит стиль
-  // map.on('style.load', createOrUpdateTreeLayer);
-
-  return () => {
-    if (map) {
+    return () => {
       map.off('style.load', createOrUpdate2DTreeLayer);
+    };
+  }, [tempTreePoints, plantationPoints]);
+
+
+  // Функция для добавления и удаления 3D моделей деревьев
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    // Если переходим в 3D
+    if (is3D) {
+      if (treeOverlay) {
+        // Уже есть Overlay — обновим
+        const updated = updateTree3DLayers(map, plantationPoints, treeOverlay);
+        setTreeOverlay(updated);
+      } else {
+        // Нет Overlay — создаём
+        const newOverlay = initTree3DLayers(map, plantationPoints);
+        setTreeOverlay(newOverlay);
+      }
+    } else {
+      // Переходим в 2D — удаляем Overlay, если он есть
+      if (treeOverlay) {
+        removeTree3DLayers(map, treeOverlay);
+        setTreeOverlay(null);
+      }
     }
-  };
-}, [
-    tempTreePoints,
-    plantationPoints,
-    is3D
-]);
+  }, [is3D, plantationPoints]); // следим за переключением is3D и обновлением plantationPoints
 
 
   // Всплывающая аннотация об объекте насаждений при наведении курсором
