@@ -1,5 +1,5 @@
 .custom-map-controls {
-    position: absolute !important;
+    position: fixed !important;
     bottom: -819px !important;
     left: -2465px !important;
     border-radius: 0;
