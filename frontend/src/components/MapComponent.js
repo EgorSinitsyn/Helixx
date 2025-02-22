@@ -1024,6 +1024,9 @@ function MapComponent({
       .setHTML(description)
       .addTo(map);
 
+    // Задаём высокий z-index для попапа, чтобы он был поверх 3D‑моделей
+    popup.getElement().style.zIndex = '9999';
+
     map.getCanvas()._currentTreePopup = popup;
   };
 
