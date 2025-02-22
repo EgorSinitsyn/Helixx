@@ -11,21 +11,29 @@ import crownTexture from '../assets/leaves.png';
  * Подготавливает данные для каждого дерева
  * (только вычисления, без ручной проекции Mercator).
  */
-function prepareTreeData(plantationPoints) {
+function prepareTreeData(plantationPoints, map) {
     return plantationPoints.map(pt => {
-        // Пусть height — общая высота дерева, а crownSize — диаметр кроны
-        const trunkHeight = pt.height * 0.75; // 75% высоты — ствол
-        const trunkDiameter = pt.height * 0.1; // 10% от высоты — диаметр ствола
-        const crownDiameter = pt.crownSize;    // crownSize воспринимаем как диаметр кроны
-        const crownRadius = crownDiameter / 2; // радиус кроны (для позиционирования сферы)
+        const trunkHeight = pt.height * 0.75;
+        const trunkDiameter = pt.height * 0.1;
+        const crownDiameter = pt.crownSize;
+        const crownRadius = crownDiameter / 2;
+
+
+        let elevation = 0;
+        if (map && typeof map.queryTerrainElevation === 'function') {
+            elevation = map.queryTerrainElevation([pt.lng, pt.lat]) || 0;
+        } else {
+            console.warn('[Tree3D] queryTerrainElevation недоступен!');
+        }
 
         return {
-            lng: pt.lng,   // долгота
-            lat: pt.lat,   // широта
+            lng: pt.lng,
+            lat: pt.lat,
             trunkHeight,
             trunkDiameter,
             crownDiameter,
-            crownRadius
+            crownRadius,
+            elevation
         };
     });
 }
@@ -33,7 +41,7 @@ function prepareTreeData(plantationPoints) {
 /**
  * Создаём слой ствола (усечённый конус).
  */
-function createTrunkLayer(treeData) {
+function createTrunkLayer(treeData, map) {
     return new SimpleMeshLayer({
         id: 'tree-trunk-layer',
         data: treeData,
@@ -47,7 +55,7 @@ function createTrunkLayer(treeData) {
         coordinateSystem: COORDINATE_SYSTEM.LNGLAT,
 
         // Позиция: базовая точка смещена так, чтобы основание ствола было на уровне земли.
-        getPosition: d => [d.lng, d.lat, d.trunkHeight / 2],
+        getPosition: d => [d.lng, d.lat, d.elevation + d.trunkHeight / 2],
 
         // Ориентация: корректировка для соответствия вертикали Deck.gl.
         getOrientation: [0, 0, 90],
@@ -59,14 +67,18 @@ function createTrunkLayer(treeData) {
         },
 
         getColor: [67, 39, 21],
-        opacity: 1
+        opacity: 1,
+        parameters: {
+            depthTest: true, // Включаем тест глубины
+            depthFunc:  0x0201 // || GL.LESS  // Убедимся, что объекты рендерятся поверх terrain
+        }
     });
 }
 
 /**
  * Создаём слой кроны (сфера).
  */
-function createCrownLayer(treeData) {
+function createCrownLayer(treeData, map) {
     return new SimpleMeshLayer({
         id: 'tree-crown-layer',
         data: treeData,
@@ -74,8 +86,8 @@ function createCrownLayer(treeData) {
         coordinateSystem: COORDINATE_SYSTEM.LNGLAT,
         texture: crownTexture,
 
-        // Центр сферы располагается на вершине ствола.
-        getPosition: d => [d.lng, d.lat, d.trunkHeight],
+        //  Центр сферы на вершине ствола, с учётом высоты рельефа
+        getPosition: d => [d.lng, d.lat, d.elevation + d.trunkHeight],
 
         getOrientation: [0, 0, 90],
 
@@ -90,7 +102,7 @@ function createCrownLayer(treeData) {
 /**
  * Создаём Overlay из двух слоёв (ствол + крона).
  */
-function createTreeOverlay(treeData) {
+function createTreeOverlay(treeData, map) {
     const trunkLayer = createTrunkLayer(treeData);
     const crownLayer = createCrownLayer(treeData);
 
@@ -103,10 +115,24 @@ function createTreeOverlay(treeData) {
  * Инициализирует и добавляет 3D‑overlay деревьев на карту.
  */
 export function initTree3DLayers(map, plantationPoints) {
-    if (!map || !plantationPoints || !plantationPoints.length) return;
+    // if (!map || !plantationPoints || !plantationPoints.length) return;
 
-    const treeData = prepareTreeData(plantationPoints);
-    console.log('[Tree3D] Data:', treeData);
+    if (!map) {
+        console.warn('[Tree3D] Ожидание инициализации карты...');
+        setTimeout(() => initTree3DLayers(map, plantationPoints), 1000); // Пробуем снова через 1 сек
+        return;
+    }
+
+    if (!map.getTerrain()) {
+        console.warn('[Tree3D] Ожидание загрузки terrain...');
+        setTimeout(() => initTree3DLayers(map, plantationPoints), 1000);
+        return;
+    }
+
+    if (!plantationPoints || !plantationPoints.length) return;
+
+    const treeData = prepareTreeData(plantationPoints, map);
+    console.log('[Tree3D] Data with elevation:', treeData);
 
     const overlay = createTreeOverlay(treeData);
     map.addControl(overlay);
