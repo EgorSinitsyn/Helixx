@@ -1,3 +1,5 @@
+// MapComponent.js
+
 import React, { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import * as THREE from 'three';
@@ -14,6 +16,7 @@ import '../components/drone_style.css';
 import '../components/geomarker_style.css';
 import '../components/custom_gl_draw.css';
 import '@mapbox/mapbox-gl-draw/dist/mapbox-gl-draw.css';
+
 
 mapboxgl.accessToken = process.env.REACT_APP_MAPBOX_TOKEN;
 
@@ -39,6 +42,7 @@ function MapComponent({
   // REFS для карты, слоёв, линейки
   // -------------------------------
   const mapContainerRef = useRef(null);
+  const [isTerrainReady, setIsTerrainReady] = useState(false); // состояние для включения рельефа
   const mapRef = useRef(null);
   const droneLayerRef = useRef(null);
   const droneMarkerRef = useRef(null);
@@ -266,6 +270,17 @@ function MapComponent({
           droneMarkerRef.current = addDroneMarker(mapRef.current, dronePosition);
         }
       });
+
+      // Добавим обработчик ошибок загрузки стиля
+      mapRef.current.on('error', (e) => {
+        console.error('[MapComponent] Ошибка загрузки карты или стиля:', e);
+      });
+
+      // Логируем прогресс загрузки
+      mapRef.current.on('styledata', () => {
+        // console.log('[MapComponent] Данные стиля начинают загружаться');
+      });
+
     }
 
     return () => {
@@ -309,6 +324,7 @@ function MapComponent({
     }
   }, [is3D]);
 
+  // Включение 3D
   function enable3D(map) {
     if (!map.getSource('mapbox-dem')) {
       map.addSource('mapbox-dem', {
@@ -317,26 +333,62 @@ function MapComponent({
         tileSize: 512,
         maxzoom: 14
       });
+      // console.log('[MapComponent] Источник mapbox-dem добавлен');
+    } else {
+      // console.log('[MapComponent] Источник mapbox-dem уже существует');
     }
-    // map.setTerrain({ source: 'mapbox-dem', exaggeration: 1.5 });
-    mapRef.current.setLight({ anchor: 'map', intensity: 0.5 });
+
+    try {
+      map.setTerrain({ source: 'mapbox-dem', exaggeration: 1.5 });
+      // console.log('[MapComponent] setTerrain вызван');
+    } catch (error) {
+      // console.error('[MapComponent] Ошибка при установке рельефа:', error);
+    }
+
+    try {
+      map.setLight({
+        // flat: {
+        //   type: 'flat',
+        //   properties: {
+        //     intensity: 0.5,
+        //     anchor: 'map'
+        //   }
+        // }
+          anchor: 'map',
+          intensity: 0.5
+      });
+      // console.log('[MapComponent] setLights установлен');
+    } catch (error) {
+      // console.error('[MapComponent] Ошибка в setLights:', error);
+    }
+
+    map.once('terrain', () => {
+      setIsTerrainReady(true);
+      // updateTree3DLayers(map,plantationPoints,overlay);
+      // console.log('[MapComponent] Рельеф загружен, isTerrainReady = true');
+    });
+
+
+    // Расширенная диагностика
+    setTimeout(() => {
+      if (map.getTerrain()) {
+        setIsTerrainReady(true);
+        // console.log('[MapComponent] (Проверка) Рельеф загружен через timeout, isTerrainReady = true');
+      }
+    }, 3000);
+
   }
 
+  // Выключение 3D
   function disable3D(map) {
     // Устанавливаем terrain в null
     map.setTerrain(null);
-
-    // Если переключение только что произошло, сбрасываем pitch и bearing,
-    // иначе оставляем пользовательские значения.
-    // if (!map._userAdjusted) {
-    //   map.setPitch(0);
-    //   map.setBearing(0);
-    // }
 
     if (map.getSource('mapbox-dem')) {
       map.removeSource('mapbox-dem');
     }
 
+    setIsTerrainReady(false);
   }
 
   // Подпишитесь на события карты, которые сигнализируют о начале управления камерой (например, ‘dragstart’ или ‘rotatestart’):
@@ -475,7 +527,7 @@ function MapComponent({
 
       // Если активен режим расстановки деревьев – ставим «дерево»
       if (isTreePlacingActive) {
-        console.log('Режим деревьев активен');
+        // console.log('Режим деревьев активен');
         const { lng, lat } = e.lngLat;
         onTreeMapClick(lat, lng);
 
@@ -903,27 +955,40 @@ function MapComponent({
   // Функция для добавления и удаления 3D моделей деревьев
   useEffect(() => {
     const map = mapRef.current;
-    if (!map) return;
+    if (!map) {
+      // console.log('[MapComponent] Карта не инициализирована');
+      return;
+    }
 
-    // Если переходим в 3D
-    if (is3D) {
+    // console.log('[MapComponent] useEffect для деревьев: is3D =', is3D, 'isTerrainReady =', isTerrainReady);
+
+    if (is3D && isTerrainReady) {
+      // console.log('[MapComponent] Создание/обновление 3D-деревьев, plantationPoints:', plantationPoints);
       if (treeOverlay) {
-        // Уже есть Overlay — обновим
+        // console.log('[MapComponent] Обновляем существующий оверлей');
         const updated = updateTree3DLayers(map, plantationPoints, treeOverlay);
         setTreeOverlay(updated);
       } else {
-        // Нет Overlay — создаём
+        // console.log('[MapComponent] Создаём новый оверлей');
         const newOverlay = initTree3DLayers(map, plantationPoints);
         setTreeOverlay(newOverlay);
       }
-    } else {
-      // Переходим в 2D — удаляем Overlay, если он есть
+    } else if (!is3D) {
       if (treeOverlay) {
+        // console.log('[MapComponent] Удаляем оверлей при переходе в 2D');
         removeTree3DLayers(map, treeOverlay);
         setTreeOverlay(null);
       }
     }
-  }, [is3D, plantationPoints]); // следим за переключением is3D и обновлением plantationPoints
+
+    return () => {
+      // console.log('[MapComponent] Очистка useEffect для деревьев');
+      if (treeOverlay && !is3D) {
+        removeTree3DLayers(map, treeOverlay);
+        setTreeOverlay(null);
+      }
+    };
+  }, [is3D, isTerrainReady, plantationPoints]); // следим за переключением is3D и обновлением plantationPoints
 
 
   // Всплывающая аннотация об объекте насаждений при наведении курсором
