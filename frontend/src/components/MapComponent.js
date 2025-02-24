@@ -553,14 +553,20 @@ function MapComponent({
       // Если включён режим планировщика маршрута – ставим маршрутный маркер
       if (isPlacingMarker) {
         const { lat, lng } = e.lngLat;
-        onMapClick(lat, lng);
+        let terrainElevation = 0;
+        if (mapRef.current && typeof mapRef.current.queryTerrainElevation === 'function') {
+          // Получаем высоту рельефа в данной точке (если функция доступна)
+          terrainElevation = mapRef.current.queryTerrainElevation(e.lngLat) || 0;
+        }
+        // Вызываем callback с передачей lat, lng и terrainElevation
+        onMapClick(lat, lng, terrainElevation);
 
+        // Добавляем визуальный маркер, как и раньше
         const markerElement = document.createElement('div');
         markerElement.className = 'route-marker';
-        const marker = new mapboxgl.Marker({ element: markerElement })
+        new mapboxgl.Marker({ element: markerElement })
             .setLngLat([lng, lat])
             .addTo(mapRef.current);
-        markersRef.current.push(marker);
       }
     };
 

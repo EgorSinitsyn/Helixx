@@ -100,12 +100,15 @@ const MissionPlannerSidebar = ({
                     <label>Высота:</label>
                     <input
                         type="number"
-                        value={selectedPoint.altitude}
+                        value={selectedPoint.flightAltitude}
                         onChange={(e) => onAltitudeChange(e.target.value)}
-                        placeholder="Введите высоту"
+                        placeholder="Введите надземную высоту"
                         style={styles.input}
                     />
                 </div>
+                <p style={{ fontSize: '12px', color: '#ccc' }}>
+                    Высота точки с учетом рельефа: {Number(selectedPoint.groundAltitude) + Number(selectedPoint.flightAltitude)} м
+                </p>
 
                 <div style={styles.buttonRow}>
                     <button onClick={onRemoveLastPoint} style={styles.cancelButton}>Отменить точку</button>
@@ -130,7 +133,7 @@ const MissionPlannerSidebar = ({
                         <p>Точка {index + 1}</p>
                         <p>Широта: {point.lat}</p>
                         <p>Долгота: {point.lng}</p>
-                        <p>Высота: {point.altitude}</p>
+                        <p>Высота: {point.flightAltitude}</p>
                     </div>
                 ))}
             </div>

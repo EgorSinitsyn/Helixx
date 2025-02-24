@@ -306,13 +306,28 @@ const App = () => {
     setIsMissionBuilding(true);
   }, []);
 
-  const handleMapClick = useCallback((lat, lng) => {
-    setSelectedPoint({ lat, lng, altitude: '' });
-    // Если требуется, можно также установить координаты для выбранной точки насаждения:
+  const handleMapClick = useCallback((lat, lng, groundAltitude = 0) => {
+    setSelectedPoint({
+      lat,
+      lng,
+      groundAltitude,
+      flightAltitude: '', // Значение по умолчанию – пустая строка
+      altitude: groundAltitude // Итоговая высота на начальном этапе
+    });
+
+    // Если в режиме расстановки деревьев, можно установить и точку для насаждения
     if (isTreePlacingActive) {
       setSelectedTreePoint({ lat, lng, height: '', crownSize: '' });
     }
   }, [isTreePlacingActive]);
+
+  const handleAltitudeChange = useCallback((flightAltitude) => {
+    setSelectedPoint(prev => ({
+      ...prev,
+      flightAltitude, // Теперь это строка, введённая пользователем
+      altitude: Number(prev.groundAltitude) + Number(flightAltitude) // Итоговая высота
+    }));
+  }, []);
 
   const handleSavePoint = useCallback(() => {
     if (selectedPoint.lat && selectedPoint.lng && selectedPoint.altitude) {
@@ -413,7 +428,7 @@ const App = () => {
           onCancelRoute={cancelRoute}
           onConfirmRoute={handleConfirmRoute}
           selectedPoint={selectedPoint}
-          onAltitudeChange={(altitude) => setSelectedPoint((prev) => ({ ...prev, altitude }))}
+          onAltitudeChange={handleAltitudeChange}
           onSavePoint={handleSavePoint}
           onClose={() => setIsMissionBuilding(false)}
         />
