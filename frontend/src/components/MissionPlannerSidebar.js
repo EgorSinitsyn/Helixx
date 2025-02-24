@@ -16,7 +16,7 @@ const MissionPlannerSidebar = ({
             type: 'FeatureCollection',
             features: routePoints.map((point, index) => ({
                 type: 'Feature',
-                properties: { id: index + 1, altitude: Number(point.altitude) },
+                properties: { id: index + 1, altitude: Number(point.flightAltitude) },
                 geometry: {
                     type: 'Point',
                     coordinates: [Number(point.lng), Number(point.lat), Number(point.altitude)],
@@ -48,7 +48,7 @@ const MissionPlannerSidebar = ({
             type: 'FeatureCollection',
             features: routePoints.map((point, index) => ({
                 type: 'Feature',
-                properties: { id: index + 1, altitude: Number(point.altitude) },
+                properties: { id: index + 1, altitude: Number(point.flightAltitude) },
                 geometry: {
                     type: 'Point',
                     coordinates: [Number(point.lng), Number(point.lat), Number(point.altitude)],
