@@ -47,7 +47,7 @@ function createTrunkLayer(treeData, map) {
         data: treeData,
         // Усечённый конус. В luma.gl высота вдоль оси Y.
         mesh: new TruncatedConeGeometry({
-            topRadius: 1,
+            topRadius: 0.4,
             bottomRadius: 1.0,
             height: 1,
             nradial: 6
@@ -171,44 +171,41 @@ export function removeTree3DLayers(map, overlay) {
  *
  * Возвращает функцию для очистки (удаления слушателя).
  */
-export function setupTree3DZoomVisibility(map, plantationPoints, zoomThreshold = 12) {
-    // Переменная для хранения текущего 3D‑оверлея
-    let tree3DOverlay = null;
-
-    const updateOverlayVisibility = () => {
-        const currentZoom = map.getZoom();
-        console.log('Текущий зум в setupTree3DZoomVisibility:', currentZoom);
-        if (currentZoom < zoomThreshold) {
-            // Если зум ниже порога — удаляем overlay, если он существует
-            if (tree3DOverlay) {
-                removeTree3DLayers(map, tree3DOverlay);
-                tree3DOverlay = null;
-                console.log('3D overlay удалён');
-            }
-        } else {
-            // Если зум выше порога — создаём overlay, если его ещё нет, или обновляем его
-            if (!tree3DOverlay) {
-                tree3DOverlay = initTree3DLayers(map, plantationPoints);
-                console.log('3D overlay создан');
-            } else {
-                tree3DOverlay = updateTree3DLayers(map, plantationPoints, tree3DOverlay);
-                console.log('3D overlay обновлён');
-            }
-        }
-    };
-
-    // Вызываем функцию сразу для установки начального состояния
-    updateOverlayVisibility();
-
-    // Регистрируем обработчик зума
-    map.on('zoomend', updateOverlayVisibility);
-
-    // Возвращаем функцию очистки, которая удаляет обработчик и, при необходимости, overlay
-    return () => {
-        map.off('zoomend', updateOverlayVisibility);
-        if (tree3DOverlay) {
-            removeTree3DLayers(map, tree3DOverlay);
-            tree3DOverlay = null;
-        }
-    };
-}
+// export function setupTree3DZoomVisibility(map, plantationPoints, zoomThreshold = 12) {
+//     let tree3DOverlay = null;
+//
+//     const updateOverlayVisibility = () => {
+//         const currentZoom = map.getZoom();
+//         console.log(`[setupTree3DZoomVisibility] currentZoom = ${currentZoom}, threshold = ${zoomThreshold}`);
+//
+//         if (currentZoom < zoomThreshold) {
+//             console.log('Текущий зум ниже порога — удаляем overlay (если есть).');
+//             if (tree3DOverlay) {
+//                 removeTree3DLayers(map, tree3DOverlay);
+//                 tree3DOverlay = null;
+//             }
+//         } else {
+//             console.log('Текущий зум выше или равен порогу — создаём или обновляем overlay.');
+//             if (!tree3DOverlay) {
+//                 tree3DOverlay = initTree3DLayers(map, plantationPoints);
+//             } else {
+//                 tree3DOverlay = updateTree3DLayers(map, plantationPoints, tree3DOverlay);
+//             }
+//         }
+//     };
+//
+//     // Проверяем начальный зум
+//     updateOverlayVisibility();
+//
+//     // Подписываемся на изменение зума
+//     map.on('zoomend', updateOverlayVisibility);
+//
+//     // Возвращаем функцию «очистки»
+//     return () => {
+//         map.off('zoomend', updateOverlayVisibility);
+//         if (tree3DOverlay) {
+//             removeTree3DLayers(map, tree3DOverlay);
+//             tree3DOverlay = null;
+//         }
+//     };
+// }
