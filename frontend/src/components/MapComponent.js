@@ -1,3 +1,5 @@
+// MapComponent.js
+
 import React, { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import * as THREE from 'three';
@@ -9,11 +11,12 @@ import towerIcon from '../assets/tower-icon.png';
 import galochkaIcon from '../assets/galochka-planiemer.png';
 import greenCircle from '../assets/green_circle.png';
 
-
+import { initTree3DLayers, updateTree3DLayers, removeTree3DLayers } from '../components/trees3D.js';
 import '../components/drone_style.css';
 import '../components/geomarker_style.css';
 import '../components/custom_gl_draw.css';
 import '@mapbox/mapbox-gl-draw/dist/mapbox-gl-draw.css';
+
 
 mapboxgl.accessToken = process.env.REACT_APP_MAPBOX_TOKEN;
 
@@ -31,6 +34,7 @@ function MapComponent({
                         routePoints,
                         plantationPoints,
                         tempTreePoints,
+                        hoveredTreePoint,
                         isMissionBuilding,
                         isTreePlacingActive,
                         isMoving
@@ -39,6 +43,7 @@ function MapComponent({
   // REFS для карты, слоёв, линейки
   // -------------------------------
   const mapContainerRef = useRef(null);
+  const [isTerrainReady, setIsTerrainReady] = useState(false); // состояние для включения рельефа
   const mapRef = useRef(null);
   const droneLayerRef = useRef(null);
   const droneMarkerRef = useRef(null);
@@ -49,9 +54,10 @@ function MapComponent({
   // REFS для маркеров деревьев
   // -------------------------------
   const [treeMarkers, setTreeMarkers] = useState([]);   // Состояние для хранения дерева-маркеров
-  const frozenTreeMarkersRef = useRef([]); // Рефы для заморозки маркеров при активации линейки или планомера
-  const plantationMarkersRef = useRef([]);
+  const [treeOverlay, setTreeOverlay] = useState(null);  // Храним ссылку на текущий 3D overlay для деревьев для удаления при 2d
 
+  // состояние для управления камерой в 2d режиме
+  const [userAdjusted, setUserAdjusted] = useState(false);
 
   // -------------------------------
   // Состояния для режима ЛИНЕЙКИ
@@ -198,7 +204,7 @@ function MapComponent({
   };
 
   // -------------------------------
-  // ИНИЦИАЛИЗАЦИЯ КАРТЫ
+  // ИНИЦИАЛИЗАЦИЯ КАРТЫ (Создается 1 раз)
   // -------------------------------
   useEffect(() => {
     if (!mapRef.current) {
@@ -211,7 +217,6 @@ function MapComponent({
         bearing: is3D ? -17.6 : 0,
         antialias: true
       });
-
 
       mapRef.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
 
@@ -250,7 +255,7 @@ function MapComponent({
           filter: ['==', '$type', 'LineString']
         });
 
-        // 2) ИСТОЧНИК/СЛОИ для дрона, вышек...
+        // 2) ИСТОЧНИК/СЛОИ для дрона
         if (is3D) {
           mapRef.current.addSource('mapbox-dem', {
             type: 'raster-dem',
@@ -265,87 +270,250 @@ function MapComponent({
         } else {
           droneMarkerRef.current = addDroneMarker(mapRef.current, dronePosition);
         }
-
-        // Вышки
-        cellTowers.forEach((tower, index) => {
-          const lat = parseFloat(tower.latitude || tower.lat);
-          const lng = parseFloat(tower.longitude || tower.lng);
-          const radius = (parseFloat(tower.radius) * 1000) / 10;
-          if (isNaN(lat) || isNaN(lng) || isNaN(radius)) {
-            console.error(`Недействительные данные вышки (index: ${index}):`, { lat, lng, radius });
-            return;
-          }
-          const markerElement = document.createElement('div');
-          markerElement.className = 'custom-marker';
-          markerElement.style.backgroundImage = `url(${towerIcon})`;
-          markerElement.style.width = '40px';
-          markerElement.style.height = '40px';
-          markerElement.style.backgroundSize = 'contain';
-          markerElement.style.backgroundRepeat = 'no-repeat';
-          markerElement.style.backgroundColor = 'transparent';
-          markerElement.style.position = 'absolute';
-          markerElement.style.filter = 'invert(100%)';
-
-          new mapboxgl.Marker({ element: markerElement })
-              .setLngLat([lng, lat])
-              .addTo(mapRef.current);
-
-          // Если нужно отрисовать зону покрытия
-          if (isCoverageEnabled) {
-            const createCirclePolygon = (center, rad, numPoints = 64) => {
-              const coords = [];
-              for (let i = 0; i < numPoints; i++) {
-                const angle = (i * 360) / numPoints;
-                const radian = (angle * Math.PI) / 180;
-                const dx = rad * Math.cos(radian);
-                const dy = rad * Math.sin(radian);
-                const offsetLng =
-                    lng + (dx / 6378137) * (180 / Math.PI) / Math.cos((lat * Math.PI) / 180);
-                const offsetLat = lat + (dy / 6378137) * (180 / Math.PI);
-                coords.push([offsetLng, offsetLat]);
-              }
-              coords.push(coords[0]);
-              return coords;
-            };
-
-            const polygonCoords = [createCirclePolygon([lng, lat], radius)];
-            const polygonSourceId = `tower-coverage-${index}`;
-            mapRef.current.addSource(polygonSourceId, {
-              type: 'geojson',
-              data: {
-                type: 'Feature',
-                geometry: {
-                  type: 'Polygon',
-                  coordinates: polygonCoords
-                }
-              }
-            });
-            mapRef.current.addLayer({
-              id: `${polygonSourceId}-fill`,
-              type: 'fill',
-              source: polygonSourceId,
-              paint: { 'fill-color': '#808080', 'fill-opacity': 0.2 }
-            });
-            mapRef.current.addLayer({
-              id: `${polygonSourceId}-outline`,
-              type: 'line',
-              source: polygonSourceId,
-              paint: { 'line-color': '#FFFFFF', 'line-width': 2 }
-            });
-          }
-        });
       });
+
+      // Добавим обработчик ошибок загрузки стиля
+      mapRef.current.on('error', (e) => {
+        console.error('[MapComponent] Ошибка загрузки карты или стиля:', e);
+      });
+
+      // Логируем прогресс загрузки
+      mapRef.current.on('styledata', () => {
+        // console.log('[MapComponent] Данные стиля начинают загружаться');
+      });
+
     }
 
     return () => {
       if (mapRef.current) {
-        mapRef.current.off('click', handleMapClickForRuler);
-        mapRef.current.off('mousemove', handleMouseMoveForRuler);
         mapRef.current?.remove();
         mapRef.current = null;
       }
     };
-  }, [is3D, cellTowers, isCoverageEnabled]);
+  }, []);
+
+
+  // UseEffect для режима 3D (is3D)
+  useEffect(() => {
+    if (!mapRef.current) return;
+    const map = mapRef.current;
+
+    if (is3D) {
+      // 1) Если стиль УЖЕ загружен, сразу вызываем setTerrain
+      if (map.isStyleLoaded()) {
+        enable3D(map);
+      }
+      // 2) Если нет, ждём событие style.load
+      else {
+        const onLoad = () => {
+          enable3D(map);
+          map.off('style.load', onLoad);
+        };
+        map.on('style.load', onLoad);
+      }
+    } else {
+      // Для отключения 3D аналогично
+      if (map.isStyleLoaded()) {
+        disable3D(map);
+      } else {
+        const onLoad = () => {
+          disable3D(map);
+          map.off('style.load', onLoad);
+        };
+        map.on('style.load', onLoad);
+      }
+    }
+  }, [is3D]);
+
+  // Включение 3D
+  function enable3D(map) {
+    if (!map.getSource('mapbox-dem')) {
+      map.addSource('mapbox-dem', {
+        type: 'raster-dem',
+        url: 'mapbox://mapbox.mapbox-terrain-dem-v1',
+        tileSize: 512,
+        maxzoom: 14
+      });
+      // console.log('[MapComponent] Источник mapbox-dem добавлен');
+    } else {
+      // console.log('[MapComponent] Источник mapbox-dem уже существует');
+    }
+
+    try {
+      map.setTerrain({ source: 'mapbox-dem', exaggeration: 1.5 });
+      // console.log('[MapComponent] setTerrain вызван');
+    } catch (error) {
+      // console.error('[MapComponent] Ошибка при установке рельефа:', error);
+    }
+
+    try {
+      map.setLight({
+        // flat: {
+        //   type: 'flat',
+        //   properties: {
+        //     intensity: 0.5,
+        //     anchor: 'map'
+        //   }
+        // }
+          anchor: 'map',
+          intensity: 0.5
+      });
+      // console.log('[MapComponent] setLights установлен');
+    } catch (error) {
+      // console.error('[MapComponent] Ошибка в setLights:', error);
+    }
+
+    map.once('terrain', () => {
+      setIsTerrainReady(true);
+      // updateTree3DLayers(map,plantationPoints,overlay);
+      // console.log('[MapComponent] Рельеф загружен, isTerrainReady = true');
+    });
+
+
+    // Расширенная диагностика
+    setTimeout(() => {
+      if (map.getTerrain()) {
+        setIsTerrainReady(true);
+        // console.log('[MapComponent] (Проверка) Рельеф загружен через timeout, isTerrainReady = true');
+      }
+    }, 3000);
+
+  }
+
+  // Выключение 3D
+  function disable3D(map) {
+    // Устанавливаем terrain в null
+    map.setTerrain(null);
+
+    if (map.getSource('mapbox-dem')) {
+      map.removeSource('mapbox-dem');
+    }
+
+    setIsTerrainReady(false);
+  }
+
+  // Подпишитесь на события карты, которые сигнализируют о начале управления камерой (например, ‘dragstart’ или ‘rotatestart’):
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    const handleUserAdjust = () => {
+      setUserAdjusted(true);
+    };
+
+    // События, сигнализирующие о начале перемещения или поворота
+    map.on('dragstart', handleUserAdjust);
+    map.on('rotatestart', handleUserAdjust);
+
+    // Не забудьте убрать слушатели при размонтировании
+    return () => {
+      map.off('dragstart', handleUserAdjust);
+      map.off('rotatestart', handleUserAdjust);
+    };
+  }, []);
+
+  // При переходе в 2D режим сбрасывайте угол и наклон только один раз, если пользователь ещё не вмешивался:
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!is3D && map && !userAdjusted) {
+      // Сброс только при переходе в 2D и если пользователь ещё не изменял камеру
+      map.setPitch(0);
+      map.setBearing(0);
+    }
+  }, [is3D, userAdjusted]);
+
+
+  // useEffect для расставления вышек и зон покрытия
+  useEffect(() => {
+    if (!mapRef.current) return;
+    const map = mapRef.current;
+
+    // Метод A: если стиль еще не загружен, прекращаем выполнение эффекта
+    if (!map.isStyleLoaded()) return;
+
+    // Удаляем старые слои/источники вышек (если есть)
+    map.getStyle().layers?.forEach((layer) => {
+      if (layer.id.startsWith('tower-coverage-')) {
+        map.removeLayer(layer.id);
+      }
+    });
+    Object.keys(map.getStyle().sources || {}).forEach((srcId) => {
+      if (srcId.startsWith('tower-coverage-')) {
+        map.removeSource(srcId);
+      }
+    });
+
+    // Если массив cellTowers пуст, выходим
+    if (!cellTowers || !cellTowers.length) return;
+
+    // Рисуем вышки
+    cellTowers.forEach((tower, index) => {
+      const lat = parseFloat(tower.latitude || tower.lat);
+      const lng = parseFloat(tower.longitude || tower.lng);
+      if (isNaN(lat) || isNaN(lng)) return;
+
+      // Ставим иконку вышки
+      const markerElement = document.createElement('div');
+      markerElement.className = 'custom-marker';
+      markerElement.style.backgroundImage = `url(${towerIcon})`;
+      markerElement.style.width = '40px';
+      markerElement.style.height = '40px';
+      markerElement.style.backgroundSize = 'contain';
+      markerElement.style.backgroundRepeat = 'no-repeat';
+      markerElement.style.backgroundColor = 'transparent';
+      markerElement.style.position = 'absolute';
+      markerElement.style.filter = 'invert(100%)';
+
+      new mapboxgl.Marker({ element: markerElement })
+          .setLngLat([lng, lat])
+          .addTo(map);
+
+      // Если включено isCoverageEnabled, рисуем зону покрытия
+      if (isCoverageEnabled && tower.radius) {
+        const radius = (parseFloat(tower.radius) * 1000) / 10;
+        const polygonCoords = [createCirclePolygon([lng, lat], radius)];
+        const polygonSourceId = `tower-coverage-${index}`;
+
+        map.addSource(polygonSourceId, {
+          type: 'geojson',
+          data: {
+            type: 'Feature',
+            geometry: {
+              type: 'Polygon',
+              coordinates: polygonCoords
+            }
+          }
+        });
+        map.addLayer({
+          id: `${polygonSourceId}-fill`,
+          type: 'fill',
+          source: polygonSourceId,
+          paint: { 'fill-color': '#808080', 'fill-opacity': 0.2 }
+        });
+        map.addLayer({
+          id: `${polygonSourceId}-outline`,
+          type: 'line',
+          source: polygonSourceId,
+          paint: { 'line-color': '#FFFFFF', 'line-width': 2 }
+        });
+      }
+    });
+
+    function createCirclePolygon([lng, lat], radius, numPoints = 64) {
+      const coords = [];
+      for (let i = 0; i < numPoints; i++) {
+        const angle = (i * 360) / numPoints;
+        const radian = (angle * Math.PI) / 180;
+        const dx = radius * Math.cos(radian);
+        const dy = radius * Math.sin(radian);
+        const offsetLng = lng + (dx / 6378137) * (180 / Math.PI) / Math.cos((lat * Math.PI) / 180);
+        const offsetLat = lat + (dy / 6378137) * (180 / Math.PI);
+        coords.push([offsetLng, offsetLat]);
+      }
+      coords.push(coords[0]);
+      return coords;
+    }
+  }, [cellTowers, isCoverageEnabled]);
 
 
   // -------------------------------
@@ -360,7 +528,7 @@ function MapComponent({
 
       // Если активен режим расстановки деревьев – ставим «дерево»
       if (isTreePlacingActive) {
-        console.log('Режим деревьев активен');
+        // console.log('Режим деревьев активен');
         const { lng, lat } = e.lngLat;
         onTreeMapClick(lat, lng);
 
@@ -378,11 +546,7 @@ function MapComponent({
           properties: {}
         };
         setTreeMarkers((prev) => [...prev, newFeature]);
-        // setTreeMarkers((prev) => {
-        //   const updated = [...prev, newFeature];
-        //   console.log('Обновлённый treeMarkers:', updated);
-        //   return updated;
-        // });
+
         return;
       }
 
@@ -407,6 +571,7 @@ function MapComponent({
       }
     };
   }, [isRulerOn, isPlanimeterOn, isPlacingMarker, onMapClick, onTreeMapClick]);
+
 
   // -------------------------------
   // ОБРАБОТЧИК КЛИКА (ЛИНЕЙКА)
@@ -703,133 +868,149 @@ function MapComponent({
   // -------------------------------
   // useEffect для деревьев
   // -------------------------------
+
+  // Функция для добавления symbols деревьев
   useEffect(() => {
-  if (!mapRef.current) return;
-  const map = mapRef.current;
+    const map = mapRef.current;
+    if (!map) return;
 
-  const createOrUpdateTreeLayer = () => {
-    if (!map.isStyleLoaded()) return;
+    const createOrUpdate2DTreeLayer = () => {
+      if (!map.isStyleLoaded()) return;
 
-    // 1) Формируем массив Feature из tempTreePoints и plantationPoints
-    const features = [];
-
-    // Временные (не подтверждённые) точки
-    tempTreePoints.forEach(pt => {
-      features.push({
-        type: 'Feature',
-        geometry: {
-          type: 'Point',
-          coordinates: [pt.lng, pt.lat],
-        },
-        properties: {
-          status: 'temp', // Можем хранить «статус» (пригодится для фильтра или выражений)
-        },
+      // Собираем features из tempTreePoints + plantationPoints
+      const features = [];
+      tempTreePoints.forEach((pt) => {
+        features.push({
+          type: 'Feature',
+          geometry: { type: 'Point', coordinates: [pt.lng, pt.lat] },
+          properties: { status: 'temp' }
+        });
       });
-    });
-
-    // Сохранённые точки
-    plantationPoints.forEach((pt, index) => {
-      features.push({
-        type: 'Feature',
-        geometry: {
-          type: 'Point',
-          coordinates: [pt.lng, pt.lat],
-        },
-        properties: {
-          number: pt.number || (index + 1),
-          height: pt.height,      // Высота дерева
-          crownSize: pt.crownSize, // Размер кроны
-          status: 'saved',
-        },
+      plantationPoints.forEach((pt, idx) => {
+        features.push({
+          type: 'Feature',
+          geometry: { type: 'Point', coordinates: [pt.lng, pt.lat] },
+          properties: {
+            status: 'saved',
+            number: pt.number ?? (idx + 1),
+            height: pt.height,
+            crownSize: pt.crownSize
+          }
+        });
       });
-    });
 
-    const geojsonData = {
-      type: 'FeatureCollection',
-      features: features,
+      const geojsonData = {
+        type: 'FeatureCollection',
+        features
+      };
+
+      // Проверяем, есть ли уже источник
+      const source = map.getSource('tree-marker-source');
+      if (source) {
+        source.setData(geojsonData);
+      } else {
+        map.loadImage(greenCircle, (error, image) => {
+          if (error) {
+            console.error('Ошибка загрузки иконки дерева:', error);
+            return;
+          }
+          if (!map.hasImage('tree-icon')) {
+            map.addImage('tree-icon', image);
+          }
+          map.addSource('tree-marker-source', {
+            type: 'geojson',
+            data: geojsonData
+          });
+          map.addLayer({
+            id: 'tree-marker-layer',
+            type: 'symbol',
+            source: 'tree-marker-source',
+            layout: {
+              'icon-image': 'tree-icon',
+              'icon-anchor': 'center',
+              'icon-allow-overlap': true,
+              'icon-ignore-placement': true,
+              'icon-rotation-alignment': 'map',
+              'symbol-placement': 'point',
+              'icon-size': 0.03
+            }
+          });
+        });
+      }
     };
 
-    // 2) Проверяем, есть ли уже источник 'tree-marker-source'
-    const source = map.getSource('tree-marker-source');
-    if (source) {
-      // Если есть — просто обновляем данные
-      source.setData(geojsonData);
-    } else {
-      // Если нет — создаём источник и слой
-
-      // Загружаем PNG-иконку (например, greenCircle или любую другую)
-      map.loadImage(greenCircle, (error, image) => {
-        if (error) {
-          console.error('Ошибка загрузки иконки дерева:', error);
-          return;
-        }
-
-        if (!map.hasImage('tree-icon')) {
-          map.addImage('tree-icon', image);
-          // Вы регистрируете иконку под ключом 'tree-icon',
-          // которую ниже используете в "icon-image": 'tree-icon'.
-        }
-
-        // Создаём источник
-        map.addSource('tree-marker-source', {
-          type: 'geojson',
-          data: geojsonData,
-        });
-
-        // Добавляем слой
-        map.addLayer({
-          id: 'tree-marker-layer',
-          type: 'symbol',
-          source: 'tree-marker-source',
-          layout: {
-            'icon-image': 'tree-icon',
-            'icon-anchor': 'center',
-            'icon-allow-overlap': true,
-            'icon-ignore-placement': true,
-            'icon-rotation-alignment': 'map',
-            'symbol-placement': 'point',
-            'icon-size': 0.03,
-          },
-          paint: {
-            'icon-opacity': 1,
-          },
-        });
-      });
+    // Вызвать сразу
+    if (map.isStyleLoaded()) {
+      createOrUpdate2DTreeLayer();
     }
-  };
 
-  // Если стиль уже загружен, подгружаем слой сразу
-  if (map.isStyleLoaded()) {
-    createOrUpdateTreeLayer();
-  }
+    // На случай, если стиль будет перезагружаться
+    map.on('style.load', createOrUpdate2DTreeLayer);
 
-  // На случай, если в будущем пользователь переключит стиль
-  map.on('style.load', createOrUpdateTreeLayer);
+    return () => {
+      map.off('style.load', createOrUpdate2DTreeLayer);
+    };
+  }, [tempTreePoints, plantationPoints]);
 
-  return () => {
-    if (map) {
-      map.off('style.load', createOrUpdateTreeLayer);
+
+  // Функция для добавления и удаления 3D моделей деревьев
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) {
+      // console.log('[MapComponent] Карта не инициализирована');
+      return;
     }
-  };
-}, [
-    tempTreePoints,
-    plantationPoints,
-    is3D
-]);
+
+    // console.log('[MapComponent] useEffect для деревьев: is3D =', is3D, 'isTerrainReady =', isTerrainReady);
+
+    if (is3D && isTerrainReady) {
+      // console.log('[MapComponent] Создание/обновление 3D-деревьев, plantationPoints:', plantationPoints);
+      if (treeOverlay) {
+        // console.log('[MapComponent] Обновляем существующий оверлей');
+        const updated = updateTree3DLayers(map, plantationPoints, treeOverlay);
+        setTreeOverlay(updated);
+      } else {
+        // console.log('[MapComponent] Создаём новый оверлей');
+        const newOverlay = initTree3DLayers(map, plantationPoints);
+        setTreeOverlay(newOverlay);
+      }
+    } else if (!is3D) {
+      if (treeOverlay) {
+        // console.log('[MapComponent] Удаляем оверлей при переходе в 2D');
+        removeTree3DLayers(map, treeOverlay);
+        setTreeOverlay(null);
+      }
+    }
+
+    return () => {
+      // console.log('[MapComponent] Очистка useEffect для деревьев');
+      if (treeOverlay && !is3D) {
+        removeTree3DLayers(map, treeOverlay);
+        setTreeOverlay(null);
+      }
+    };
+  }, [is3D, isTerrainReady, plantationPoints]); // следим за переключением is3D и обновлением plantationPoints
 
 
   // Всплывающая аннотация об объекте насаждений при наведении курсором
   useEffect(() => {
-  if (!mapRef.current) return;
-  const map = mapRef.current;
+    if (!mapRef.current) return;
+    const map = mapRef.current;
+    const canvas = map.getCanvas();
+    if (!canvas) return; // Если canvas не определён, выходим
 
-  const onMouseEnter = (e) => {
-    map.getCanvas().style.cursor = 'pointer';
-    const feature = e.features[0];
-    const coordinates = feature.geometry.coordinates.slice();
-    const { height, crownSize, number } = feature.properties;
+    // Обработчики для событий на слое tree-marker-layer
+    const onMapMouseEnter = (e) => {
+      canvas.style.cursor = 'pointer';
+      const feature = e.features[0];
+      const coordinates = feature.geometry.coordinates.slice();
+      const { height, crownSize, number } = feature.properties;
 
-    const description = `
+      while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
+        coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
+      }
+
+      const description = `
       <div style="font-size:12px;">
         <strong>Насаждение №${number}</strong><br/>
         Широта: ${coordinates[1].toFixed(5)}<br/>
@@ -839,41 +1020,67 @@ function MapComponent({
       </div>
     `;
 
-    while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
-      coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
+      const popup = new mapboxgl.Popup({
+        closeButton: false,
+        closeOnClick: false,
+      })
+          .setLngLat(coordinates)
+          .setHTML(description)
+          .addTo(map);
+
+      popup.getElement().style.zIndex = '9999';
+      canvas._currentTreePopup = popup;
+    };
+
+    const onMapMouseLeave = () => {
+      canvas.style.cursor = '';
+      if (canvas._currentTreePopup) {
+        canvas._currentTreePopup.remove();
+        canvas._currentTreePopup = null;
+      }
+    };
+
+    map.on('mouseenter', 'tree-marker-layer', onMapMouseEnter);
+    map.on('mouseleave', 'tree-marker-layer', onMapMouseLeave);
+
+    // Обработка hoveredTreePoint для аннотации из списка
+    if (hoveredTreePoint) {
+      const { lat, lng, height, crownSize, number } = hoveredTreePoint;
+      const coordinates = [lng, lat];
+      const description = `
+      <div style="font-size:12px;">
+        <strong>Насаждение №${number}</strong><br/>
+        Широта: ${lat.toFixed(5)}<br/>
+        Долгота: ${lng.toFixed(5)}<br/>
+        Высота: ${height || 'нет данных'}<br/>
+        Размер кроны: ${crownSize || 'нет данных'}
+      </div>
+    `;
+      const listPopup = new mapboxgl.Popup({
+        closeButton: false,
+        closeOnClick: false,
+      })
+          .setLngLat(coordinates)
+          .setHTML(description)
+          .addTo(map);
+      listPopup.getElement().style.zIndex = '9999';
+      canvas._currentListPopup = listPopup;
+    } else {
+      if (canvas._currentListPopup) {
+        canvas._currentListPopup.remove();
+        canvas._currentListPopup = null;
+      }
     }
 
-    const popup = new mapboxgl.Popup({
-      closeButton: false,
-      closeOnClick: false
-    })
-      .setLngLat(coordinates)
-      .setHTML(description)
-      .addTo(map);
-
-    map.getCanvas()._currentTreePopup = popup;
-  };
-
-  const onMouseLeave = () => {
-    map.getCanvas().style.cursor = '';
-    const popup = map.getCanvas()._currentTreePopup;
-    if (popup) {
-      popup.remove();
-      map.getCanvas()._currentTreePopup = null;
-    }
-  };
-
-  map.on('mouseenter', 'tree-marker-layer', onMouseEnter);
-  map.on('mouseleave', 'tree-marker-layer', onMouseLeave);
-
-  return () => {
-    if (map) {
-      map.off('mouseenter', 'tree-marker-layer', onMouseEnter);
-      map.off('mouseleave', 'tree-marker-layer', onMouseLeave);
-    }
-  };
-}, []);
-
+    return () => {
+      map.off('mouseenter', 'tree-marker-layer', onMapMouseEnter);
+      map.off('mouseleave', 'tree-marker-layer', onMapMouseLeave);
+      if (canvas && canvas._currentListPopup) {
+        canvas._currentListPopup.remove();
+        canvas._currentListPopup = null;
+      }
+    };
+  }, [is3D, cellTowers, isCoverageEnabled, savedPolygons, hoveredTreePoint]);
 
 
   // -------------------------------
@@ -881,6 +1088,7 @@ function MapComponent({
   // -------------------------------
   useEffect(() => {
     if (!mapRef.current) return;
+    const map = mapRef.current;
 
     // 3D или 2D
     if (is3D && droneLayerRef.current?.drone) {
@@ -889,7 +1097,46 @@ function MapComponent({
     } else if (droneMarkerRef.current) {
       droneMarkerRef.current.setLngLat([dronePosition.lng, dronePosition.lat]);
     }
-  }, [dronePosition, is3D]);
+
+    if (is3D) {
+      // Если карта уже загружена, включаем 3D
+      if (map.isStyleLoaded()) {
+        enable3D(map);
+      } else {
+        map.on('style.load', () => enable3D(map));
+      }
+      // Удаляем 2D-маркер, если он есть
+      if (droneMarkerRef.current) {
+        droneMarkerRef.current.remove();
+        droneMarkerRef.current = null;
+      }
+      // Добавляем 3D-модель, если её еще нет
+      if (!droneLayerRef.current) {
+        droneLayerRef.current = addDroneModel(map, dronePosition);
+      }
+    } else {
+      // Если режим 2D, выключаем 3D
+      if (map.isStyleLoaded()) {
+        disable3D(map);
+      } else {
+        map.on('style.load', () => disable3D(map));
+      }
+      // Удаляем 3D-модель, если она существует
+      if (droneLayerRef.current) {
+        if (map.getLayer(droneLayerRef.current.id)) {
+          map.removeLayer(droneLayerRef.current.id);
+        }
+        if (map.getSource('drone-model-layer')) {
+          map.removeSource('drone-model-layer');
+        }
+        droneLayerRef.current = null;
+      }
+      // Добавляем 2D-маркер, если его нет
+      if (!droneMarkerRef.current) {
+        droneMarkerRef.current = addDroneMarker(map, dronePosition);
+      }
+    }
+  }, [is3D, dronePosition]);
 
   // Ориентация дрона
   useEffect(() => {
@@ -1032,6 +1279,7 @@ function MapComponent({
     return () => clearInterval(interval);
   }, [confirmedRoute, is3D, isMissionBuilding]);
 
+
   // -------------------------------
   // RENDER
   // -------------------------------
@@ -1156,26 +1404,15 @@ function addDroneModel(map, dronePosition, isMoving) {
 
       const loader = new GLTFLoader();
       loader.load(
-          '/drone-model.glb',
+          'drone-model.glb', // Убедись, что путь к модели корректен
           (gltf) => {
             this.drone = gltf.scene;
-            // Начальные повороты
-            this.drone.rotation.set(0, 0, 0);
-            this.drone.rotation.x = Math.PI / 2;
-
+            this.drone.rotation.set(Math.PI / 2, 0, 0); // Корректируем ориентацию
             this.scene.add(this.drone);
             this.initialized = true;
 
             this.drone.traverse((child) => {
-              if (child.isMesh && child.material) {
-                // Настройка материала
-                if (child.material.map) {
-                  child.material.map.anisotropy = 100;
-                  child.material.map.magFilter = THREE.NearestFilter;
-                  child.material.map.minFilter = THREE.NearestMipMapNearestFilter;
-                  child.material.map.generateMipmaps = true;
-                  child.material.map.needsUpdate = true;
-                }
+              if (child.isMesh) {
                 child.material.color.setHex(0xffffff);
                 child.material.emissive = new THREE.Color(0xffffff);
                 child.material.emissiveIntensity = 1;
@@ -1183,13 +1420,8 @@ function addDroneModel(map, dronePosition, isMoving) {
                 child.material.side = THREE.DoubleSide;
                 child.material.opacity = 1.0;
                 child.material.needsUpdate = true;
-                if (child.material.map) {
-                  child.material.map = null;
-                }
               }
             });
-            this.scene.add(this.drone);
-            this.initialized = false;
           },
           undefined,
           (error) => console.error('Ошибка при загрузке модели дрона:', error)
@@ -1207,8 +1439,9 @@ function addDroneModel(map, dronePosition, isMoving) {
         const { lat, lng, altitude } = this.dronePosition;
         const modelAsMercatorCoordinate = updateDronePositionInMercator(map, this.dronePosition);
 
-        // Масштаб
-        const scaleFactor = 0.5;
+        if (!modelAsMercatorCoordinate) return;
+
+        const scaleFactor = 1;
         const scale = modelAsMercatorCoordinate.meterInMercatorCoordinateUnits() * scaleFactor;
         this.drone.position.set(
             modelAsMercatorCoordinate.x,
@@ -1217,13 +1450,11 @@ function addDroneModel(map, dronePosition, isMoving) {
         );
         this.drone.scale.set(scale, scale, scale);
 
-        // Поворот при движении
         if (isMoving) {
-          const targetHeading = this.dronePosition.heading;
+          const targetHeading = this.dronePosition.heading || 0;
           this.drone.rotation.y = -Math.PI / 180 * targetHeading;
         }
 
-        // Камера и рендер
         this.camera.projectionMatrix = new THREE.Matrix4().fromArray(matrix);
         this.renderer.state.reset();
         this.renderer.clearDepth();

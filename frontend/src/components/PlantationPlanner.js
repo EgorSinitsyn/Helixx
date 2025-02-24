@@ -1,6 +1,6 @@
 // src/components/PlantationPlanner.js
 
-import React from 'react';
+import React, { useState } from 'react';
 
 const PlantationPlanner = ({
   selectedPoint,
@@ -10,8 +10,11 @@ const PlantationPlanner = ({
   onCancelPoint,
   onConfirmPlantation,
   treePoints,
+                             onRemoveTreePoint,
+                             onTreeHover,
+                             onTreeLeave,
   onClose,
-}) => {
+}) => { const [hoveredPointIndex, setHoveredPointIndex] = useState(null);
   return (
     <div style={{ ...styles.sidebar, overflowX: 'hidden', overflowY: 'auto' }}>
       <button onClick={onClose} style={styles.closeButton}>
@@ -81,13 +84,33 @@ const PlantationPlanner = ({
       <div style={styles.pointListContainer}>
         <h4>Сохранённые точки насаждений</h4>
         {treePoints.map((point, index) => (
-          <div key={index} style={styles.pointItem}>
-            <p>Точка {index + 1}</p>
-            <p>Широта: {point.lat}</p>
-            <p>Долгота: {point.lng}</p>
-            <p>Высота: {point.height} м</p>
-            <p>Размер кроны: {point.crownSize} м</p>
-          </div>
+            <div
+                key={index}
+                style={{
+                  ...styles.pointItem,
+                  border: hoveredPointIndex === index ? '2px solid blue' : styles.pointItem.border,
+                }}
+                onMouseEnter={() => {
+                  onTreeHover(point, index);
+                  setHoveredPointIndex(index);
+                }}
+                onMouseLeave={() => {
+                  onTreeLeave();
+                  setHoveredPointIndex(null);
+                }}
+            >
+          <span
+              style={styles.removeIcon}
+              onClick={() => onRemoveTreePoint(index)}
+          >
+            ❌
+          </span>
+              <p>Точка {index + 1}</p>
+              <p>Широта: {point.lat}</p>
+              <p>Долгота: {point.lng}</p>
+              <p>Высота: {point.height} м</p>
+              <p>Размер кроны: {point.crownSize} м</p>
+            </div>
         ))}
       </div>
     </div>
@@ -184,6 +207,16 @@ const styles = {
     padding: '10px',
     backgroundColor: '#555',
     borderRadius: '4px',
+    border: '1px solid #555',
+    position: 'relative', // чтобы можно было позиционировать крестик
+  },
+  removeIcon: {
+    position: 'absolute',
+    top: '5px',
+    right: '5px',
+    cursor: 'pointer',
+    fontSize: '16px',
+    color: 'red',
   },
 };
 

@@ -10,7 +10,6 @@ import DraggableModal from './components/DraggableModal.js';
 import DroneInfoPanel from './components/DroneInfoPanel.js';
 import MissionPlannerSidebar from './components/MissionPlannerSidebar.js';
 import PlantationPlanner from './components/PlantationPlanner';
-import mapboxgl from 'mapbox-gl';
 import { loadRoute, moveDroneToRoutePoints } from './components/DroneRouteManager.js';
 
 const CALIBRATION_LATITUDE = 55.139592;
@@ -51,6 +50,7 @@ const App = () => {
   const [selectedTreePoint, setSelectedTreePoint] = useState({ lat: '', lng: '', height: '', crownSize: '' });
   const [plantationPoints, setPlantationPoints] = useState([]);
   const [tempTreePoints, setTempTreePoints] = useState([]); // Временные (не сохранённые ещё) точки
+  const [hoveredTreePoint, setHoveredTreePoint] = useState(null);   // Новое состояние для точки, над которой наведен курсор в списке
 
 
   // Определяем callback для обновления координат точки насаждения
@@ -201,9 +201,28 @@ const App = () => {
     }
   }, [tempTreePoints, plantationPoints]);
 
+  // --- обработчики кликов/наведения мыши в plantationplanner.js
+  // Обработчик удаления точки
+  const handleRemoveTreePoint = useCallback((index) => {
+    setPlantationPoints((prev) => prev.filter((_, i) => i !== index));
+    setTempTreePoints((prev) => prev.filter((_, i) => i !== index));
+    setHoveredTreePoint(null);
+    // При изменении plantationPoints в MapComponent обновятся 2D‑символы и 3D‑модели
+  }, []);
+
+  // Обработчики наведения/снятия наведения
+  const handleTreeHover = useCallback((point, index) => {
+    // Можно добавить номер точки, если требуется для аннотации
+    setHoveredTreePoint({ ...point, number: index + 1 });
+  }, []);
+
+  const handleTreeLeave = useCallback(() => {
+    setHoveredTreePoint(null);
+  }, []);
 
 
   // --- Остальные обработчики (для миссий и настроек) ---
+
   const openSettings = useCallback(() => {
     setIsSettingsOpen(true);
     setNewDronePosition({
@@ -356,13 +375,11 @@ const App = () => {
         isTreePlacingActive={isTreePlacingActive}
         plantationPoints={plantationPoints}
         tempTreePoints={tempTreePoints}
+        hoveredTreePoint={hoveredTreePoint}
         onTreeMapClick={handleTreeMapClick}
-        // isTreePlacingActive={isTreePlacingActive}
         routePoints={routePoints}
-        // plantationPoints={plantationPoints}
         confirmedRoute={confirmedRoute}
         onMapClick={handleMapClick}
-        // onTreeMapClick={handleTreeMapClick}
         isMoving={isMoving}
       />
 
@@ -517,6 +534,9 @@ const App = () => {
           onConfirmPlantation={handleConfirmPlantation}
           treePoints={plantationPoints}
           onClose= {handleClosePlanner}
+          onRemoveTreePoint={handleRemoveTreePoint}
+          onTreeHover={handleTreeHover}
+          onTreeLeave={handleTreeLeave}
         />
       )}
     </div>

@@ -1,3 +1,5 @@
+import throttle from 'lodash/throttle';
+
 // Функция для загрузки маршрута из файла GeoJSON
 export const loadRoute = async () => {
     try {
@@ -24,7 +26,7 @@ export const loadRoute = async () => {
     }
 };
 
-// Функция для перемещения дрона по точкам маршрута
+/// Функция для перемещения дрона по точкам маршрута с использованием requestAnimationFrame и throttle
 export const moveDroneToRoutePoints = (dronePosition, setDronePosition, routePoints, setIsMoving) => {
     if (!routePoints || routePoints.length === 0) {
         alert('Маршрут пуст!');
@@ -33,72 +35,73 @@ export const moveDroneToRoutePoints = (dronePosition, setDronePosition, routePoi
 
     let index = 0;
 
+    // Создаем throttled-версию setDronePosition (обновление не чаще, чем раз в 50 мс)
+    const throttledSetDronePosition = throttle(setDronePosition, 50);
+
     const moveToNextPoint = (currentDronePosition) => {
         if (index >= routePoints.length) {
             alert('Маршрут завершён!');
-            setIsMoving(false);  // Останавливаем движение
+            setIsMoving(false); // Останавливаем движение
             return;
         }
 
         const target = routePoints[index];
         const speed = 20; // Скорость дрона в метрах в секунду
-        const refreshRate = 50; // Частота обновлений в миллисекундах
-
         const distanceToTarget = calculateDistance(currentDronePosition, target);
-        const duration = (distanceToTarget / speed) * 1000;
-        const steps = Math.ceil(duration / refreshRate);
+        const duration = (distanceToTarget / speed) * 1000; // продолжительность в мс
 
-        const deltaLat = (target.lat - currentDronePosition.lat) / steps;
-        const deltaLng = (target.lng - currentDronePosition.lng) / steps;
+        const startLat = currentDronePosition.lat;
+        const startLng = currentDronePosition.lng;
+        const startAlt = parseFloat(currentDronePosition.altitude);
+        const targetLat = target.lat;
+        const targetLng = target.lng;
+        const targetAlt = parseFloat(target.altitude);
 
-        const targetAltitude = parseFloat(target.altitude); // Преобразование в число
-        const currentAltitude = parseFloat(currentDronePosition.altitude); // Преобразование в число
-
-        if (isNaN(targetAltitude) || isNaN(currentAltitude)) {
-            console.error('Ошибка при преобразовании высоты:', target.altitude, currentDronePosition.altitude);
+        if (isNaN(startAlt) || isNaN(targetAlt)) {
+            console.error('Ошибка при преобразовании высоты:', currentDronePosition.altitude, target.altitude);
             return;
         }
 
-        const deltaAlt = (targetAltitude - currentAltitude) / steps;
+        let startTime = null;
 
-        let currentStep = 0;
+        const animate = (timestamp) => {
+            if (!startTime) startTime = timestamp;
+            const elapsed = timestamp - startTime;
+            let t = elapsed / duration;
+            if (t > 1) t = 1; // Ограничиваем значение от 0 до 1
 
-        const intervalId = setInterval(() => {
-            if (currentStep >= steps || calculateDistance(currentDronePosition, target) < 0.001) {
-                clearInterval(intervalId);
+            // Интерполяция координат по линейной формуле
+            const newLat = startLat + (targetLat - startLat) * t;
+            const newLng = startLng + (targetLng - startLng) * t;
+            const newAlt = startAlt + (targetAlt - startAlt) * t;
 
-                const newPosition = {
-                    lat: target.lat,
-                    lng: target.lng,
-                    altitude: targetAltitude,
-                    heading: calculateHeading(currentDronePosition, target),
-                };
+            // Вычисляем heading на основе текущей позиции и цели
+            const newPosition = {
+                lat: newLat,
+                lng: newLng,
+                altitude: newAlt,
+                heading: calculateHeading({ lat: newLat, lng: newLng }, target),
+            };
 
-                setDronePosition(newPosition);
-                index++;  // Переходим к следующей точке
+            // Обновляем позицию через throttled-функцию
+            throttledSetDronePosition(newPosition);
 
-                // Переходим к следующей точке с обновленной позицией
-                moveToNextPoint(newPosition);
+            if (t < 1) {
+                requestAnimationFrame(animate);
             } else {
-                const newPosition = {
-                    lat: currentDronePosition.lat + deltaLat,
-                    lng: currentDronePosition.lng + deltaLng,
-                    altitude: currentDronePosition.altitude + deltaAlt,
-                    heading: calculateHeading(currentDronePosition, target),
-                };
-
-                setDronePosition(newPosition);
-                currentDronePosition = newPosition; // Обновляем текущую позицию
-                currentStep++;
+                index++;  // Переходим к следующей точке
+                moveToNextPoint(newPosition);
             }
-        }, refreshRate);
+        };
+
+        requestAnimationFrame(animate);
     };
 
-    setIsMoving(true);  // Начинаем движение
-    moveToNextPoint(dronePosition); // Передаем начальную позицию дрона
+    setIsMoving(true); // Начинаем движение
+    moveToNextPoint(dronePosition); // Запускаем анимацию от текущей позиции
 };
 
-// Функция для вычисления расстояния между точками (Haversine formula)
+// Функция для вычисления расстояния между точками (формула Haversine)
 const calculateDistance = (start, end) => {
     const R = 6371000; // Радиус Земли в метрах
     const lat1 = (start.lat * Math.PI) / 180;
@@ -107,8 +110,8 @@ const calculateDistance = (start, end) => {
     const deltaLng = ((end.lng - start.lng) * Math.PI) / 180;
 
     const a =
-        Math.sin(deltaLat / 2) * Math.sin(deltaLat / 2) +
-        Math.cos(lat1) * Math.cos(lat2) * Math.sin(deltaLng / 2) * Math.sin(deltaLng / 2);
+        Math.sin(deltaLat / 2) ** 2 +
+        Math.cos(lat1) * Math.cos(lat2) * Math.sin(deltaLng / 2) ** 2;
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
     return R * c; // Расстояние в метрах
@@ -118,10 +121,7 @@ const calculateDistance = (start, end) => {
 const calculateHeading = (start, end) => {
     const deltaLng = end.lng - start.lng;
     const deltaLat = end.lat - start.lat;
-
-    const angle = Math.atan2(deltaLng, deltaLat); // angle between start and end point
-    let heading = (angle * 180) / Math.PI; // Convert to degrees
-    if (heading < 0) heading += 360;  // Поворот на 360 градусов для диапазона от 0 до 360
-
+    let heading = (Math.atan2(deltaLng, deltaLat) * 180) / Math.PI;
+    if (heading < 0) heading += 360;
     return heading;
 };
