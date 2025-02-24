@@ -34,6 +34,7 @@ function MapComponent({
                         routePoints,
                         plantationPoints,
                         tempTreePoints,
+                        hoveredTreePoint,
                         isMissionBuilding,
                         isTreePlacingActive,
                         isMoving
@@ -993,16 +994,23 @@ function MapComponent({
 
   // Всплывающая аннотация об объекте насаждений при наведении курсором
   useEffect(() => {
-  if (!mapRef.current) return;
-  const map = mapRef.current;
+    if (!mapRef.current) return;
+    const map = mapRef.current;
+    const canvas = map.getCanvas();
+    if (!canvas) return; // Если canvas не определён, выходим
 
-  const onMouseEnter = (e) => {
-    map.getCanvas().style.cursor = 'pointer';
-    const feature = e.features[0];
-    const coordinates = feature.geometry.coordinates.slice();
-    const { height, crownSize, number } = feature.properties;
+    // Обработчики для событий на слое tree-marker-layer
+    const onMapMouseEnter = (e) => {
+      canvas.style.cursor = 'pointer';
+      const feature = e.features[0];
+      const coordinates = feature.geometry.coordinates.slice();
+      const { height, crownSize, number } = feature.properties;
 
-    const description = `
+      while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
+        coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
+      }
+
+      const description = `
       <div style="font-size:12px;">
         <strong>Насаждение №${number}</strong><br/>
         Широта: ${coordinates[1].toFixed(5)}<br/>
@@ -1012,44 +1020,67 @@ function MapComponent({
       </div>
     `;
 
-    while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
-      coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
+      const popup = new mapboxgl.Popup({
+        closeButton: false,
+        closeOnClick: false,
+      })
+          .setLngLat(coordinates)
+          .setHTML(description)
+          .addTo(map);
+
+      popup.getElement().style.zIndex = '9999';
+      canvas._currentTreePopup = popup;
+    };
+
+    const onMapMouseLeave = () => {
+      canvas.style.cursor = '';
+      if (canvas._currentTreePopup) {
+        canvas._currentTreePopup.remove();
+        canvas._currentTreePopup = null;
+      }
+    };
+
+    map.on('mouseenter', 'tree-marker-layer', onMapMouseEnter);
+    map.on('mouseleave', 'tree-marker-layer', onMapMouseLeave);
+
+    // Обработка hoveredTreePoint для аннотации из списка
+    if (hoveredTreePoint) {
+      const { lat, lng, height, crownSize, number } = hoveredTreePoint;
+      const coordinates = [lng, lat];
+      const description = `
+      <div style="font-size:12px;">
+        <strong>Насаждение №${number}</strong><br/>
+        Широта: ${lat.toFixed(5)}<br/>
+        Долгота: ${lng.toFixed(5)}<br/>
+        Высота: ${height || 'нет данных'}<br/>
+        Размер кроны: ${crownSize || 'нет данных'}
+      </div>
+    `;
+      const listPopup = new mapboxgl.Popup({
+        closeButton: false,
+        closeOnClick: false,
+      })
+          .setLngLat(coordinates)
+          .setHTML(description)
+          .addTo(map);
+      listPopup.getElement().style.zIndex = '9999';
+      canvas._currentListPopup = listPopup;
+    } else {
+      if (canvas._currentListPopup) {
+        canvas._currentListPopup.remove();
+        canvas._currentListPopup = null;
+      }
     }
 
-    const popup = new mapboxgl.Popup({
-      closeButton: false,
-      closeOnClick: false
-    })
-      .setLngLat(coordinates)
-      .setHTML(description)
-      .addTo(map);
-
-    // Задаём высокий z-index для попапа, чтобы он был поверх 3D‑моделей
-    popup.getElement().style.zIndex = '9999';
-
-    map.getCanvas()._currentTreePopup = popup;
-  };
-
-  const onMouseLeave = () => {
-    map.getCanvas().style.cursor = '';
-    const popup = map.getCanvas()._currentTreePopup;
-    if (popup) {
-      popup.remove();
-      map.getCanvas()._currentTreePopup = null;
-    }
-  };
-
-  map.on('mouseenter', 'tree-marker-layer', onMouseEnter);
-  map.on('mouseleave', 'tree-marker-layer', onMouseLeave);
-
-  return () => {
-    if (map) {
-      map.off('mouseenter', 'tree-marker-layer', onMouseEnter);
-      map.off('mouseleave', 'tree-marker-layer', onMouseLeave);
-    }
-  };
-}, [is3D, cellTowers, isCoverageEnabled, savedPolygons]);
-
+    return () => {
+      map.off('mouseenter', 'tree-marker-layer', onMapMouseEnter);
+      map.off('mouseleave', 'tree-marker-layer', onMapMouseLeave);
+      if (canvas && canvas._currentListPopup) {
+        canvas._currentListPopup.remove();
+        canvas._currentListPopup = null;
+      }
+    };
+  }, [is3D, cellTowers, isCoverageEnabled, savedPolygons, hoveredTreePoint]);
 
 
   // -------------------------------
