@@ -564,9 +564,10 @@ function MapComponent({
         // Добавляем визуальный маркер, как и раньше
         const markerElement = document.createElement('div');
         markerElement.className = 'route-marker';
-        new mapboxgl.Marker({ element: markerElement })
+        const marker = new mapboxgl.Marker({ element: markerElement })
             .setLngLat([lng, lat])
             .addTo(mapRef.current);
+        markersRef.current.push(marker);
       }
     };
 
