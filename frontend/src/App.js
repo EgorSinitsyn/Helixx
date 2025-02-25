@@ -14,9 +14,18 @@ import { loadRoute, moveDroneToRoutePoints } from './components/DroneRouteManage
 
 const CALIBRATION_LATITUDE = 55.139592;
 const CALIBRATION_LONGITUDE = 37.962471;
-const CALIBRATION_ALTITUDE = 270;
+const CALIBRATION_ALTITUDE = '';
+
 
 const App = () => {
+
+  // Состояние калибровки (будет обновляться в модальном окне)
+  const [calibrationCoordinates, setCalibrationCoordinates] = useState({
+    lat: CALIBRATION_LATITUDE,
+    lng: CALIBRATION_LONGITUDE,
+    altitude: CALIBRATION_ALTITUDE,
+  });
+
   const [dronePosition, setDronePosition] = useState({
     lat: CALIBRATION_LATITUDE,
     lng: CALIBRATION_LONGITUDE,
@@ -59,6 +68,14 @@ const App = () => {
   }, []);
 
   const hideDroneInfoPanel = useCallback(() => setIsDroneInfoVisible(false), []);
+
+  // Callback для установки высоты рельефа
+  const handleCalibrationAltitude = (elevation) => {
+    setDronePosition((prev) => ({
+      ...prev,
+      altitude: elevation,
+    }));
+  };
 
   const [isMoving, setIsMoving] = useState(false); // Флаг для отслеживания движения дрона
 
@@ -119,7 +136,6 @@ const App = () => {
 
     return () => socket.close();
   }, []);
-
 
 
   // --- Обработчики для PlantationPlanner ---
@@ -279,22 +295,39 @@ const App = () => {
     const { lat, lng, altitude } = newDronePosition;
     const latNum = parseFloat(lat);
     const lngNum = parseFloat(lng);
-    const altitudeNum = parseFloat(altitude);
-
-    setIsDroneInfoVisible(true);
-
-    if (!isNaN(latNum) && !isNaN(lngNum) && lat !== '' && lng !== '' && !isNaN(altitudeNum)) {
-      setDronePosition({
-        lat: latNum,
-        lng: lngNum,
-        altitude: altitudeNum,
-        heading: droneHeading,
-      });
-      console.log("Новое положение дрона:", { lat: latNum, lng: lngNum, altitude: altitudeNum, heading: droneHeading });
+    // Не используем введённое значение высоты в 3D‑режиме
+    if (!isNaN(latNum) && !isNaN(lngNum) && lat !== '' && lng !== '') {
+      setIsDroneInfoVisible(true);
+      if (is3D) {
+        // Обновляем только координаты калибровки, высота пересчитается MapComponent
+        setCalibrationCoordinates({
+          lat: latNum,
+          lng: lngNum,
+          altitude: CALIBRATION_ALTITUDE, // fallback, если запрос не сработает
+        });
+        // Обновляем позицию дрона: lat и lng обновляются, высота остаётся прежней пока MapComponent не пересчитает
+        setDronePosition((prev) => ({
+          ...prev,
+          lat: latNum,
+          lng: lngNum,
+        }));
+      } else {
+        // Для 2D используем введённое значение высоты
+        const altitudeNum = parseFloat(altitude);
+        if (!isNaN(altitudeNum)) {
+          setDronePosition({
+            lat: latNum,
+            lng: lngNum,
+            altitude: altitudeNum,
+            heading: droneHeading,
+          });
+        }
+      }
+      console.log("Новое положение дрона:", { lat: latNum, lng: lngNum });
     } else {
-      alert("Введите корректные координаты и дельту высоты дрона.");
+      alert("Введите корректные координаты.");
     }
-  }, [newDronePosition, droneHeading]);
+  }, [newDronePosition, is3D, droneHeading]);
 
   const handleHeadingChange = useCallback((angle) => {
     setDroneHeading(angle);
@@ -390,6 +423,8 @@ const App = () => {
     <div>
       <MapComponent
         dronePosition={dronePosition}
+        onCalibrationAltitude={handleCalibrationAltitude} // калибровка высоты дрона относительно рельефа
+        calibrationCoordinates={calibrationCoordinates}
         route={confirmedRoute}
         is3D={is3D}
         cellTowers={cellTowers}

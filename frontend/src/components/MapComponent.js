@@ -22,6 +22,8 @@ mapboxgl.accessToken = process.env.REACT_APP_MAPBOX_TOKEN;
 
 function MapComponent({
                         dronePosition,
+                        onCalibrationAltitude,
+                        calibrationCoordinates,
                         route: confirmedRoute,
                         is3D,
                         cellTowers,
@@ -1093,6 +1095,25 @@ function MapComponent({
   // -------------------------------
   // useEffect для ДРОНА и маршрута
   // -------------------------------
+  // Калибровка высоты дрона после загрузки стиля и DEM-источника:
+  useEffect(() => {
+    // Если дрон выполняет миссию, не калибруем высоту
+    if (isMoving) return;
+    if (!mapRef.current || !mapRef.current.isStyleLoaded()) return;
+    if (!calibrationCoordinates) return;
+
+    const calibrationPoint = new mapboxgl.LngLat(
+        calibrationCoordinates.lng,
+        calibrationCoordinates.lat
+    );
+
+    const groundAltitude = mapRef.current.queryTerrainElevation(calibrationPoint) || calibrationCoordinates.altitude;
+
+    if (typeof onCalibrationAltitude === 'function') {
+      onCalibrationAltitude(groundAltitude);
+    }
+  }, [calibrationCoordinates, onCalibrationAltitude, isMoving, mapRef.current?.isStyleLoaded()]);
+
   useEffect(() => {
     if (!mapRef.current) return;
     const map = mapRef.current;
