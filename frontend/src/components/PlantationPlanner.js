@@ -1,4 +1,4 @@
-// src/components/PlantationPlanner.js
+// PlantationPlanner.js
 
 import React, { useState } from 'react';
 
