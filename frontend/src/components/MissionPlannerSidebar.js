@@ -1,4 +1,6 @@
-import React from 'react';
+// MissionPlannerSidebar.js
+
+import React, { useState } from 'react';
 
 const MissionPlannerSidebar = ({
                                    selectedPoint,
@@ -6,10 +8,15 @@ const MissionPlannerSidebar = ({
                                    onSavePoint,
                                    onCancelRoute,
                                    onRemoveLastPoint,
+                                   onRemoveRoutePoint,
                                    onConfirmRoute,
                                    routePoints,
                                    onClose,
                                }) => {
+
+    // **NEW** — добавляем состояние для отслеживания «подсвеченной» точки
+    const [hoveredPointIndex, setHoveredPointIndex] = useState(null);
+
     // Функция для сохранения маршрута в проект
     const saveRouteToProject = async (routePoints) => {
         const geoJson = {
@@ -129,7 +136,27 @@ const MissionPlannerSidebar = ({
             <div style={styles.routeListContainer}>
                 <h4>Маршрутные точки</h4>
                 {routePoints.map((point, index) => (
-                    <div key={index} style={styles.routePoint}>
+                    <div
+                        key={index}
+                        // Делаем обёртку с position:relative для крестика, а при наведении — синяя рамка
+                        style={{
+                            ...styles.routePoint,
+                            border:
+                                hoveredPointIndex === index
+                                    ? '2px solid blue'
+                                    : styles.routePoint.border,
+                        }}
+                        onMouseEnter={() => setHoveredPointIndex(index)}
+                        onMouseLeave={() => setHoveredPointIndex(null)}
+                    >
+                        {/* Крестик ❌ в правом верхнем углу */}
+                        <span
+                            style={styles.removeIcon}
+                            onClick={() => onRemoveRoutePoint(index)}
+                        >
+              ❌
+            </span>
+
                         <p>Точка {index + 1}</p>
                         <p>Широта: {point.lat}</p>
                         <p>Долгота: {point.lng}</p>
@@ -260,6 +287,18 @@ const styles = {
         padding: '10px',
         backgroundColor: '#555',
         borderRadius: '4px',
+        border: '1px solid #555',
+        position: 'relative',
+    },
+
+    // **NEW** — стили для крестика «❌»
+    removeIcon: {
+        position: 'absolute',
+        top: '5px',
+        right: '5px',
+        cursor: 'pointer',
+        fontSize: '16px',
+        color: 'red',
     },
 };
 

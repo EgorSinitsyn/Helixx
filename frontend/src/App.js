@@ -40,8 +40,8 @@ const App = () => {
   const [isDroneInfoVisible, setIsDroneInfoVisible] = useState(false);
 
   // Для построения маршрута
-  const [routePoints, setRoutePoints] = useState([]); // для редактирования маршрута
-  const [selectedPoint, setSelectedPoint] = useState({ lat: '', lng: '', altitude: '' });
+  const [routePoints, setRoutePoints] = useState([]);
+  const [selectedPoint, setSelectedPoint] = useState([]);
   const [isMissionBuilding, setIsMissionBuilding] = useState(false);
   const [confirmedRoute, setConfirmedRoute] = useState([]);       // для подтверждённого маршрута
 
@@ -344,15 +344,27 @@ const App = () => {
     setSelectedPoint({ lat: '', lng: '', altitude: '' });
   }, []);
 
-  const removeLastPoint = () => {
-    console.log("Отмена последней точки");
-    if (markersRef.current.length > 0) {
-      const lastMarker = markersRef.current.pop();
-      lastMarker.remove();
-    } else if (routePoints.length > 0) {
-      setRoutePoints((prev) => prev.slice(0, -1));
+
+  const removeLastPoint = useCallback(() => {
+    // 1) Если есть «несохранённая» точка (selectedPoint), «откатываем» её
+    if (selectedPoint.lat !== '' || selectedPoint.lng !== '') {
+      // Сбросим selectedPoint в пустое состояние
+      setSelectedPoint({
+        lat: '',
+        lng: '',
+        flightAltitude: '',
+        groundAltitude: 0,
+      });
     }
-    setSelectedPoint({ lat: '', lng: '', altitude: '' });
+    // 2) Иначе, если нет несохранённой, но есть «сохранённые» (routePoints)
+    else if (routePoints.length > 0) {
+      setRoutePoints(prev => prev.slice(0, -1));
+    }
+  }, [selectedPoint, routePoints]);
+
+  // Удаление точки маршрута по ❌
+  const handleRemoveRoutePoint = (index) => {
+    setRoutePoints((prev) => prev.filter((_, i) => i !== index));
   };
 
   const saveRoute = useCallback(() => {
@@ -425,6 +437,7 @@ const App = () => {
           routePoints={routePoints}
           onSaveRoute={saveRoute}
           onRemoveLastPoint={removeLastPoint}
+          onRemoveRoutePoint={handleRemoveRoutePoint}
           onCancelRoute={cancelRoute}
           onConfirmRoute={handleConfirmRoute}
           selectedPoint={selectedPoint}
