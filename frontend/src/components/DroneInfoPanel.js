@@ -43,7 +43,7 @@ const DroneInfoPanel = ({ latitude, longitude, altitude, heading, onHide }) => {
                 <>
                     <p>Широта: {latitude.toFixed(5)}</p>
                     <p>Долгота: {longitude.toFixed(5)}</p>
-                    <p>Высота: {altitude} м</p>
+                    <p>Высота: {Number(altitude).toFixed(2)} м</p>
                     <p>Направление: {heading}°</p>
                 </>
             )}
