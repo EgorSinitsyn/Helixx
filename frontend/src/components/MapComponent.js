@@ -200,7 +200,11 @@ function MapComponent({
     markersRef.current = confirmedRoute.map((point) => {
       const markerElement = document.createElement('div');
       markerElement.className = 'route-marker';
-      return new mapboxgl.Marker({ element: markerElement })
+      return new mapboxgl.Marker({
+        element: markerElement,
+        pitchAlignment: 'map',
+        rotationAlignment: 'map'
+      })
           .setLngLat([point.lng, point.lat])
           .addTo(mapRef.current);
     });
@@ -588,7 +592,11 @@ function MapComponent({
         // Добавляем визуальный маркер, как и раньше
         const markerElement = document.createElement('div');
         markerElement.className = 'route-marker';
-        const marker = new mapboxgl.Marker({ element: markerElement })
+        const marker = new mapboxgl.Marker({
+          element: markerElement,
+          pitchAlignment: 'map',
+          rotationAlignment: 'map'
+        })
             .setLngLat([lng, lat])
             .addTo(mapRef.current);
         markersRef.current.push(marker);
@@ -1242,7 +1250,11 @@ function MapComponent({
     dataForMarkers.forEach((pt) => {
       const el = document.createElement('div');
       el.className = 'route-marker';
-      const marker = new mapboxgl.Marker({ element: el })
+      const marker = new mapboxgl.Marker({
+        element: el,
+        pitchAlignment: 'map',
+        rotationAlignment: 'map'
+      })
           .setLngLat([pt.lng, pt.lat])
           .addTo(mapRef.current);
       markersRef.current.push(marker);
