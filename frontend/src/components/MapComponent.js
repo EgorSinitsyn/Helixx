@@ -1552,7 +1552,12 @@ function addDroneModel(map, dronePosition, isMoving) {
 function addDroneMarker(map, dronePosition) {
   const markerElement = document.createElement('div');
   markerElement.className = 'gps-marker';
-  return new mapboxgl.Marker({ element: markerElement, anchor: 'bottom' })
+  return new mapboxgl.Marker({
+    element: markerElement,
+    anchor: 'bottom',
+    pitchAlignment: 'map',
+    rotationAlignment: 'map'
+  })
       .setLngLat([dronePosition.lng, dronePosition.lat])
       .addTo(map);
 }
