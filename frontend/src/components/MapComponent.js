@@ -549,7 +549,7 @@ function MapComponent({
       if (isTreePlacingActive) {
         // console.log('Режим деревьев активен');
         const { lng, lat } = e.lngLat;
-        onTreeMapClick(lat, lng);
+        // onTreeMapClick(lat, lng);
 
         // Вызываем callback для обновления координат в родительском компоненте
         if (typeof onTreeMapClick === 'function') {
@@ -573,9 +573,14 @@ function MapComponent({
       if (isPlacingMarker) {
         const { lat, lng } = e.lngLat;
         let terrainElevation = 0;
-        if (mapRef.current && typeof mapRef.current.queryTerrainElevation === 'function') {
-          // Получаем высоту рельефа в данной точке (если функция доступна)
-          terrainElevation = mapRef.current.queryTerrainElevation(e.lngLat) || 0;
+        if (is3D) {
+          // В 3D режиме пытаемся получить высоту рельефа
+          if (mapRef.current && typeof mapRef.current.queryTerrainElevation === 'function') {
+            terrainElevation = mapRef.current.queryTerrainElevation(e.lngLat) || 0;
+          }
+        } else {
+          // В 2D режиме игнорируем высоту рельефа
+          terrainElevation = 0;
         }
         // Вызываем callback с передачей lat, lng и terrainElevation
         onMapClick(lat, lng, terrainElevation);
@@ -596,7 +601,7 @@ function MapComponent({
         mapRef.current.off('click', handleMapClick);
       }
     };
-  }, [isRulerOn, isPlanimeterOn, isPlacingMarker, onMapClick, onTreeMapClick]);
+  }, [isRulerOn, isPlanimeterOn, isPlacingMarker, onMapClick, onTreeMapClick, isTreePlacingActive, is3D]);
 
 
   // -------------------------------
@@ -1119,17 +1124,23 @@ function MapComponent({
     if (!mapRef.current || !mapRef.current.isStyleLoaded()) return;
     if (!calibrationCoordinates) return;
 
-    const calibrationPoint = new mapboxgl.LngLat(
-        calibrationCoordinates.lng,
-        calibrationCoordinates.lat
-    );
-
-    const groundAltitude = mapRef.current.queryTerrainElevation(calibrationPoint) || calibrationCoordinates.altitude;
+    let groundAltitude;
+    if (is3D) {
+      // В 3D‑режиме пытаемся получить высоту рельефа
+      const calibrationPoint = new mapboxgl.LngLat(
+          calibrationCoordinates.lng,
+          calibrationCoordinates.lat
+      );
+      groundAltitude = mapRef.current.queryTerrainElevation(calibrationPoint) || calibrationCoordinates.altitude;
+    } else {
+      // В 2D‑режиме используем значение, введённое пользователем, или 0
+      groundAltitude = calibrationCoordinates.altitude || 0;
+    }
 
     if (typeof onCalibrationAltitude === 'function') {
       onCalibrationAltitude(groundAltitude);
     }
-  }, [calibrationCoordinates, onCalibrationAltitude, isMoving, mapRef.current?.isStyleLoaded()]);
+  }, [calibrationCoordinates, onCalibrationAltitude, isMoving, is3D, mapRef.current?.isStyleLoaded()]);
 
   useEffect(() => {
     if (!mapRef.current) return;
