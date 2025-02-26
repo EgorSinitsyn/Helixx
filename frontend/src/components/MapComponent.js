@@ -10,6 +10,7 @@ import MapboxDraw from '@mapbox/mapbox-gl-draw';
 import towerIcon from '../assets/tower-icon.png';
 import galochkaIcon from '../assets/galochka-planiemer.png';
 import greenCircle from '../assets/green_circle.png';
+import TargetIcon from '../assets/target_icon.png';
 
 import { initTree3DLayers, updateTree3DLayers, removeTree3DLayers } from '../components/trees3D.js';
 import '../components/drone_style.css';
@@ -859,7 +860,7 @@ function MapComponent({
         // При необходимости задайте размеры
         saveButton.style.width = '32px';
         saveButton.style.height = '32px';
-        saveButton.style.backgroundSize = '15px 15px';
+        saveButton.style.backgroundSize = '16px 16px';
 
         // Используем нашу функцию handleSavePolygons
         saveButton.onclick = handleSavePolygons;
@@ -1323,7 +1324,7 @@ function MapComponent({
             style={{
               position: 'absolute',
               bottom: '3px',
-              left: '38.5%',
+              left: '36.7%',
               transform: 'translateX(-50%)',
               zIndex: 999,
               width: '35px',
@@ -1339,13 +1340,36 @@ function MapComponent({
             }}
         />
 
+
+        {/* кнопка "Target" для зума */}
+        <button
+            onClick={() => { /* Добавьте нужный обработчик клика */ }}
+            className="target-button"
+            style={{
+              position: 'absolute',
+              bottom: '3px',
+              left: '39.5%',
+              transform: 'translateX(-50%)',
+              zIndex: 999,
+              width: '35px',
+              height: '35px',
+              backgroundColor: '#fff',
+              border: '1px solid #ccc',
+              backgroundImage: `url(${TargetIcon})`,
+              backgroundRepeat: 'no-repeat',
+              backgroundPosition: 'center',
+              backgroundSize: 'contain',
+              cursor: 'pointer'
+            }}
+        />
+
         {/* Кнопка Планирмер */}
         <button
             onClick={togglePlanimeter}
             style={{
               position: 'absolute',
               bottom: '3px',
-              left: '35.5%',
+              left: '33.9%',
               transform: 'translateX(-50%)',
               zIndex: 999,
               width: '35px',
