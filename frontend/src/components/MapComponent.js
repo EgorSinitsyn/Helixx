@@ -1,6 +1,6 @@
 // MapComponent.js
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import mapboxgl from 'mapbox-gl';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three-stdlib';
@@ -205,6 +205,22 @@ function MapComponent({
           .addTo(mapRef.current);
     });
   };
+
+  // Обработчик для кнопки "target-button" (зум на позицию дрона)
+  const handleTargetClick = useCallback(() => {
+    if (!mapRef.current) return;
+    const { lng, lat } = dronePosition;
+    mapRef.current.flyTo({
+      center: [dronePosition.lng, dronePosition.lat],
+      zoom: is3D ? 18 : 16,       // примерный зум для 3D и 2D режимов
+      pitch: is3D ? 60 : 0,       // наклон камеры в 3D, 0 в 2D
+      bearing: is3D ? -17.6 : 0, // ориентация камеры для 3D или 0 для 2D
+      offset: is3D ? [0, 500] : [0, 0],// для 3D сдвигаем камеру на 100 пикселей вниз
+      speed: 1.2,               // скорость анимации
+      curve: 1,                 // кривая анимации
+      easing: (t) => t,         // функция сглаживания
+    });
+  }, [dronePosition, is3D]);
 
   // -------------------------------
   // ИНИЦИАЛИЗАЦИЯ КАРТЫ (Создается 1 раз)
@@ -1343,7 +1359,7 @@ function MapComponent({
 
         {/* кнопка "Target" для зума */}
         <button
-            onClick={() => { /* Добавьте нужный обработчик клика */ }}
+            onClick={handleTargetClick}
             className="target-button"
             style={{
               position: 'absolute',
