@@ -1146,9 +1146,22 @@ function MapComponent({
       groundAltitude = calibrationCoordinates.altitude || 0;
     }
 
+    // if (typeof onCalibrationAltitude === 'function') {
+    //   onCalibrationAltitude(groundAltitude);
+    // }
+
+    // Добавляем условие: обновляем только если разница существенная
+    if (
+        Math.abs(Number(dronePosition.altitude) - Number(groundAltitude)) <
+        0.01
+    ) {
+      return;
+    }
+
     if (typeof onCalibrationAltitude === 'function') {
       onCalibrationAltitude(groundAltitude);
     }
+
   }, [calibrationCoordinates, onCalibrationAltitude, isMoving, is3D, mapRef.current?.isStyleLoaded()]);
 
   // Получение высоты рельефа под дроном
