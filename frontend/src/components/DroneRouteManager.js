@@ -27,7 +27,13 @@ export const loadRoute = async () => {
 };
 
 /// Функция для перемещения дрона по точкам маршрута с использованием requestAnimationFrame и throttle
-export const moveDroneToRoutePoints = (dronePosition, setDronePosition, routePoints, setIsMoving) => {
+export const moveDroneToRoutePoints = (
+    dronePosition,
+    setDronePosition,
+    routePoints,
+    setIsMoving,
+    getGroundElevation // функция, возвращающая актуальное значение groundElevation
+) => {
     if (!routePoints || routePoints.length === 0) {
         alert('Маршрут пуст!');
         return;
@@ -35,20 +41,28 @@ export const moveDroneToRoutePoints = (dronePosition, setDronePosition, routePoi
 
     let index = 0;
 
-    // Создаем throttled-версию setDronePosition (обновление не чаще, чем раз в 50 мс)
     const throttledSetDronePosition = throttle(setDronePosition, 50);
 
     const moveToNextPoint = (currentDronePosition) => {
+        // Используем getGroundElevation() для получения актуального значения
+        const flightAltitude = Number(currentDronePosition.altitude) - Number(getGroundElevation());
+
+        if (flightAltitude < 0) {
+            alert('Столкновение с землей!');
+            setIsMoving(false);
+            return;
+        }
+
         if (index >= routePoints.length) {
             alert('Маршрут завершён!');
-            setIsMoving(false); // Останавливаем движение
+            setIsMoving(false);
             return;
         }
 
         const target = routePoints[index];
-        const speed = 20; // Скорость дрона в метрах в секунду
+        const speed = 20;
         const distanceToTarget = calculateDistance(currentDronePosition, target);
-        const duration = (distanceToTarget / speed) * 1000; // продолжительность в мс
+        const duration = (distanceToTarget / speed) * 1000;
 
         const startLat = currentDronePosition.lat;
         const startLng = currentDronePosition.lng;
@@ -65,17 +79,33 @@ export const moveDroneToRoutePoints = (dronePosition, setDronePosition, routePoi
         let startTime = null;
 
         const animate = (timestamp) => {
+
             if (!startTime) startTime = timestamp;
             const elapsed = timestamp - startTime;
             let t = elapsed / duration;
-            if (t > 1) t = 1; // Ограничиваем значение от 0 до 1
+            if (t > 1) t = 1;
 
-            // Интерполяция координат по линейной формуле
             const newLat = startLat + (targetLat - startLat) * t;
             const newLng = startLng + (targetLng - startLng) * t;
             const newAlt = startAlt + (targetAlt - startAlt) * t;
 
-            // Вычисляем heading на основе текущей позиции и цели
+            // Пересчитываем flightAltitude с использованием актуального groundElevation
+            const newFlightAltitude = Number(newAlt) - Number(getGroundElevation());
+
+            // В начале анимации:
+            console.log(
+                '[Перед проверкой]',
+                'newAlt:', newAlt,
+                'groundElevation:', getGroundElevation(),
+                'flightAltitude:', newFlightAltitude
+            );
+
+            if (newFlightAltitude < 0) {
+                alert('Столкновение с землей!');
+                setIsMoving(false);
+                return;
+            }
+
             const newPosition = {
                 lat: newLat,
                 lng: newLng,
@@ -83,13 +113,12 @@ export const moveDroneToRoutePoints = (dronePosition, setDronePosition, routePoi
                 heading: calculateHeading({ lat: newLat, lng: newLng }, target),
             };
 
-            // Обновляем позицию через throttled-функцию
             throttledSetDronePosition(newPosition);
 
             if (t < 1) {
                 requestAnimationFrame(animate);
             } else {
-                index++;  // Переходим к следующей точке
+                index++;
                 moveToNextPoint(newPosition);
             }
         };
@@ -97,8 +126,8 @@ export const moveDroneToRoutePoints = (dronePosition, setDronePosition, routePoi
         requestAnimationFrame(animate);
     };
 
-    setIsMoving(true); // Начинаем движение
-    moveToNextPoint(dronePosition); // Запускаем анимацию от текущей позиции
+    setIsMoving(true);
+    moveToNextPoint(dronePosition);
 };
 
 // Функция для вычисления расстояния между точками (формула Haversine)

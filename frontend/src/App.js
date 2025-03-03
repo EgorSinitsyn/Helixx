@@ -14,7 +14,7 @@ import { loadRoute, moveDroneToRoutePoints } from './components/DroneRouteManage
 
 const CALIBRATION_LATITUDE = 55.139592;
 const CALIBRATION_LONGITUDE = 37.962471;
-const CALIBRATION_ALTITUDE = '';
+const CALIBRATION_ALTITUDE = 0;
 
 
 const App = () => {
@@ -86,8 +86,14 @@ const App = () => {
       return;
     }
     setIsMoving(true);  // Начинаем движение
-    moveDroneToRoutePoints(dronePosition, setDronePosition, routePoints, setIsMoving);
-  }, [dronePosition, routePoints]);
+    moveDroneToRoutePoints(
+        dronePosition,
+        setDronePosition,
+        routePoints,
+        setIsMoving,
+        () => groundElevation  // функция, возвращающая актуальное значение
+    );
+  }, [dronePosition, routePoints, groundElevation]); // добавляем groundElevation
 
   useEffect(() => {
     const initializeRoute = async () => {
@@ -239,6 +245,8 @@ const App = () => {
 
 
   // --- Остальные обработчики (для миссий и настроек) ---
+
+  const flightAltitude = Number(dronePosition.altitude) - Number(groundElevation);
 
   // Колбэк для получения высоты рельефа под дроном
   const handleGroundElevationChange = useCallback((newElevation) => {
@@ -457,7 +465,7 @@ const App = () => {
           latitude={dronePosition.lat}
           longitude={dronePosition.lng}
           altitude={dronePosition.altitude}
-          groundElevation={groundElevation}
+          flightAltitude={flightAltitude}
           heading={droneHeading}
           onHide={hideDroneInfoPanel}
         />
@@ -471,7 +479,7 @@ const App = () => {
         onToggleTreePlacing={toggleTreePlacing}
         isOpen={isSidebarOpen}
         onToggleSidebar={toggleSidebar}
-        onStartMission={() => moveDroneToRoutePoints(dronePosition, setDronePosition, routePoints, setIsMoving)}
+        onStartMission={() => moveDroneToRoutePoints(dronePosition, setDronePosition, routePoints, setIsMoving, () => groundElevation)}
       />
 
       {isMissionBuilding && (
