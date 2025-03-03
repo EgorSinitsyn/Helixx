@@ -36,6 +36,7 @@ const App = () => {
   const markersRef = useRef([]); // Инициализация markersRef
 
   const [newDronePosition, setNewDronePosition] = useState({ lat: '', lng: '', altitude: '' });
+  const [groundElevation, setGroundElevation] = useState(0); // получение высоты рельефа под дроном
   const [route, setRoute] = useState([]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -239,6 +240,11 @@ const App = () => {
 
   // --- Остальные обработчики (для миссий и настроек) ---
 
+  // Колбэк для получения высоты рельефа под дроном
+  const handleGroundElevationChange = useCallback((newElevation) => {
+    setGroundElevation(newElevation);
+  }, []);
+
   const openSettings = useCallback(() => {
     setIsSettingsOpen(true);
     setNewDronePosition({
@@ -424,6 +430,7 @@ const App = () => {
       <MapComponent
         dronePosition={dronePosition}
         onCalibrationAltitude={handleCalibrationAltitude} // калибровка высоты дрона относительно рельефа
+        onGroundElevationChange={handleGroundElevationChange}
         calibrationCoordinates={calibrationCoordinates}
         route={confirmedRoute}
         is3D={is3D}
@@ -450,6 +457,7 @@ const App = () => {
           latitude={dronePosition.lat}
           longitude={dronePosition.lng}
           altitude={dronePosition.altitude}
+          groundElevation={groundElevation}
           heading={droneHeading}
           onHide={hideDroneInfoPanel}
         />

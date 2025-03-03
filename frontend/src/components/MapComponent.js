@@ -24,6 +24,7 @@ mapboxgl.accessToken = process.env.REACT_APP_MAPBOX_TOKEN;
 function MapComponent({
                         dronePosition,
                         onCalibrationAltitude,
+                        onGroundElevationChange,
                         calibrationCoordinates,
                         route: confirmedRoute,
                         is3D,
@@ -370,7 +371,7 @@ function MapComponent({
     }
 
     try {
-      map.setLight({
+      map.setLights({
         // flat: {
         //   type: 'flat',
         //   properties: {
@@ -1150,6 +1151,31 @@ function MapComponent({
     }
   }, [calibrationCoordinates, onCalibrationAltitude, isMoving, is3D, mapRef.current?.isStyleLoaded()]);
 
+  // Получение высоты рельефа под дроном
+  useEffect(() => {
+    // Если карта не готова или проп не передан — ничего не делаем
+    if (!mapRef.current || !mapRef.current.isStyleLoaded()) return;
+    if (typeof onGroundElevationChange !== 'function') return;
+
+    // Включён ли режим 3D и есть ли DEM‑источник
+    if (is3D) {
+      // Координаты дрона
+      const { lng, lat } = dronePosition;
+      // Вызываем queryTerrainElevation — вернёт высоту рельефа в метрах
+      // Если по каким-то причинам null / undefined — fallback на 0
+      const groundElevation = mapRef.current.queryTerrainElevation([lng, lat]) || 0;
+
+      // Отправляем наверх
+      onGroundElevationChange(groundElevation);
+
+    } else {
+      // В 2D‑режиме можно передавать 0 (либо передавать ту «плоскую» высоту, которая у вас есть)
+      onGroundElevationChange(0);
+    }
+
+  }, [dronePosition, is3D, onGroundElevationChange]);
+
+  // Отвечает за добавление (удаление) 3D-модели дрона и 2D-маркера
   useEffect(() => {
     if (!mapRef.current) return;
     const map = mapRef.current;

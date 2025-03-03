@@ -1,8 +1,9 @@
 // src/components/DroneInfoPanel.js
 import React, { useState } from 'react';
 
-const DroneInfoPanel = ({ latitude, longitude, altitude, heading, onHide }) => {
+const DroneInfoPanel = ({ latitude, longitude, altitude, groundElevation, heading, onHide }) => {
     const [isMinimized, setIsMinimized] = useState(false);
+    const flightAltitude = Number(altitude) - Number(groundElevation);
 
     const panelStyle = {
         position: 'fixed',
@@ -44,6 +45,7 @@ const DroneInfoPanel = ({ latitude, longitude, altitude, heading, onHide }) => {
                     <p>Широта: {latitude.toFixed(5)}</p>
                     <p>Долгота: {longitude.toFixed(5)}</p>
                     <p>Высота: {Number(altitude).toFixed(2)} м</p>
+                    <p>Высота полёта: {flightAltitude.toFixed(2)} м</p>
                     <p>Направление: {heading}°</p>
                 </>
             )}
