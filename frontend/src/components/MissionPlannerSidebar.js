@@ -5,6 +5,7 @@ import React, { useState } from 'react';
 const MissionPlannerSidebar = ({
                                    selectedPoint,
                                    onAltitudeChange,
+                                   calibratedAltitude,
                                    onSavePoint,
                                    onCancelRoute,
                                    onRemoveLastPoint,
@@ -114,7 +115,7 @@ const MissionPlannerSidebar = ({
                     />
                 </div>
                 <p style={{ fontSize: '12px', color: '#ccc' }}>
-                    Высота точки с учетом рельефа: {Number(selectedPoint.groundAltitude) + Number(selectedPoint.flightAltitude)} м
+                    Высота точки с учетом начальной позиции дрона: {(Number(calibratedAltitude) + Number(selectedPoint.flightAltitude)).toFixed(2)} м
                 </p>
 
                 <div style={styles.buttonRow}>

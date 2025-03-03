@@ -477,6 +477,7 @@ const App = () => {
           onConfirmRoute={handleConfirmRoute}
           selectedPoint={selectedPoint}
           onAltitudeChange={handleAltitudeChange}
+          calibratedAltitude={dronePosition.altitude}
           onSavePoint={handleSavePoint}
           onClose={() => setIsMissionBuilding(false)}
         />
