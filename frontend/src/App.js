@@ -91,7 +91,8 @@ const App = () => {
         setDronePosition,
         routePoints,
         setIsMoving,
-        () => groundElevation  // функция, возвращающая актуальное значение
+        () => groundElevation,  // функция, возвращающая актуальное значение
+        () => flightAltitudeRef.current  // функция, возвращающая актуальное значение
     );
   }, [dronePosition, routePoints, groundElevation]); // добавляем groundElevation
 
@@ -246,7 +247,19 @@ const App = () => {
 
   // --- Остальные обработчики (для миссий и настроек) ---
 
-  const flightAltitude = Number(dronePosition.altitude) - Number(groundElevation);
+  // const flightAltitude = Number(dronePosition.altitude) - Number(groundElevation);
+
+  const [flightAltitude, setFlightAltitude] = useState(0);
+  const flightAltitudeRef = useRef(0);
+
+
+  useEffect(() => {
+    const newFlightAltitude = Number(dronePosition.altitude) - Number(groundElevation);
+    // Обновляем стейт (чтобы интерфейс перерисовывался)
+    setFlightAltitude(newFlightAltitude);
+    // Одновременно пишем в ref (чтобы анимация могла читать «напрямую» без задержек)
+    flightAltitudeRef.current = newFlightAltitude;
+  }, [dronePosition.altitude, groundElevation]);
 
   // Колбэк для получения высоты рельефа под дроном
   const handleGroundElevationChange = useCallback((newElevation) => {
@@ -479,7 +492,7 @@ const App = () => {
         onToggleTreePlacing={toggleTreePlacing}
         isOpen={isSidebarOpen}
         onToggleSidebar={toggleSidebar}
-        onStartMission={() => moveDroneToRoutePoints(dronePosition, setDronePosition, routePoints, setIsMoving, () => groundElevation)}
+        onStartMission={handleStartRoute}
       />
 
       {isMissionBuilding && (

@@ -32,7 +32,8 @@ export const moveDroneToRoutePoints = (
     setDronePosition,
     routePoints,
     setIsMoving,
-    getGroundElevation // функция, возвращающая актуальное значение groundElevation
+    getGroundElevation,          // если нужно логировать groundElevation
+    getExternalFlightAltitude    // функция, возвращающая flightAltitude (из App.js)
 ) => {
     if (!routePoints || routePoints.length === 0) {
         alert('Маршрут пуст!');
@@ -40,19 +41,9 @@ export const moveDroneToRoutePoints = (
     }
 
     let index = 0;
-
     const throttledSetDronePosition = throttle(setDronePosition, 50);
 
-    const moveToNextPoint = (currentDronePosition) => {
-        // Используем getGroundElevation() для получения актуального значения
-        const flightAltitude = Number(currentDronePosition.altitude) - Number(getGroundElevation());
-
-        if (flightAltitude < 0) {
-            alert('Столкновение с землей!');
-            setIsMoving(false);
-            return;
-        }
-
+    const moveToNextPoint = (currentPosition) => {
         if (index >= routePoints.length) {
             alert('Маршрут завершён!');
             setIsMoving(false);
@@ -61,25 +52,25 @@ export const moveDroneToRoutePoints = (
 
         const target = routePoints[index];
         const speed = 20;
-        const distanceToTarget = calculateDistance(currentDronePosition, target);
+        const distanceToTarget = calculateDistance(currentPosition, target);
         const duration = (distanceToTarget / speed) * 1000;
 
-        const startLat = currentDronePosition.lat;
-        const startLng = currentDronePosition.lng;
-        const startAlt = parseFloat(currentDronePosition.altitude);
+        const startLat = currentPosition.lat;
+        const startLng = currentPosition.lng;
+        const startAlt = parseFloat(currentPosition.altitude);
+
         const targetLat = target.lat;
         const targetLng = target.lng;
         const targetAlt = parseFloat(target.altitude);
 
         if (isNaN(startAlt) || isNaN(targetAlt)) {
-            console.error('Ошибка при преобразовании высоты:', currentDronePosition.altitude, target.altitude);
+            console.error('Ошибка при преобразовании высоты:', startAlt, targetAlt);
             return;
         }
 
         let startTime = null;
 
         const animate = (timestamp) => {
-
             if (!startTime) startTime = timestamp;
             const elapsed = timestamp - startTime;
             let t = elapsed / duration;
@@ -89,23 +80,7 @@ export const moveDroneToRoutePoints = (
             const newLng = startLng + (targetLng - startLng) * t;
             const newAlt = startAlt + (targetAlt - startAlt) * t;
 
-            // Пересчитываем flightAltitude с использованием актуального groundElevation
-            const newFlightAltitude = Number(newAlt) - Number(getGroundElevation());
-
-            // В начале анимации:
-            console.log(
-                '[Перед проверкой]',
-                'newAlt:', newAlt,
-                'groundElevation:', getGroundElevation(),
-                'flightAltitude:', newFlightAltitude
-            );
-
-            if (newFlightAltitude < 0) {
-                alert('Столкновение с землей!');
-                setIsMoving(false);
-                return;
-            }
-
+            // Обновляем позицию дрона
             const newPosition = {
                 lat: newLat,
                 lng: newLng,
@@ -114,6 +89,32 @@ export const moveDroneToRoutePoints = (
             };
 
             throttledSetDronePosition(newPosition);
+
+            // Берём «актуальное» значение flightAltitude из App.js
+            const externalFlightAltitude = getExternalFlightAltitude ? getExternalFlightAltitude() : null;
+
+            // Если надо логировать groundElevation, возьмём его из переданного колбэка
+            const currentGroundElevation = getGroundElevation ? getGroundElevation() : null;
+
+            // --- Логирование как было «до проверки» ---
+            console.log(
+                '[Перед проверкой]',
+                'newAlt:', newAlt,
+                'groundElevation:', currentGroundElevation,
+                'flightAltitude:', externalFlightAltitude
+            );
+
+            // Проверка столкновения
+            if (
+                // is3D
+                // // externalFlightAltitude !== null
+                // &&
+                externalFlightAltitude < -0.5
+            ) {
+                alert('Столкновение с землёй!');
+                setIsMoving(false);
+                return;
+            }
 
             if (t < 1) {
                 requestAnimationFrame(animate);
