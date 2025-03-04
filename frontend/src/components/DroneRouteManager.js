@@ -1,3 +1,5 @@
+// DroneRouteManager.js
+
 import throttle from 'lodash/throttle';
 
 // Функция для загрузки маршрута из файла GeoJSON
@@ -26,7 +28,7 @@ export const loadRoute = async () => {
     }
 };
 
-/// Функция для перемещения дрона по точкам маршрута с использованием requestAnimationFrame и throttle
+/// Функция для перемещения дрона по точкам маршрута с объединённой анимацией (горизонтальной и вертикальной)
 export const moveDroneToRoutePoints = (
     dronePosition,
     setDronePosition,
@@ -43,7 +45,6 @@ export const moveDroneToRoutePoints = (
     let index = 0;
     const throttledSetDronePosition = throttle(setDronePosition, 50);
 
-    // --- Запускаем цепочку движения ---
     setIsMoving(true);
     moveToNextPoint(dronePosition);
 
@@ -63,115 +64,78 @@ export const moveDroneToRoutePoints = (
         const targetLng = parseFloat(target.lng);
         const targetAlt = parseFloat(target.altitude) || 0;
 
-        // 1) Сначала вертикальная анимация
-        animateAltitude(startAlt, targetAlt, () => {
-            // 2) Затем горизонтальная анимация
-            animateHorizontal(startLat, startLng, targetLat, targetLng, targetAlt, () => {
-                // Переходим к следующей точке
-                index++;
-                moveToNextPoint({
-                    lat: targetLat,
-                    lng: targetLng,
-                    altitude: targetAlt,
-                });
+        // Объединённая анимация для горизонтального перемещения и изменения высоты
+        animateMovement(startLat, startLng, startAlt, targetLat, targetLng, targetAlt, () => {
+            index++;
+            moveToNextPoint({
+                lat: targetLat,
+                lng: targetLng,
+                altitude: targetAlt,
             });
         });
     }
 
-    // --- Анимация вертикали: меняем ТОЛЬКО высоту ---
-    function animateAltitude(startAltitude, endAltitude, onComplete) {
-        const speedVertical = 5;  // м/с или любая другая скорость
-        const distance = Math.abs(endAltitude - startAltitude);
-        const duration = (distance / speedVertical) * 1000; // в мс
+    // Функция, объединяющая горизонтальную и вертикальную анимацию
+    function animateMovement(startLat, startLng, startAlt, targetLat, targetLng, targetAlt, onComplete) {
+        const speedVertical = 5; // м/с для вертикального перемещения
+        const speedHorizontal = 20; // м/с для горизонтального перемещения
+
+        // Расстояние между точками для горизонтальной анимации (метры)
+        const distance = calculateDistance(
+            { lat: startLat, lng: startLng },
+            { lat: targetLat, lng: targetLng }
+        );
+
+        const durationAltitude = (Math.abs(targetAlt - startAlt) / speedVertical) * 1000;
+        const durationHorizontal = (distance / speedHorizontal) * 1000;
+        // Общая длительность — максимум из двух этапов
+        const totalDuration = Math.max(durationAltitude, durationHorizontal);
 
         let startTime = null;
 
         function step(timestamp) {
             if (!startTime) startTime = timestamp;
             const elapsed = timestamp - startTime;
-            let t = elapsed / duration;
-            if (t > 1) t = 1;
 
-            // Линейная интерполяция высоты
-            const currentAlt = startAltitude + (endAltitude - startAltitude) * t;
+            // Вычисляем прогресс отдельно для горизонтали и вертикали
+            const tHorizontal = Math.min(elapsed / durationHorizontal, 1);
+            const tVertical = Math.min(elapsed / durationAltitude, 1);
 
-            // Позиция в вертикальном этапе: lat/lng не меняются
-            const newPosition = {
-                lat: dronePosition.lat, // или current lat? Но здесь см. ниже
-                lng: dronePosition.lng,
+            const currentLat = startLat + (targetLat - startLat) * tHorizontal;
+            const currentLng = startLng + (targetLng - startLng) * tHorizontal;
+            const currentAlt = startAlt + (targetAlt - startAlt) * tVertical;
+
+            const newHeading = calculateHeading({ lat: currentLat, lng: currentLng }, { lat: targetLat, lng: targetLng });
+
+            throttledSetDronePosition({
+                lat: currentLat,
+                lng: currentLng,
                 altitude: currentAlt,
-                heading: 0
-            };
+                heading: newHeading,
+            });
 
-            throttledSetDronePosition(newPosition);
-
-            // Проверяем столкновение через getExternalFlightAltitude() (если нужно)
+            // Проверка столкновения (при необходимости)
             const fAlt = getExternalFlightAltitude ? getExternalFlightAltitude() : null;
-            if (
-                // fAlt !== null &&
-                fAlt < -0.2) {
+            if (fAlt !== null && fAlt < -0.2) {
                 alert('Столкновение с землей!');
                 setIsMoving(false);
                 return;
             }
 
-            if (t < 1) {
+            if (elapsed < totalDuration) {
                 requestAnimationFrame(step);
             } else {
-                onComplete(); // Закончили подъём/спуск
-            }
-        }
-
-        // Старт
-        requestAnimationFrame(step);
-    }
-
-    // --- Анимация горизонтали: меняем lat/lng, держим altitude постоянной ---
-    function animateHorizontal(startLat, startLng, endLat, endLng, fixedAltitude, onComplete) {
-        const speedHorizontal = 20; // м/с
-        // Расстояние по прямой (Haversine)
-        const dist = calculateDistance(
-            { lat: startLat, lng: startLng },
-            { lat: endLat, lng: endLng }
-        );
-        const duration = (dist / speedHorizontal) * 1000;
-
-        let startTime = null;
-
-        function step(timestamp) {
-            if (!startTime) startTime = timestamp;
-            const elapsed = timestamp - startTime;
-            let t = elapsed / duration;
-            if (t > 1) t = 1;
-
-            const curLat = startLat + (endLat - startLat) * t;
-            const curLng = startLng + (endLng - startLng) * t;
-
-            const newPosition = {
-                lat: curLat,
-                lng: curLng,
-                altitude: fixedAltitude, // не меняется!
-                heading: calculateHeading({ lat: curLat, lng: curLng }, { lat: endLat, lng: endLng }),
-            };
-
-            throttledSetDronePosition(newPosition);
-
-            // Проверка столкновения (если нужно)
-            const fAlt = getExternalFlightAltitude ? getExternalFlightAltitude() : null;
-            if (
-                // fAlt !== null &&
-                fAlt < -0.2) {
-                alert('Столкновение (horizontal stage)!');
-                setIsMoving(false);
-                return;
-            }
-
-            if (t < 1) {
-                requestAnimationFrame(step);
-            } else {
+                // Обеспечиваем точное совпадение с целевой позицией
+                throttledSetDronePosition({
+                    lat: targetLat,
+                    lng: targetLng,
+                    altitude: targetAlt,
+                    heading: newHeading,
+                });
                 onComplete();
             }
         }
+
         requestAnimationFrame(step);
     }
 };
