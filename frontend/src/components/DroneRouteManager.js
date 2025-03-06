@@ -78,7 +78,7 @@ export const moveDroneToRoutePoints = (
     // Функция, объединяющая горизонтальную и вертикальную анимацию
     function animateMovement(startLat, startLng, startAlt, targetLat, targetLng, targetAlt, onComplete) {
         const speedVertical = 5; // м/с для вертикального перемещения
-        const speedHorizontal = 20; // м/с для горизонтального перемещения
+        const speedHorizontal = 5; // м/с для горизонтального перемещения
 
         // Расстояние между точками для горизонтальной анимации (метры)
         const distance = calculateDistance(
@@ -96,16 +96,17 @@ export const moveDroneToRoutePoints = (
         function step(timestamp) {
             if (!startTime) startTime = timestamp;
             const elapsed = timestamp - startTime;
+            // Единый прогресс для обеих составляющих
+            const t = Math.min(elapsed / totalDuration, 1);
 
-            // Вычисляем прогресс отдельно для горизонтали и вертикали
-            const tHorizontal = Math.min(elapsed / durationHorizontal, 1);
-            const tVertical = Math.min(elapsed / durationAltitude, 1);
+            const currentLat = startLat + (targetLat - startLat) * t;
+            const currentLng = startLng + (targetLng - startLng) * t;
+            const currentAlt = startAlt + (targetAlt - startAlt) * t;
 
-            const currentLat = startLat + (targetLat - startLat) * tHorizontal;
-            const currentLng = startLng + (targetLng - startLng) * tHorizontal;
-            const currentAlt = startAlt + (targetAlt - startAlt) * tVertical;
-
-            const newHeading = calculateHeading({ lat: currentLat, lng: currentLng }, { lat: targetLat, lng: targetLng });
+            const newHeading = calculateHeading(
+                { lat: currentLat, lng: currentLng },
+                { lat: targetLat, lng: targetLng }
+            );
 
             throttledSetDronePosition({
                 lat: currentLat,
