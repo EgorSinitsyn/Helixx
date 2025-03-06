@@ -158,10 +158,11 @@ const MissionPlannerSidebar = ({
               ❌
             </span>
 
-                        <p>Точка {index + 1}</p>
+                        <p style={{color: '#FFD700', textAlign: 'center' }}>Точка {index + 1}</p>
                         <p>Широта: {point.lat}</p>
                         <p>Долгота: {point.lng}</p>
-                        <p>Высота: {point.flightAltitude}</p>
+                        <p>Надземная высота: {point.flightAltitude} м</p>
+                        <p>Абсолютная высота: {Number(point.altitude).toFixed(2)} м</p>
                     </div>
                 ))}
             </div>
