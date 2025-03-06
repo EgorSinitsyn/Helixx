@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 
 const MissionPlannerSidebar = ({
                                    selectedPoint,
+                                   is3D,
                                    onAltitudeChange,
                                    calibratedAltitude,
                                    onSavePoint,
@@ -108,9 +109,9 @@ const MissionPlannerSidebar = ({
                     <label>Высота:</label>
                     <input
                         type="number"
-                        value={selectedPoint.flightAltitude}
-                        onChange={(e) => onAltitudeChange(e.target.value)}
-                        placeholder="Введите надземную высоту"
+                        value={is3D ? selectedPoint.flightAltitude : selectedPoint.altitude}
+                        onChange={(e) => onAltitudeChange(e.target.value, is3D)}
+                        placeholder={is3D ? "Введите надземную высоту" : "Введите абсолютную высоту"}
                         style={styles.input}
                     />
                 </div>

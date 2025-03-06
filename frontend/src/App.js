@@ -381,12 +381,24 @@ const App = () => {
     }
   }, [isTreePlacingActive]);
 
-  const handleAltitudeChange = useCallback((flightAltitude) => {
-    setSelectedPoint(prev => ({
-      ...prev,
-      flightAltitude, // Теперь это строка, введённая пользователем
-      altitude: Number(prev.groundAltitude) + Number(flightAltitude) // Итоговая высота
-    }));
+  const handleAltitudeChange = useCallback((value, is3D) => {
+    const numericValue = Number(value);
+    setSelectedPoint(prev => {
+      if (is3D) {
+        // В 3D‑режиме обновляем надземную высоту и вычисляем абсолютную высоту
+        return {
+          ...prev,
+          flightAltitude: numericValue,
+          altitude: Number(prev.groundAltitude) + numericValue
+        };
+      } else {
+        return {
+          ...prev,
+          // В 2D‑режиме обновляем только абсолютную высоту
+          altitude: numericValue
+        };
+      }
+    });
   }, []);
 
   const handleSavePoint = useCallback(() => {
@@ -498,6 +510,7 @@ const App = () => {
       {isMissionBuilding && (
         <MissionPlannerSidebar
           isMissionBuilding={isMissionBuilding}
+          is3D={is3D}
           routePoints={routePoints}
           onSaveRoute={saveRoute}
           onRemoveLastPoint={removeLastPoint}
