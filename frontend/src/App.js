@@ -14,9 +14,18 @@ import { loadRoute, moveDroneToRoutePoints } from './components/DroneRouteManage
 
 const CALIBRATION_LATITUDE = 55.139592;
 const CALIBRATION_LONGITUDE = 37.962471;
-const CALIBRATION_ALTITUDE = 270;
+const CALIBRATION_ALTITUDE = 0;
+
 
 const App = () => {
+
+  // Состояние калибровки (будет обновляться в модальном окне)
+  const [calibrationCoordinates, setCalibrationCoordinates] = useState({
+    lat: CALIBRATION_LATITUDE,
+    lng: CALIBRATION_LONGITUDE,
+    altitude: CALIBRATION_ALTITUDE,
+  });
+
   const [dronePosition, setDronePosition] = useState({
     lat: CALIBRATION_LATITUDE,
     lng: CALIBRATION_LONGITUDE,
@@ -27,6 +36,7 @@ const App = () => {
   const markersRef = useRef([]); // Инициализация markersRef
 
   const [newDronePosition, setNewDronePosition] = useState({ lat: '', lng: '', altitude: '' });
+  const [groundElevation, setGroundElevation] = useState(0); // получение высоты рельефа под дроном
   const [route, setRoute] = useState([]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -40,8 +50,8 @@ const App = () => {
   const [isDroneInfoVisible, setIsDroneInfoVisible] = useState(false);
 
   // Для построения маршрута
-  const [routePoints, setRoutePoints] = useState([]); // для редактирования маршрута
-  const [selectedPoint, setSelectedPoint] = useState({ lat: '', lng: '', altitude: '' });
+  const [routePoints, setRoutePoints] = useState([]);
+  const [selectedPoint, setSelectedPoint] = useState([]);
   const [isMissionBuilding, setIsMissionBuilding] = useState(false);
   const [confirmedRoute, setConfirmedRoute] = useState([]);       // для подтверждённого маршрута
 
@@ -60,6 +70,14 @@ const App = () => {
 
   const hideDroneInfoPanel = useCallback(() => setIsDroneInfoVisible(false), []);
 
+  // Callback для установки высоты рельефа
+  const handleCalibrationAltitude = (elevation) => {
+    setDronePosition((prev) => ({
+      ...prev,
+      altitude: elevation,
+    }));
+  };
+
   const [isMoving, setIsMoving] = useState(false); // Флаг для отслеживания движения дрона
 
   const handleStartRoute = useCallback(() => {
@@ -68,8 +86,15 @@ const App = () => {
       return;
     }
     setIsMoving(true);  // Начинаем движение
-    moveDroneToRoutePoints(dronePosition, setDronePosition, routePoints, setIsMoving);
-  }, [dronePosition, routePoints]);
+    moveDroneToRoutePoints(
+        dronePosition,
+        setDronePosition,
+        routePoints,
+        setIsMoving,
+        () => groundElevation,  // функция, возвращающая актуальное значение
+        () => flightAltitudeRef.current  // функция, возвращающая актуальное значение
+    );
+  }, [dronePosition, routePoints, groundElevation]); // добавляем groundElevation
 
   useEffect(() => {
     const initializeRoute = async () => {
@@ -119,7 +144,6 @@ const App = () => {
 
     return () => socket.close();
   }, []);
-
 
 
   // --- Обработчики для PlantationPlanner ---
@@ -223,6 +247,25 @@ const App = () => {
 
   // --- Остальные обработчики (для миссий и настроек) ---
 
+  // const flightAltitude = Number(dronePosition.altitude) - Number(groundElevation);
+
+  const [flightAltitude, setFlightAltitude] = useState(0);
+  const flightAltitudeRef = useRef(0);
+
+
+  useEffect(() => {
+    const newFlightAltitude = Number(dronePosition.altitude) - Number(groundElevation);
+    // Обновляем стейт (чтобы интерфейс перерисовывался)
+    setFlightAltitude(newFlightAltitude);
+    // Одновременно пишем в ref (чтобы анимация могла читать «напрямую» без задержек)
+    flightAltitudeRef.current = newFlightAltitude;
+  }, [dronePosition.altitude, groundElevation]);
+
+  // Колбэк для получения высоты рельефа под дроном
+  const handleGroundElevationChange = useCallback((newElevation) => {
+    setGroundElevation(newElevation);
+  }, []);
+
   const openSettings = useCallback(() => {
     setIsSettingsOpen(true);
     setNewDronePosition({
@@ -279,22 +322,39 @@ const App = () => {
     const { lat, lng, altitude } = newDronePosition;
     const latNum = parseFloat(lat);
     const lngNum = parseFloat(lng);
-    const altitudeNum = parseFloat(altitude);
-
-    setIsDroneInfoVisible(true);
-
-    if (!isNaN(latNum) && !isNaN(lngNum) && lat !== '' && lng !== '' && !isNaN(altitudeNum)) {
-      setDronePosition({
-        lat: latNum,
-        lng: lngNum,
-        altitude: altitudeNum,
-        heading: droneHeading,
-      });
-      console.log("Новое положение дрона:", { lat: latNum, lng: lngNum, altitude: altitudeNum, heading: droneHeading });
+    // Не используем введённое значение высоты в 3D‑режиме
+    if (!isNaN(latNum) && !isNaN(lngNum) && lat !== '' && lng !== '') {
+      setIsDroneInfoVisible(true);
+      if (is3D) {
+        // Обновляем только координаты калибровки, высота пересчитается MapComponent
+        setCalibrationCoordinates({
+          lat: latNum,
+          lng: lngNum,
+          altitude: CALIBRATION_ALTITUDE, // fallback, если запрос не сработает
+        });
+        // Обновляем позицию дрона: lat и lng обновляются, высота остаётся прежней пока MapComponent не пересчитает
+        setDronePosition((prev) => ({
+          ...prev,
+          lat: latNum,
+          lng: lngNum,
+        }));
+      } else {
+        // Для 2D используем введённое значение высоты
+        const altitudeNum = parseFloat(altitude);
+        if (!isNaN(altitudeNum)) {
+          setDronePosition({
+            lat: latNum,
+            lng: lngNum,
+            altitude: altitudeNum,
+            heading: droneHeading,
+          });
+        }
+      }
+      console.log("Новое положение дрона:", { lat: latNum, lng: lngNum });
     } else {
-      alert("Введите корректные координаты и дельту высоты дрона.");
+      alert("Введите корректные координаты.");
     }
-  }, [newDronePosition, droneHeading]);
+  }, [newDronePosition, is3D, droneHeading]);
 
   const handleHeadingChange = useCallback((angle) => {
     setDroneHeading(angle);
@@ -306,13 +366,40 @@ const App = () => {
     setIsMissionBuilding(true);
   }, []);
 
-  const handleMapClick = useCallback((lat, lng) => {
-    setSelectedPoint({ lat, lng, altitude: '' });
-    // Если требуется, можно также установить координаты для выбранной точки насаждения:
+  const handleMapClick = useCallback((lat, lng, groundAltitude = 0) => {
+    setSelectedPoint({
+      lat,
+      lng,
+      groundAltitude,
+      flightAltitude: '', // Значение по умолчанию – пустая строка
+      altitude: groundAltitude // Итоговая высота на начальном этапе
+    });
+
+    // Если в режиме расстановки деревьев, можно установить и точку для насаждения
     if (isTreePlacingActive) {
       setSelectedTreePoint({ lat, lng, height: '', crownSize: '' });
     }
   }, [isTreePlacingActive]);
+
+  const handleAltitudeChange = useCallback((value, is3D) => {
+    const numericValue = Number(value);
+    setSelectedPoint(prev => {
+      if (is3D) {
+        // В 3D‑режиме обновляем надземную высоту и вычисляем абсолютную высоту
+        return {
+          ...prev,
+          flightAltitude: numericValue,
+          altitude: Number(prev.groundAltitude) + numericValue
+        };
+      } else {
+        return {
+          ...prev,
+          // В 2D‑режиме обновляем только абсолютную высоту
+          altitude: numericValue
+        };
+      }
+    });
+  }, []);
 
   const handleSavePoint = useCallback(() => {
     if (selectedPoint.lat && selectedPoint.lng && selectedPoint.altitude) {
@@ -329,15 +416,27 @@ const App = () => {
     setSelectedPoint({ lat: '', lng: '', altitude: '' });
   }, []);
 
-  const removeLastPoint = () => {
-    console.log("Отмена последней точки");
-    if (markersRef.current.length > 0) {
-      const lastMarker = markersRef.current.pop();
-      lastMarker.remove();
-    } else if (routePoints.length > 0) {
-      setRoutePoints((prev) => prev.slice(0, -1));
+
+  const removeLastPoint = useCallback(() => {
+    // 1) Если есть «несохранённая» точка (selectedPoint), «откатываем» её
+    if (selectedPoint.lat !== '' || selectedPoint.lng !== '') {
+      // Сбросим selectedPoint в пустое состояние
+      setSelectedPoint({
+        lat: '',
+        lng: '',
+        flightAltitude: '',
+        groundAltitude: 0,
+      });
     }
-    setSelectedPoint({ lat: '', lng: '', altitude: '' });
+    // 2) Иначе, если нет несохранённой, но есть «сохранённые» (routePoints)
+    else if (routePoints.length > 0) {
+      setRoutePoints(prev => prev.slice(0, -1));
+    }
+  }, [selectedPoint, routePoints]);
+
+  // Удаление точки маршрута по ❌
+  const handleRemoveRoutePoint = (index) => {
+    setRoutePoints((prev) => prev.filter((_, i) => i !== index));
   };
 
   const saveRoute = useCallback(() => {
@@ -363,6 +462,9 @@ const App = () => {
     <div>
       <MapComponent
         dronePosition={dronePosition}
+        onCalibrationAltitude={handleCalibrationAltitude} // калибровка высоты дрона относительно рельефа
+        onGroundElevationChange={handleGroundElevationChange}
+        calibrationCoordinates={calibrationCoordinates}
         route={confirmedRoute}
         is3D={is3D}
         cellTowers={cellTowers}
@@ -388,6 +490,7 @@ const App = () => {
           latitude={dronePosition.lat}
           longitude={dronePosition.lng}
           altitude={dronePosition.altitude}
+          flightAltitude={flightAltitude}
           heading={droneHeading}
           onHide={hideDroneInfoPanel}
         />
@@ -401,19 +504,22 @@ const App = () => {
         onToggleTreePlacing={toggleTreePlacing}
         isOpen={isSidebarOpen}
         onToggleSidebar={toggleSidebar}
-        onStartMission={() => moveDroneToRoutePoints(dronePosition, setDronePosition, routePoints, setIsMoving)}
+        onStartMission={handleStartRoute}
       />
 
       {isMissionBuilding && (
         <MissionPlannerSidebar
           isMissionBuilding={isMissionBuilding}
+          is3D={is3D}
           routePoints={routePoints}
           onSaveRoute={saveRoute}
           onRemoveLastPoint={removeLastPoint}
+          onRemoveRoutePoint={handleRemoveRoutePoint}
           onCancelRoute={cancelRoute}
           onConfirmRoute={handleConfirmRoute}
           selectedPoint={selectedPoint}
-          onAltitudeChange={(altitude) => setSelectedPoint((prev) => ({ ...prev, altitude }))}
+          onAltitudeChange={handleAltitudeChange}
+          calibratedAltitude={dronePosition.altitude}
           onSavePoint={handleSavePoint}
           onClose={() => setIsMissionBuilding(false)}
         />

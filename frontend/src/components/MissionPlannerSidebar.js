@@ -1,22 +1,31 @@
-import React from 'react';
+// MissionPlannerSidebar.js
+
+import React, { useState } from 'react';
 
 const MissionPlannerSidebar = ({
                                    selectedPoint,
+                                   is3D,
                                    onAltitudeChange,
+                                   calibratedAltitude,
                                    onSavePoint,
                                    onCancelRoute,
                                    onRemoveLastPoint,
+                                   onRemoveRoutePoint,
                                    onConfirmRoute,
                                    routePoints,
                                    onClose,
                                }) => {
+
+    // **NEW** — добавляем состояние для отслеживания «подсвеченной» точки
+    const [hoveredPointIndex, setHoveredPointIndex] = useState(null);
+
     // Функция для сохранения маршрута в проект
     const saveRouteToProject = async (routePoints) => {
         const geoJson = {
             type: 'FeatureCollection',
             features: routePoints.map((point, index) => ({
                 type: 'Feature',
-                properties: { id: index + 1, altitude: Number(point.altitude) },
+                properties: { id: index + 1, altitude: Number(point.flightAltitude) },
                 geometry: {
                     type: 'Point',
                     coordinates: [Number(point.lng), Number(point.lat), Number(point.altitude)],
@@ -48,7 +57,7 @@ const MissionPlannerSidebar = ({
             type: 'FeatureCollection',
             features: routePoints.map((point, index) => ({
                 type: 'Feature',
-                properties: { id: index + 1, altitude: Number(point.altitude) },
+                properties: { id: index + 1, altitude: Number(point.flightAltitude) },
                 geometry: {
                     type: 'Point',
                     coordinates: [Number(point.lng), Number(point.lat), Number(point.altitude)],
@@ -100,12 +109,15 @@ const MissionPlannerSidebar = ({
                     <label>Высота:</label>
                     <input
                         type="number"
-                        value={selectedPoint.altitude}
-                        onChange={(e) => onAltitudeChange(e.target.value)}
-                        placeholder="Введите высоту"
+                        value={is3D ? selectedPoint.flightAltitude : selectedPoint.altitude}
+                        onChange={(e) => onAltitudeChange(e.target.value, is3D)}
+                        placeholder={is3D ? "Введите надземную высоту" : "Введите абсолютную высоту"}
                         style={styles.input}
                     />
                 </div>
+                <p style={{ fontSize: '12px', color: '#ccc' }}>
+                    Высота точки с учетом начальной позиции дрона: {(Number(calibratedAltitude) + Number(selectedPoint.flightAltitude)).toFixed(2)} м
+                </p>
 
                 <div style={styles.buttonRow}>
                     <button onClick={onRemoveLastPoint} style={styles.cancelButton}>Отменить точку</button>
@@ -126,11 +138,32 @@ const MissionPlannerSidebar = ({
             <div style={styles.routeListContainer}>
                 <h4>Маршрутные точки</h4>
                 {routePoints.map((point, index) => (
-                    <div key={index} style={styles.routePoint}>
-                        <p>Точка {index + 1}</p>
+                    <div
+                        key={index}
+                        // Делаем обёртку с position:relative для крестика, а при наведении — синяя рамка
+                        style={{
+                            ...styles.routePoint,
+                            border:
+                                hoveredPointIndex === index
+                                    ? '2px solid blue'
+                                    : styles.routePoint.border,
+                        }}
+                        onMouseEnter={() => setHoveredPointIndex(index)}
+                        onMouseLeave={() => setHoveredPointIndex(null)}
+                    >
+                        {/* Крестик ❌ в правом верхнем углу */}
+                        <span
+                            style={styles.removeIcon}
+                            onClick={() => onRemoveRoutePoint(index)}
+                        >
+              ❌
+            </span>
+
+                        <p style={{color: '#FFD700', textAlign: 'center' }}>Точка {index + 1}</p>
                         <p>Широта: {point.lat}</p>
                         <p>Долгота: {point.lng}</p>
-                        <p>Высота: {point.altitude}</p>
+                        <p>Надземная высота: {point.flightAltitude} м</p>
+                        <p>Абсолютная высота: {Number(point.altitude).toFixed(2)} м</p>
                     </div>
                 ))}
             </div>
@@ -257,6 +290,18 @@ const styles = {
         padding: '10px',
         backgroundColor: '#555',
         borderRadius: '4px',
+        border: '1px solid #555',
+        position: 'relative',
+    },
+
+    // **NEW** — стили для крестика «❌»
+    removeIcon: {
+        position: 'absolute',
+        top: '5px',
+        right: '5px',
+        cursor: 'pointer',
+        fontSize: '16px',
+        color: 'red',
     },
 };
 

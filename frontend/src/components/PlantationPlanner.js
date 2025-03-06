@@ -1,4 +1,4 @@
-// src/components/PlantationPlanner.js
+// PlantationPlanner.js
 
 import React, { useState } from 'react';
 
@@ -105,7 +105,7 @@ const PlantationPlanner = ({
           >
             ❌
           </span>
-              <p>Точка {index + 1}</p>
+              <p style={{color: '#ADFF2F', textAlign: 'center' }}>Насаждение {index + 1}</p>
               <p>Широта: {point.lat}</p>
               <p>Долгота: {point.lng}</p>
               <p>Высота: {point.height} м</p>

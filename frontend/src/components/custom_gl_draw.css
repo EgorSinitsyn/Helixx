@@ -1,12 +1,16 @@
 .custom-map-controls {
     position: fixed !important;
-    bottom: -819px !important;
-    left: -2465px !important;
-    border-radius: 0;
-    display: flex !important;
+    bottom: -806px !important;
+    left: -2513px !important;
+    border-radius: 0 !important;
+    display: flex;
     flex-direction: column; /* Выстроить кнопки вертикально */
     align-items: center;
     transform: rotate(90deg) scale(1.21); /* Повернуть контейнер */
+    transform-origin: center;
+    padding: 0;
+    margin: 0;
+    gap: 5px;
     /*transform-origin: center;*/
 }
 
@@ -16,17 +20,11 @@
     border-radius: 0 !important;
 }
 
-/*.my-planimeter-popup {*/
-/*    position: absolute !important;*/
-/*    top: 50% !important;*/
-/*    left: 50% !important;*/
-/*    bottom: auto !important;*/
-/*    right: auto !important;*/
-/*    transform: translate(-50%, -50%) !important;*/
-/*    width: 150px !important;*/
-/*    height: 75px !important;*/
-/*    !* Если нужно, можно дописать ещё свои стили *!*/
-/*}*/
 
-
+.mapboxgl-ctrl-group.mapboxgl-ctrl {
+    transform: scale(1) translateX(0px) !important;
+    border-radius: 0 !important;
+    margin: 0 6px !important;
+    /* можно добавить другие стили, если требуется */
+}
 

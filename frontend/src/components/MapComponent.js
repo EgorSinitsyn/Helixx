@@ -1,6 +1,6 @@
 // MapComponent.js
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import mapboxgl from 'mapbox-gl';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three-stdlib';
@@ -10,6 +10,7 @@ import MapboxDraw from '@mapbox/mapbox-gl-draw';
 import towerIcon from '../assets/tower-icon.png';
 import galochkaIcon from '../assets/galochka-planiemer.png';
 import greenCircle from '../assets/green_circle.png';
+import TargetIcon from '../assets/target_icon.png';
 
 import { initTree3DLayers, updateTree3DLayers, removeTree3DLayers } from '../components/trees3D.js';
 import '../components/drone_style.css';
@@ -22,6 +23,9 @@ mapboxgl.accessToken = process.env.REACT_APP_MAPBOX_TOKEN;
 
 function MapComponent({
                         dronePosition,
+                        onCalibrationAltitude,
+                        onGroundElevationChange,
+                        calibrationCoordinates,
                         route: confirmedRoute,
                         is3D,
                         cellTowers,
@@ -197,11 +201,31 @@ function MapComponent({
     markersRef.current = confirmedRoute.map((point) => {
       const markerElement = document.createElement('div');
       markerElement.className = 'route-marker';
-      return new mapboxgl.Marker({ element: markerElement })
+      return new mapboxgl.Marker({
+        element: markerElement,
+        pitchAlignment: 'map',
+        rotationAlignment: 'map'
+      })
           .setLngLat([point.lng, point.lat])
           .addTo(mapRef.current);
     });
   };
+
+  // Обработчик для кнопки "target-button" (зум на позицию дрона)
+  const handleTargetClick = useCallback(() => {
+    if (!mapRef.current) return;
+    const { lng, lat } = dronePosition;
+    mapRef.current.flyTo({
+      center: [dronePosition.lng, dronePosition.lat],
+      zoom: is3D ? 18 : 16,       // примерный зум для 3D и 2D режимов
+      pitch: is3D ? 60 : 0,       // наклон камеры в 3D, 0 в 2D
+      bearing: is3D ? -17.6 : 0, // ориентация камеры для 3D или 0 для 2D
+      offset: is3D ? [0, 500] : [0, 0],// для 3D сдвигаем камеру на 100 пикселей вниз
+      speed: 1.2,               // скорость анимации
+      curve: 1,                 // кривая анимации
+      easing: (t) => t,         // функция сглаживания
+    });
+  }, [dronePosition, is3D]);
 
   // -------------------------------
   // ИНИЦИАЛИЗАЦИЯ КАРТЫ (Создается 1 раз)
@@ -347,7 +371,7 @@ function MapComponent({
     }
 
     try {
-      map.setLight({
+      map.setLights({
         // flat: {
         //   type: 'flat',
         //   properties: {
@@ -530,7 +554,7 @@ function MapComponent({
       if (isTreePlacingActive) {
         // console.log('Режим деревьев активен');
         const { lng, lat } = e.lngLat;
-        onTreeMapClick(lat, lng);
+        // onTreeMapClick(lat, lng);
 
         // Вызываем callback для обновления координат в родительском компоненте
         if (typeof onTreeMapClick === 'function') {
@@ -553,11 +577,27 @@ function MapComponent({
       // Если включён режим планировщика маршрута – ставим маршрутный маркер
       if (isPlacingMarker) {
         const { lat, lng } = e.lngLat;
-        onMapClick(lat, lng);
+        let terrainElevation = 0;
+        if (is3D) {
+          // В 3D режиме пытаемся получить высоту рельефа
+          if (mapRef.current && typeof mapRef.current.queryTerrainElevation === 'function') {
+            terrainElevation = mapRef.current.queryTerrainElevation(e.lngLat) || 0;
+          }
+        } else {
+          // В 2D режиме игнорируем высоту рельефа
+          terrainElevation = 0;
+        }
+        // Вызываем callback с передачей lat, lng и terrainElevation
+        onMapClick(lat, lng, terrainElevation);
 
+        // Добавляем визуальный маркер, как и раньше
         const markerElement = document.createElement('div');
         markerElement.className = 'route-marker';
-        const marker = new mapboxgl.Marker({ element: markerElement })
+        const marker = new mapboxgl.Marker({
+          element: markerElement,
+          pitchAlignment: 'map',
+          rotationAlignment: 'map'
+        })
             .setLngLat([lng, lat])
             .addTo(mapRef.current);
         markersRef.current.push(marker);
@@ -570,7 +610,7 @@ function MapComponent({
         mapRef.current.off('click', handleMapClick);
       }
     };
-  }, [isRulerOn, isPlanimeterOn, isPlacingMarker, onMapClick, onTreeMapClick]);
+  }, [isRulerOn, isPlanimeterOn, isPlacingMarker, onMapClick, onTreeMapClick, isTreePlacingActive, is3D]);
 
 
   // -------------------------------
@@ -850,7 +890,7 @@ function MapComponent({
         // При необходимости задайте размеры
         saveButton.style.width = '32px';
         saveButton.style.height = '32px';
-        saveButton.style.backgroundSize = '15px 15px';
+        saveButton.style.backgroundSize = '16px 16px';
 
         // Используем нашу функцию handleSavePolygons
         saveButton.onclick = handleSavePolygons;
@@ -1086,6 +1126,69 @@ function MapComponent({
   // -------------------------------
   // useEffect для ДРОНА и маршрута
   // -------------------------------
+  // Калибровка высоты дрона после загрузки стиля и DEM-источника:
+  useEffect(() => {
+    // Если дрон выполняет миссию, не калибруем высоту
+    if (isMoving) return;
+    if (!mapRef.current || !mapRef.current.isStyleLoaded()) return;
+    if (!calibrationCoordinates) return;
+
+    let groundAltitude;
+    if (is3D) {
+      // В 3D‑режиме пытаемся получить высоту рельефа
+      const calibrationPoint = new mapboxgl.LngLat(
+          calibrationCoordinates.lng,
+          calibrationCoordinates.lat
+      );
+      groundAltitude = mapRef.current.queryTerrainElevation(calibrationPoint) || calibrationCoordinates.altitude;
+    } else {
+      // В 2D‑режиме используем значение, введённое пользователем, или 0
+      groundAltitude = calibrationCoordinates.altitude || 0;
+    }
+
+    // if (typeof onCalibrationAltitude === 'function') {
+    //   onCalibrationAltitude(groundAltitude);
+    // }
+
+    // Добавляем условие: обновляем только если разница существенная
+    if (
+        Math.abs(Number(dronePosition.altitude) - Number(groundAltitude)) <
+        0.01
+    ) {
+      return;
+    }
+
+    if (typeof onCalibrationAltitude === 'function') {
+      onCalibrationAltitude(groundAltitude);
+    }
+
+  }, [calibrationCoordinates, onCalibrationAltitude, isMoving, is3D, mapRef.current?.isStyleLoaded()]);
+
+  // Получение высоты рельефа под дроном
+  useEffect(() => {
+    // Если карта не готова или проп не передан — ничего не делаем
+    if (!mapRef.current || !mapRef.current.isStyleLoaded()) return;
+    if (typeof onGroundElevationChange !== 'function') return;
+
+    // Включён ли режим 3D и есть ли DEM‑источник
+    if (is3D) {
+      // Координаты дрона
+      const { lng, lat } = dronePosition;
+      // Вызываем queryTerrainElevation — вернёт высоту рельефа в метрах
+      // Если по каким-то причинам null / undefined — fallback на 0
+      const groundElevation = mapRef.current.queryTerrainElevation([lng, lat]) || 0;
+
+      // Отправляем наверх
+      onGroundElevationChange(groundElevation);
+
+    } else {
+      // В 2D‑режиме можно передавать 0 (либо передавать ту «плоскую» высоту, которая у вас есть)
+      onGroundElevationChange(0);
+    }
+
+  }, [dronePosition, is3D, onGroundElevationChange]);
+
+  // Отвечает за добавление (удаление) 3D-модели дрона и 2D-маркера
   useEffect(() => {
     if (!mapRef.current) return;
     const map = mapRef.current;
@@ -1138,8 +1241,11 @@ function MapComponent({
     }
   }, [is3D, dronePosition]);
 
-  // Ориентация дрона
+ // Ориентация дрона (heading) при движении
   useEffect(() => {
+    if (isMoving && droneMarkerRef.current) {
+      droneMarkerRef.current.setRotation(droneHeading);
+    }
     if (isMoving && droneLayerRef.current?.drone) {
       const adjustedHeading = droneHeading + 90;
       droneLayerRef.current.drone.rotation.y = THREE.MathUtils.degToRad(adjustedHeading);
@@ -1186,7 +1292,11 @@ function MapComponent({
     dataForMarkers.forEach((pt) => {
       const el = document.createElement('div');
       el.className = 'route-marker';
-      const marker = new mapboxgl.Marker({ element: el })
+      const marker = new mapboxgl.Marker({
+        element: el,
+        pitchAlignment: 'map',
+        rotationAlignment: 'map'
+      })
           .setLngLat([pt.lng, pt.lat])
           .addTo(mapRef.current);
       markersRef.current.push(marker);
@@ -1295,7 +1405,7 @@ function MapComponent({
             style={{
               position: 'absolute',
               bottom: '3px',
-              left: '38.5%',
+              left: '36.7%',
               transform: 'translateX(-50%)',
               zIndex: 999,
               width: '35px',
@@ -1311,13 +1421,36 @@ function MapComponent({
             }}
         />
 
+
+        {/* кнопка "Target" для зума */}
+        <button
+            onClick={handleTargetClick}
+            className="target-button"
+            style={{
+              position: 'absolute',
+              bottom: '3px',
+              left: '39.5%',
+              transform: 'translateX(-50%)',
+              zIndex: 999,
+              width: '35px',
+              height: '35px',
+              backgroundColor: '#fff',
+              border: '1px solid #ccc',
+              backgroundImage: `url(${TargetIcon})`,
+              backgroundRepeat: 'no-repeat',
+              backgroundPosition: 'center',
+              backgroundSize: 'contain',
+              cursor: 'pointer'
+            }}
+        />
+
         {/* Кнопка Планирмер */}
         <button
             onClick={togglePlanimeter}
             style={{
               position: 'absolute',
               bottom: '3px',
-              left: '35.5%',
+              left: '33.9%',
               transform: 'translateX(-50%)',
               zIndex: 999,
               width: '35px',
@@ -1473,7 +1606,12 @@ function addDroneModel(map, dronePosition, isMoving) {
 function addDroneMarker(map, dronePosition) {
   const markerElement = document.createElement('div');
   markerElement.className = 'gps-marker';
-  return new mapboxgl.Marker({ element: markerElement, anchor: 'bottom' })
+  return new mapboxgl.Marker({
+    element: markerElement,
+    anchor: 'bottom',
+    pitchAlignment: 'map',
+    rotationAlignment: 'map'
+  })
       .setLngLat([dronePosition.lng, dronePosition.lat])
       .addTo(map);
 }
