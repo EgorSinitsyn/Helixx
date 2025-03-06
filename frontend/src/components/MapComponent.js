@@ -1241,8 +1241,11 @@ function MapComponent({
     }
   }, [is3D, dronePosition]);
 
-  // Ориентация дрона
+ // Ориентация дрона (heading) при движении
   useEffect(() => {
+    if (isMoving && droneMarkerRef.current) {
+      droneMarkerRef.current.setRotation(droneHeading);
+    }
     if (isMoving && droneLayerRef.current?.drone) {
       const adjustedHeading = droneHeading + 90;
       droneLayerRef.current.drone.rotation.y = THREE.MathUtils.degToRad(adjustedHeading);
