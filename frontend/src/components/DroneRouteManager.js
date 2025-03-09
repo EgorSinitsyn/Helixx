@@ -35,7 +35,8 @@ export const moveDroneToRoutePoints = (
     routePoints,
     setIsMoving,
     getGroundElevation,
-    getExternalFlightAltitude
+    getExternalFlightAltitude,
+    updateRouteIndex
 ) => {
     if (!routePoints || routePoints.length === 0) {
         alert('Маршрут пуст!');
@@ -67,6 +68,7 @@ export const moveDroneToRoutePoints = (
         // Объединённая анимация для горизонтального перемещения и изменения высоты
         animateMovement(startLat, startLng, startAlt, targetLat, targetLng, targetAlt, () => {
             index++;
+            updateRouteIndex();
             moveToNextPoint({
                 lat: targetLat,
                 lng: targetLng,

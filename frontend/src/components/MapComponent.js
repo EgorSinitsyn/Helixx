@@ -31,6 +31,7 @@ function MapComponent({
                         cellTowers,
                         isCoverageEnabled,
                         droneHeading,
+                        currentRouteIndex,
                         setDroneHeading,
                         isPlacingMarker,
                         onMapClick,
@@ -1262,13 +1263,14 @@ function MapComponent({
     return Math.round(angle);
   };
 
+
   useEffect(() => {
-    if (isMoving && routePoints.length > 0) {
-      const nextPoint = routePoints[0];
+    if (isMoving && routePoints.length > 0 && currentRouteIndex < routePoints.length) {
+      const nextPoint = routePoints[currentRouteIndex];
       const newHeading = calculateHeadingFromRoute(dronePosition, nextPoint);
       setDroneHeading(newHeading);
     }
-  }, [dronePosition, isMoving, routePoints, setDroneHeading]);
+  }, [dronePosition, isMoving, routePoints, currentRouteIndex]);
 
   // Первый рендер (3D дрон)
   useEffect(() => {

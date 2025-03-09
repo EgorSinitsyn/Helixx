@@ -54,6 +54,7 @@ const App = () => {
   const [selectedPoint, setSelectedPoint] = useState([]);
   const [isMissionBuilding, setIsMissionBuilding] = useState(false);
   const [confirmedRoute, setConfirmedRoute] = useState([]);       // для подтверждённого маршрута
+  const [currentRouteIndex, setCurrentRouteIndex] = useState(0); // для отслеживания направления (heading) к текущей точки маршрута
 
   // --- Новые состояния для PlantationPlanner ---
   const [isTreePlacingActive, setIsTreePlacingActive] = useState(false);
@@ -92,7 +93,8 @@ const App = () => {
         routePoints,
         setIsMoving,
         () => groundElevation,  // функция, возвращающая актуальное значение
-        () => flightAltitudeRef.current  // функция, возвращающая актуальное значение
+        () => flightAltitudeRef.current, // функция, возвращающая актуальное значение
+        () => setCurrentRouteIndex(prevIndex => prevIndex + 1)
     );
   }, [dronePosition, routePoints, groundElevation]); // добавляем groundElevation
 
@@ -471,6 +473,7 @@ const App = () => {
         isCoverageEnabled={isCoverageEnabled}
         droneHeading={droneHeading}
         setDroneHeading={setDroneHeading}
+        currentRouteIndex={currentRouteIndex}
         updateDroneAltitude={updateDroneAltitude}
         isPlacingMarker={isMissionBuilding}
         isMissionBuilding={isMissionBuilding}
