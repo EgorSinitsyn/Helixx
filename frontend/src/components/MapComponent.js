@@ -1247,8 +1247,8 @@ function MapComponent({
       droneMarkerRef.current.setRotation(droneHeading);
     }
     if (isMoving && droneLayerRef.current?.drone) {
-      const adjustedHeading = droneHeading + 90;
-      droneLayerRef.current.drone.rotation.y = THREE.MathUtils.degToRad(adjustedHeading);
+      // const adjustedHeading = droneHeading + 90;
+      droneLayerRef.current.drone.rotation.y = THREE.MathUtils.degToRad(droneHeading);
       mapRef.current.triggerRepaint();
     }
   }, [droneHeading, isMoving]);
@@ -1523,6 +1523,29 @@ function MapComponent({
 // ---------------------------------------------------------
 // ФУНКЦИЯ: добавить 3D модель дрона
 // ---------------------------------------------------------
+// Глобальная переменная для кеширования модели
+let droneModelCache = null;
+
+function loadDroneModel(callback) {
+  console.log("Загрузка модели дрона...");
+  if (droneModelCache) {
+    console.log("Используется кешированная модель");
+    callback(droneModelCache.clone());
+    return;
+  }
+  const loader = new GLTFLoader();
+  loader.load(
+      'drone-model.glb', // Убедитесь, что путь к модели корректный
+      (gltf) => {
+        console.log("Модель успешно загружена:", gltf);
+        droneModelCache = gltf.scene;
+        callback(droneModelCache.clone());
+      },
+      undefined,
+      (error) => console.error("Ошибка при загрузке модели дрона:", error)
+  );
+}
+
 function addDroneModel(map, dronePosition, isMoving) {
   const customLayer = {
     id: 'drone-model-layer',
@@ -1530,52 +1553,80 @@ function addDroneModel(map, dronePosition, isMoving) {
     renderingMode: '3d',
     dronePosition: dronePosition,
     onAdd: function (map, gl) {
+      console.log("onAdd вызван");
+
+      // Создаем камеру и сцену
       this.camera = new THREE.Camera();
       this.scene = new THREE.Scene();
-      const ambientLight = new THREE.AmbientLight(0xffffff, 1);
-      this.scene.add(ambientLight);
 
-      const loader = new GLTFLoader();
-      loader.load(
-          'drone-model.glb', // Убедись, что путь к модели корректен
-          (gltf) => {
-            this.drone = gltf.scene;
-            this.drone.rotation.set(Math.PI / 2, 0, 0); // Корректируем ориентацию
-            this.scene.add(this.drone);
-            this.initialized = true;
-
-            this.drone.traverse((child) => {
-              if (child.isMesh) {
-                child.material.color.setHex(0xffffff);
-                child.material.emissive = new THREE.Color(0xffffff);
-                child.material.emissiveIntensity = 1;
-                child.material.transparent = true;
-                child.material.side = THREE.DoubleSide;
-                child.material.opacity = 1.0;
-                child.material.needsUpdate = true;
-              }
-            });
-          },
-          undefined,
-          (error) => console.error('Ошибка при загрузке модели дрона:', error)
-      );
-
+      // Создаем рендерер, используя canvas и контекст Mapbox
       this.renderer = new THREE.WebGLRenderer({
         canvas: map.getCanvas(),
         context: gl,
         antialias: true
       });
       this.renderer.autoClear = false;
+      // Устанавливаем pixel ratio и размеры рендера для высокого качества
+      this.renderer.setPixelRatio(window.devicePixelRatio);
+      this.renderer.setSize(
+          map.getCanvas().clientWidth,
+          map.getCanvas().clientHeight,
+          false
+      );
+
+      // Настраиваем корректное отображение цветов и физически правильное освещение
+      this.renderer.outputColorSpace = THREE.SRGBColorSpace;
+      this.renderer.physicallyCorrectLights = true;
+      this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      this.renderer.toneMappingExposure = 1.0; // Подберите оптимальное значение
+
+      // Добавляем освещение
+      const ambientLight = new THREE.AmbientLight(0xffffff, 1);
+      this.scene.add(ambientLight);
+      const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+      directionalLight.position.set(0, 1, 1).normalize();
+      this.scene.add(directionalLight);
+
+      // Загружаем модель дрона
+      loadDroneModel((drone) => {
+        this.drone = drone;
+        // Корректируем первоначальную ориентацию (учитывая экспорт из Blender)
+        this.drone.rotation.set(Math.PI / 2, 3, 0);
+        this.scene.add(this.drone);
+        this.initialized = true;
+        console.log("Модель добавлена в сцену");
+
+        // Обновляем настройки текстур для сохранения качества PBR-материалов
+        this.drone.traverse((child) => {
+          if (child.isMesh && child.material.map) {
+            // Устанавливаем корректное цветовое пространство
+            child.material.map.colorSpace = THREE.SRGBColorSpace;
+            // Максимальная анизотропия для улучшения качества текстур
+            child.material.map.anisotropy = this.renderer.capabilities.getMaxAnisotropy();
+            // Рекомендуемые фильтры
+            child.material.map.minFilter = THREE.LinearMipMapLinearFilter;
+            child.material.map.magFilter = THREE.LinearFilter;
+            child.material.needsUpdate = true;
+          }
+        });
+      });
     },
     render: function (gl, matrix) {
       if (this.drone && this.dronePosition) {
-        const { lat, lng, altitude } = this.dronePosition;
+        // Получаем координаты в системе Mercator
         const modelAsMercatorCoordinate = updateDronePositionInMercator(map, this.dronePosition);
+        if (!modelAsMercatorCoordinate) {
+          console.error("Некорректные координаты модели:", modelAsMercatorCoordinate);
+          return;
+        }
 
-        if (!modelAsMercatorCoordinate) return;
-
-        const scaleFactor = 1;
+        // Расчет масштаба
+        // Если масштаб 1 дает нужное качество, оставляем его; затем можно подбирать scaleFactor для нужного размера
+        const scaleFactor = 20;
         const scale = modelAsMercatorCoordinate.meterInMercatorCoordinateUnits() * scaleFactor;
+        // console.log("Координаты дрона:", modelAsMercatorCoordinate, "Масштаб:", scale);
+
+        // Устанавливаем позицию и масштаб модели
         this.drone.position.set(
             modelAsMercatorCoordinate.x,
             modelAsMercatorCoordinate.y,
@@ -1583,19 +1634,24 @@ function addDroneModel(map, dronePosition, isMoving) {
         );
         this.drone.scale.set(scale, scale, scale);
 
+        // Если дрон движется, корректируем поворот по heading
         if (isMoving) {
           const targetHeading = this.dronePosition.heading || 0;
           this.drone.rotation.y = -Math.PI / 180 * targetHeading;
         }
 
+        // Обновляем матрицу проекции камеры и рендерим сцену
         this.camera.projectionMatrix = new THREE.Matrix4().fromArray(matrix);
         this.renderer.state.reset();
         this.renderer.clearDepth();
         this.renderer.render(this.scene, this.camera);
+
+        // Запрашиваем перерисовку карты
         map.triggerRepaint();
       }
     }
   };
+
   map.addLayer(customLayer);
   return customLayer;
 }
