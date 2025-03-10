@@ -24,14 +24,14 @@ const App = () => {
     lat: CALIBRATION_LATITUDE,
     lng: CALIBRATION_LONGITUDE,
     altitude: CALIBRATION_ALTITUDE,
-    heading: 0,
+    // heading: 0,
   });
 
   const [dronePosition, setDronePosition] = useState({
     lat: CALIBRATION_LATITUDE,
     lng: CALIBRATION_LONGITUDE,
     altitude: CALIBRATION_ALTITUDE,
-    heading: 0,
+    // heading: 0,
   });
 
   const markersRef = useRef([]); // Инициализация markersRef
@@ -87,6 +87,9 @@ const App = () => {
       alert('Маршрут пуст!');
       return;
     }
+
+    setCurrentRouteIndex(0); // сброс индекса чтобы дрон корректно обновлял heading при старте новой миссии
+
     setIsMoving(true);  // Начинаем движение
     moveDroneToRoutePoints(
         dronePosition,
