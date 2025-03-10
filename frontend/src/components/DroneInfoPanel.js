@@ -73,7 +73,11 @@ const DroneInfoPanel = ({ latitude, longitude, altitude, flightAltitude, heading
                         <div className="arrow"></div>
                         <div
                             className="compass-rotatable"
-                            style={{ transform: `rotate(${-heading}deg)` }}
+                            style={{
+                                transform: `rotate(${-heading}deg)`,
+                                transition: 'transform 2s ease',
+                                transitionProperty: 'transform',
+                            }}
                         >
                             <div className="tick tick-0"></div>
                             <div className="tick tick-45"></div>
