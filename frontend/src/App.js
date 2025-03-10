@@ -24,6 +24,7 @@ const App = () => {
     lat: CALIBRATION_LATITUDE,
     lng: CALIBRATION_LONGITUDE,
     altitude: CALIBRATION_ALTITUDE,
+    heading: 0,
   });
 
   const [dronePosition, setDronePosition] = useState({
@@ -339,6 +340,7 @@ const App = () => {
           ...prev,
           lat: latNum,
           lng: lngNum,
+          heading: droneHeading, // добавляем значение heading
         }));
       } else {
         // Для 2D используем введённое значение высоты

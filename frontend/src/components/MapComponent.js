@@ -221,7 +221,7 @@ function MapComponent({
       zoom: is3D ? 18 : 16,       // примерный зум для 3D и 2D режимов
       pitch: is3D ? 60 : 0,       // наклон камеры в 3D, 0 в 2D
       bearing: is3D ? -17.6 : 0, // ориентация камеры для 3D или 0 для 2D
-      offset: is3D ? [0, 500] : [0, 0],// для 3D сдвигаем камеру на 100 пикселей вниз
+      offset: is3D ? [0, 50] : [0, 0],// для 3D сдвигаем камеру на 100 пикселей вниз
       speed: 1.2,               // скорость анимации
       curve: 1,                 // кривая анимации
       easing: (t) => t,         // функция сглаживания
@@ -1263,7 +1263,6 @@ function MapComponent({
     return Math.round(angle);
   };
 
-
   useEffect(() => {
     if (isMoving && routePoints.length > 0 && currentRouteIndex < routePoints.length) {
       const nextPoint = routePoints[currentRouteIndex];
@@ -1280,7 +1279,7 @@ function MapComponent({
         droneLayerRef.current.drone.rotation.y = THREE.MathUtils.degToRad(initialHeading);
         droneLayerRef.current.initialized = true;
       }
-      const adjHeading = dronePosition.heading + 90;
+      const adjHeading = dronePosition.heading + 180;
       droneLayerRef.current.drone.rotation.y = THREE.MathUtils.degToRad(adjHeading);
       mapRef.current.triggerRepaint();
     }
@@ -1593,7 +1592,7 @@ function addDroneModel(map, dronePosition, isMoving) {
       loadDroneModel((drone) => {
         this.drone = drone;
         // Корректируем первоначальную ориентацию (учитывая экспорт из Blender)
-        this.drone.rotation.set(Math.PI / 2, 3, 0);
+        this.drone.rotation.set(Math.PI / 2, Math.PI , 0);
         this.scene.add(this.drone);
         this.initialized = true;
         console.log("Модель добавлена в сцену");
@@ -1624,7 +1623,7 @@ function addDroneModel(map, dronePosition, isMoving) {
 
         // Расчет масштаба
         // Если масштаб 1 дает нужное качество, оставляем его; затем можно подбирать scaleFactor для нужного размера
-        const scaleFactor = 20;
+        const scaleFactor = 5;
         const scale = modelAsMercatorCoordinate.meterInMercatorCoordinateUnits() * scaleFactor;
         // console.log("Координаты дрона:", modelAsMercatorCoordinate, "Масштаб:", scale);
 
