@@ -1,119 +1,300 @@
-// PlantationPlanner.js
+import React, { useState, useRef, useEffect } from 'react';
+import * as turf from '@turf/turf';
 
-import React, { useState } from 'react';
+// Новый компонент DraggableWindow для разметки рядов с деревьями
+const DraggableWindow = ({ children, onClose, style }) => {
+  const [dragging, setDragging] = useState(false);
+  const [offset, setOffset] = useState({ x: 0, y: 0 });
+  const [position, setPosition] = useState({ x: 100, y: 100 });
+  const windowRef = useRef(null);
+
+  const handleMouseDown = (e) => {
+    setDragging(true);
+    const rect = windowRef.current.getBoundingClientRect();
+    setOffset({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+    e.stopPropagation();
+  };
+
+  const handleMouseMove = (e) => {
+    if (dragging) {
+      setPosition({ x: e.clientX - offset.x, y: e.clientY - offset.y });
+    }
+  };
+
+  const handleMouseUp = () => {
+    setDragging(false);
+  };
+
+  useEffect(() => {
+    if (dragging) {
+      window.addEventListener('mousemove', handleMouseMove);
+      window.addEventListener('mouseup', handleMouseUp);
+    } else {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    }
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [dragging, offset]);
+
+  return (
+      <div
+          ref={windowRef}
+          style={{
+            position: 'fixed',
+            top: position.y,
+            left: position.x,
+            backgroundColor: 'gray',
+            color: 'white',
+            border: '1px solid #ccc',
+            padding: '10px',
+            zIndex: 2000,
+            cursor: dragging ? 'grabbing' : 'grab',
+            ...style
+          }}
+          onMouseDown={handleMouseDown}
+      >
+        {children}
+        <button
+            onClick={onClose}
+            style={{
+              position: 'absolute',
+              top: '2px',
+              right: '2px',
+              background: 'transparent',
+              border: 'none',
+              cursor: 'pointer',
+              fontWeight: 'bold',
+              color: 'white'
+            }}
+        >
+          X
+        </button>
+      </div>
+  );
+};
 
 const PlantationPlanner = ({
-  selectedPoint,
-  onTreeHeightChange,
-  onCrownSizeChange,
-  onSavePoint,
-  onCancelPoint,
-  onConfirmPlantation,
-  treePoints,
+                             selectedPoint,
+                             onTreeHeightChange,
+                             onCrownSizeChange,
+                             onSavePoint,       // Функция для сохранения одной точки насаждения
+                             onCancelPoint,
+                             onConfirmPlantation,
+                             treePoints,
                              onRemoveTreePoint,
                              onTreeHover,
                              onTreeLeave,
-  onClose,
-}) => { const [hoveredPointIndex, setHoveredPointIndex] = useState(null);
+                             onClose,
+                           }) => {
+  const [hoveredPointIndex, setHoveredPointIndex] = useState(null);
+
+  // Состояния для режима "Разметить ряды"
+  const [isRowModalOpen, setIsRowModalOpen] = useState(false);
+  const [rowSettings, setRowSettings] = useState({ treeHeight: '', crownSize: '', step: '' });
+  const [rowPoints, setRowPoints] = useState([]); // точки, задающие ряд
+
+  // Функция для добавления точки ряда – здесь для простоты через prompt
+  const handleAddRowPoint = () => {
+    const lat = parseFloat(window.prompt("Введите широту для точки ряда:", ""));
+    const lng = parseFloat(window.prompt("Введите долготу для точки ряда:", ""));
+    if (!isNaN(lat) && !isNaN(lng)) {
+      setRowPoints(prev => [...prev, { lat, lng }]);
+    } else {
+      alert("Некорректные координаты");
+    }
+  };
+
+  // Функция для вычисления промежуточных точек между заданными rowPoints
+  const computeRowPoints = () => {
+    if (rowPoints.length < 2) {
+      alert("Необходимо добавить минимум 2 точки для построения ряда.");
+      return [];
+    }
+    const coordinates = rowPoints.map(pt => [pt.lng, pt.lat]);
+    const line = turf.lineString(coordinates);
+    const totalLength = turf.length(line, { units: 'kilometers' });
+    const stepKm = parseFloat(rowSettings.step) / 1000; // шаг в км
+    if (!stepKm || stepKm <= 0) {
+      alert("Введите корректное значение шага.");
+      return [];
+    }
+    const points = [];
+    for (let d = 0; d <= totalLength; d += stepKm) {
+      const pt = turf.along(line, d, { units: 'kilometers' });
+      const [lng, lat] = pt.geometry.coordinates;
+      points.push({ lat, lng, height: rowSettings.treeHeight, crownSize: rowSettings.crownSize });
+    }
+    return points;
+  };
+
+
   return (
-    <div style={{ ...styles.sidebar, overflowX: 'hidden', overflowY: 'auto' }}>
-      <button onClick={onClose} style={styles.closeButton}>
-        ✕
-      </button>
-      <h3 style={styles.header}>Планировщик насаждений</h3>
-
-      <div style={styles.pointInputContainer}>
-        <p>Добавить точку насаждения</p>
-
-        <div style={styles.inputRow}>
-          <label style={styles.label}>Широта:</label>
-          <input
-            type="number"
-            value={selectedPoint.lat}
-            readOnly
-            style={styles.input}
-          />
-        </div>
-
-        <div style={styles.inputRow}>
-          <label style={styles.label}>Долгота:</label>
-          <input
-            type="number"
-            value={selectedPoint.lng}
-            readOnly
-            style={styles.input}
-          />
-        </div>
-
-        <div style={styles.inputRow}>
-          <label style={styles.label}>Высота дерева:</label>
-          <input
-            type="number"
-            value={selectedPoint.height || ''}
-            onChange={(e) => onTreeHeightChange(e.target.value)}
-            placeholder="Введите высоту"
-            style={styles.input}
-          />
-        </div>
-
-        <div style={styles.inputRow}>
-          <label style={styles.label}>Размер кроны:</label>
-          <input
-            type="number"
-            value={selectedPoint.crownSize || ''}
-            onChange={(e) => onCrownSizeChange(e.target.value)}
-            placeholder="Введите размер кроны"
-            style={styles.input}
-          />
-        </div>
-
-        <div style={styles.buttonRow}>
-          <button onClick={onCancelPoint} style={styles.cancelButton}>
-            Отменить точку
-          </button>
-          <button onClick={onSavePoint} style={styles.saveButton}>
-            Сохранить точку
-          </button>
-        </div>
-
-        <button onClick={onConfirmPlantation} style={styles.confirmButton}>
-          Подтвердить насаждения
+      <div style={{ ...styles.sidebar, overflowX: 'hidden', overflowY: 'auto' }}>
+        <button onClick={onClose} style={styles.closeButton}>
+          ✕
         </button>
-      </div>
+        <h3 style={styles.header}>Планировщик насаждений</h3>
 
-      <div style={styles.pointListContainer}>
-        <h4>Сохранённые точки насаждений</h4>
-        {treePoints.map((point, index) => (
-            <div
-                key={index}
-                style={{
-                  ...styles.pointItem,
-                  border: hoveredPointIndex === index ? '2px solid blue' : styles.pointItem.border,
-                }}
-                onMouseEnter={() => {
-                  onTreeHover(point, index);
-                  setHoveredPointIndex(index);
-                }}
-                onMouseLeave={() => {
-                  onTreeLeave();
-                  setHoveredPointIndex(null);
-                }}
-            >
-          <span
-              style={styles.removeIcon}
-              onClick={() => onRemoveTreePoint(index)}
-          >
-            ❌
-          </span>
-              <p style={{color: '#ADFF2F', textAlign: 'center' }}>Насаждение {index + 1}</p>
-              <p>Широта: {point.lat}</p>
-              <p>Долгота: {point.lng}</p>
-              <p>Высота: {point.height} м</p>
-              <p>Размер кроны: {point.crownSize} м</p>
-            </div>
-        ))}
+        <div style={styles.pointInputContainer}>
+          <p>Добавить точку насаждения</p>
+
+          <div style={styles.inputRow}>
+            <label style={styles.label}>Широта:</label>
+            <input type="number" value={selectedPoint.lat} readOnly style={styles.input} />
+          </div>
+
+          <div style={styles.inputRow}>
+            <label style={styles.label}>Долгота:</label>
+            <input type="number" value={selectedPoint.lng} readOnly style={styles.input} />
+          </div>
+
+          <div style={styles.inputRow}>
+            <label style={styles.label}>Высота дерева:</label>
+            <input
+                type="number"
+                value={selectedPoint.height || ''}
+                onChange={(e) => onTreeHeightChange(e.target.value)}
+                placeholder="Введите высоту"
+                style={styles.input}
+            />
+          </div>
+
+          <div style={styles.inputRow}>
+            <label style={styles.label}>Размер кроны:</label>
+            <input
+                type="number"
+                value={selectedPoint.crownSize || ''}
+                onChange={(e) => onCrownSizeChange(e.target.value)}
+                placeholder="Введите размер кроны"
+                style={styles.input}
+            />
+          </div>
+
+          <div style={styles.buttonRow}>
+            <button onClick={onCancelPoint} style={styles.cancelButton}>
+              Отменить точку
+            </button>
+            <button onClick={onSavePoint} style={styles.saveButton}>
+              Сохранить точку
+            </button>
+          </div>
+
+          {/* Новая кнопка "Разметить ряды" */}
+          <button onClick={() => setIsRowModalOpen(true)} style={styles.rowButton}>
+            Разметить ряды
+          </button>
+
+          <button onClick={onConfirmPlantation} style={styles.confirmButton}>
+            Подтвердить насаждения
+          </button>
+        </div>
+
+        <div style={styles.pointListContainer}>
+          <h4>Сохранённые точки насаждений</h4>
+          {treePoints.map((point, index) => (
+              <div
+                  key={index}
+                  style={{
+                    ...styles.pointItem,
+                    border: hoveredPointIndex === index ? '2px solid blue' : styles.pointItem.border,
+                  }}
+                  onMouseEnter={() => {
+                    onTreeHover(point, index);
+                    setHoveredPointIndex(index);
+                  }}
+                  onMouseLeave={() => {
+                    onTreeLeave();
+                    setHoveredPointIndex(null);
+                  }}
+              >
+            <span style={styles.removeIcon} onClick={() => onRemoveTreePoint(index)}>
+              ❌
+            </span>
+                <p style={{ color: '#ADFF2F', textAlign: 'center' }}>Насаждение {index + 1}</p>
+                <p>Широта: {point.lat}</p>
+                <p>Долгота: {point.lng}</p>
+                <p>Высота: {point.height} м</p>
+                <p>Размер кроны: {point.crownSize} м</p>
+              </div>
+          ))}
+        </div>
+
+        {/* Собственное перемещаемое окно для разметки рядов */}
+        {isRowModalOpen && (
+            <DraggableWindow
+                // onClose={handleCancelRow}
+                style={{ width: '300px' }}>
+              <h3 style={{ marginTop: 0 }}>Разметить ряды</h3>
+              <div style={styles.modalContent}>
+                <div style={styles.modalInputRow}>
+                  <label style={styles.modalLabel}>Высота дерева:</label>
+                  <input
+                      type="number"
+                      value={rowSettings.treeHeight}
+                      onChange={(e) =>
+                          setRowSettings({ ...rowSettings, treeHeight: e.target.value })
+                      }
+                      placeholder="Введите высоту"
+                      style={styles.modalInput}
+                  />
+                </div>
+                <div style={styles.modalInputRow}>
+                  <label style={styles.modalLabel}>Размер кроны:</label>
+                  <input
+                      type="number"
+                      value={rowSettings.crownSize}
+                      onChange={(e) =>
+                          setRowSettings({ ...rowSettings, crownSize: e.target.value })
+                      }
+                      placeholder="Введите размер кроны"
+                      style={styles.modalInput}
+                  />
+                </div>
+                <div style={styles.modalInputRow}>
+                  <label style={styles.modalLabel}>Шаг (м):</label>
+                  <input
+                      type="number"
+                      value={rowSettings.step}
+                      onChange={(e) =>
+                          setRowSettings({ ...rowSettings, step: e.target.value })
+                      }
+                      placeholder="Введите шаг"
+                      style={styles.modalInput}
+                  />
+                </div>
+                <div style={styles.modalButtonRow}>
+                  <button
+                      // onClick={}
+                          style={styles.cancelButton}>
+                    Отмена
+                  </button>
+                  <button
+                      // onClick={}
+                      style={styles.saveButton}>
+                    Подтвердить
+                  </button>
+                </div>
+                <hr style={{ margin: '10px 0' }} />
+                <div>
+                  <h4 style={{ fontSize: '14px' }}>Добавленные точки ряда</h4>
+                  {rowPoints.map((pt, idx) => (
+                      <div key={idx} style={styles.rowPointItem}>
+                        <p style={{ fontSize: '12px' }}>
+                          {idx + 1}. Широта: {pt.lat}, Долгота: {pt.lng}
+                        </p>
+                      </div>
+                  ))}
+                  <button onClick={handleAddRowPoint} style={styles.addRowPointButton}>
+                    Добавить точку ряда
+                  </button>
+                </div>
+              </div>
+            </DraggableWindow>
+        )}
       </div>
-    </div>
   );
 };
 
@@ -148,18 +329,15 @@ const styles = {
   pointInputContainer: {
     marginBottom: '20px',
   },
-  // Используем flex-ряд с фиксированной шириной для метки
   inputRow: {
     display: 'flex',
     alignItems: 'center',
     marginBottom: '8px',
   },
-  // Фиксированная ширина для меток позволит инпутам сохранять одинаковый размер
   label: {
     width: '80px',
     fontSize: '12px',
   },
-  // Фиксированная ширина поля ввода (аналог 50% от 200px в MissionPlannerSidebar)
   input: {
     width: '100px',
     padding: '6px',
@@ -199,6 +377,16 @@ const styles = {
     border: 'none',
     cursor: 'pointer',
   },
+  rowButton: {
+    width: '100%',
+    marginTop: '10px',
+    padding: '8px',
+    fontSize: '16px',
+    backgroundColor: 'gray',
+    color: 'white',
+    border: 'none',
+    cursor: 'pointer',
+  },
   pointListContainer: {
     marginBottom: '20px',
   },
@@ -208,7 +396,7 @@ const styles = {
     backgroundColor: '#555',
     borderRadius: '4px',
     border: '1px solid #555',
-    position: 'relative', // чтобы можно было позиционировать крестик
+    position: 'relative',
   },
   removeIcon: {
     position: 'absolute',
@@ -217,6 +405,46 @@ const styles = {
     cursor: 'pointer',
     fontSize: '16px',
     color: 'red',
+  },
+  modalContent: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '10px',
+  },
+  modalInputRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px',
+  },
+  modalLabel: {
+    width: '100px',
+    fontSize: '14px',
+  },
+  modalInput: {
+    flex: 1,
+    padding: '6px',
+    fontSize: '14px',
+  },
+  modalButtonRow: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    marginTop: '10px',
+  },
+  rowPointItem: {
+    backgroundColor: '#444',
+    padding: '4px',
+    marginBottom: '4px',
+    borderRadius: '2px',
+    fontSize: '12px',
+  },
+  addRowPointButton: {
+    width: '100%',
+    padding: '6px',
+    fontSize: '14px',
+    backgroundColor: '#666',
+    color: 'white',
+    border: 'none',
+    cursor: 'pointer',
   },
 };
 
