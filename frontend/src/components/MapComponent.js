@@ -1248,7 +1248,6 @@ function MapComponent({
       droneMarkerRef.current.setRotation(droneHeading);
     }
     if (isMoving && droneLayerRef.current?.drone) {
-      // const adjustedHeading = droneHeading + 90;
       droneLayerRef.current.drone.rotation.y = THREE.MathUtils.degToRad(droneHeading);
       mapRef.current.triggerRepaint();
     }
@@ -1623,7 +1622,7 @@ function addDroneModel(map, dronePosition, isMoving) {
 
         // Расчет масштаба
         // Если масштаб 1 дает нужное качество, оставляем его; затем можно подбирать scaleFactor для нужного размера
-        const scaleFactor = 5;
+        const scaleFactor = 1;
         const scale = modelAsMercatorCoordinate.meterInMercatorCoordinateUnits() * scaleFactor;
         // console.log("Координаты дрона:", modelAsMercatorCoordinate, "Масштаб:", scale);
 
