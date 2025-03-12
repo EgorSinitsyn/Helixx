@@ -1,86 +1,11 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState } from 'react';
 import * as turf from '@turf/turf';
-
-// Новый компонент DraggableWindow для разметки рядов с деревьями
-const DraggableWindow = ({ children, onClose, style }) => {
-  const [dragging, setDragging] = useState(false);
-  const [offset, setOffset] = useState({ x: 0, y: 0 });
-  const [position, setPosition] = useState({ x: 100, y: 100 });
-  const windowRef = useRef(null);
-
-  const handleMouseDown = (e) => {
-    setDragging(true);
-    const rect = windowRef.current.getBoundingClientRect();
-    setOffset({ x: e.clientX - rect.left, y: e.clientY - rect.top });
-    e.stopPropagation();
-  };
-
-  const handleMouseMove = (e) => {
-    if (dragging) {
-      setPosition({ x: e.clientX - offset.x, y: e.clientY - offset.y });
-    }
-  };
-
-  const handleMouseUp = () => {
-    setDragging(false);
-  };
-
-  useEffect(() => {
-    if (dragging) {
-      window.addEventListener('mousemove', handleMouseMove);
-      window.addEventListener('mouseup', handleMouseUp);
-    } else {
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mouseup', handleMouseUp);
-    }
-    return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mouseup', handleMouseUp);
-    };
-  }, [dragging, offset]);
-
-  return (
-      <div
-          ref={windowRef}
-          style={{
-            position: 'fixed',
-            top: position.y,
-            left: position.x,
-            backgroundColor: 'gray',
-            color: 'white',
-            border: '1px solid #ccc',
-            padding: '10px',
-            zIndex: 2000,
-            cursor: dragging ? 'grabbing' : 'grab',
-            ...style
-          }}
-          onMouseDown={handleMouseDown}
-      >
-        {children}
-        <button
-            onClick={onClose}
-            style={{
-              position: 'absolute',
-              top: '2px',
-              right: '2px',
-              background: 'transparent',
-              border: 'none',
-              cursor: 'pointer',
-              fontWeight: 'bold',
-              color: 'white'
-            }}
-        >
-          X
-        </button>
-      </div>
-  );
-};
 
 const PlantationPlanner = ({
                              selectedPoint,
                              onTreeHeightChange,
                              onCrownSizeChange,
-                             onSavePoint,       // Функция для сохранения одной точки насаждения
+                             onSavePoint,
                              onCancelPoint,
                              onConfirmPlantation,
                              treePoints,
@@ -88,15 +13,15 @@ const PlantationPlanner = ({
                              onTreeHover,
                              onTreeLeave,
                              onClose,
+                             // новые пропсы для управления режимом разметки рядов
+                             onOpenRowModal,
+                             onCloseRowModal,
                            }) => {
   const [hoveredPointIndex, setHoveredPointIndex] = useState(null);
-
-  // Состояния для режима "Разметить ряды"
   const [isRowModalOpen, setIsRowModalOpen] = useState(false);
   const [rowSettings, setRowSettings] = useState({ treeHeight: '', crownSize: '', step: '' });
   const [rowPoints, setRowPoints] = useState([]); // точки, задающие ряд
 
-  // Функция для добавления точки ряда – здесь для простоты через prompt
   const handleAddRowPoint = () => {
     const lat = parseFloat(window.prompt("Введите широту для точки ряда:", ""));
     const lng = parseFloat(window.prompt("Введите долготу для точки ряда:", ""));
@@ -107,29 +32,96 @@ const PlantationPlanner = ({
     }
   };
 
-  // Функция для вычисления промежуточных точек между заданными rowPoints
-  const computeRowPoints = () => {
-    if (rowPoints.length < 2) {
-      alert("Необходимо добавить минимум 2 точки для построения ряда.");
-      return [];
+  // Функции открытия/закрытия окна разметки рядов
+  const handleOpenRowModal = () => {
+    // console.log('Открытие окна разметки рядов в PlantationPlanner');
+    setIsRowModalOpen(true);
+    if (onOpenRowModal) {
+      onOpenRowModal();
     }
-    const coordinates = rowPoints.map(pt => [pt.lng, pt.lat]);
-    const line = turf.lineString(coordinates);
-    const totalLength = turf.length(line, { units: 'kilometers' });
-    const stepKm = parseFloat(rowSettings.step) / 1000; // шаг в км
-    if (!stepKm || stepKm <= 0) {
-      alert("Введите корректное значение шага.");
-      return [];
-    }
-    const points = [];
-    for (let d = 0; d <= totalLength; d += stepKm) {
-      const pt = turf.along(line, d, { units: 'kilometers' });
-      const [lng, lat] = pt.geometry.coordinates;
-      points.push({ lat, lng, height: rowSettings.treeHeight, crownSize: rowSettings.crownSize });
-    }
-    return points;
   };
 
+  const handleCloseRowModal = () => {
+    setIsRowModalOpen(false);
+    if (onCloseRowModal) {
+      onCloseRowModal();
+    }
+  };
+
+  // Пример простого DraggableWindow, определённого прямо здесь
+  const DraggableWindow = ({ children, onClose, style }) => {
+    const [dragging, setDragging] = useState(false);
+    const [offset, setOffset] = useState({ x: 0, y: 0 });
+    const [position, setPosition] = useState({ x: 100, y: 100 });
+    const windowRef = React.useRef(null);
+
+    const handleMouseDown = (e) => {
+      setDragging(true);
+      const rect = windowRef.current.getBoundingClientRect();
+      setOffset({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+      e.stopPropagation();
+    };
+
+    const handleMouseMove = (e) => {
+      if (dragging) {
+        setPosition({ x: e.clientX - offset.x, y: e.clientY - offset.y });
+      }
+    };
+
+    const handleMouseUp = () => {
+      setDragging(false);
+    };
+
+    React.useEffect(() => {
+      if (dragging) {
+        window.addEventListener('mousemove', handleMouseMove);
+        window.addEventListener('mouseup', handleMouseUp);
+      } else {
+        window.removeEventListener('mousemove', handleMouseMove);
+        window.removeEventListener('mouseup', handleMouseUp);
+      }
+      return () => {
+        window.removeEventListener('mousemove', handleMouseMove);
+        window.removeEventListener('mouseup', handleMouseUp);
+      };
+    }, [dragging, offset]);
+
+    return (
+        <div
+            ref={windowRef}
+            style={{
+              position: 'fixed',
+              top: position.y,
+              left: position.x,
+              backgroundColor: 'gray',
+              color: 'white',
+              border: '1px solid #ccc',
+              padding: '10px',
+              zIndex: 2000,
+              cursor: dragging ? 'grabbing' : 'grab',
+              ...style
+            }}
+            onMouseDown={handleMouseDown}
+        >
+          {children}
+          <button
+              onClick={onClose}
+              style={{
+                position: 'absolute',
+                top: '2px',
+                right: '2px',
+                background: 'transparent',
+                border: 'none',
+                cursor: 'pointer',
+                fontWeight: 'bold',
+                color: 'white'
+              }}
+          >
+            X
+          </button>
+        </div>
+    );
+  };
 
   return (
       <div style={{ ...styles.sidebar, overflowX: 'hidden', overflowY: 'auto' }}>
@@ -140,17 +132,14 @@ const PlantationPlanner = ({
 
         <div style={styles.pointInputContainer}>
           <p>Добавить точку насаждения</p>
-
           <div style={styles.inputRow}>
             <label style={styles.label}>Широта:</label>
             <input type="number" value={selectedPoint.lat} readOnly style={styles.input} />
           </div>
-
           <div style={styles.inputRow}>
             <label style={styles.label}>Долгота:</label>
             <input type="number" value={selectedPoint.lng} readOnly style={styles.input} />
           </div>
-
           <div style={styles.inputRow}>
             <label style={styles.label}>Высота дерева:</label>
             <input
@@ -161,7 +150,6 @@ const PlantationPlanner = ({
                 style={styles.input}
             />
           </div>
-
           <div style={styles.inputRow}>
             <label style={styles.label}>Размер кроны:</label>
             <input
@@ -172,7 +160,6 @@ const PlantationPlanner = ({
                 style={styles.input}
             />
           </div>
-
           <div style={styles.buttonRow}>
             <button onClick={onCancelPoint} style={styles.cancelButton}>
               Отменить точку
@@ -181,12 +168,10 @@ const PlantationPlanner = ({
               Сохранить точку
             </button>
           </div>
-
-          {/* Новая кнопка "Разметить ряды" */}
-          <button onClick={() => setIsRowModalOpen(true)} style={styles.rowButton}>
+          {/* Кнопка открытия окна разметки рядов */}
+          <button onClick={handleOpenRowModal} style={styles.rowButton}>
             Разметить ряды
           </button>
-
           <button onClick={onConfirmPlantation} style={styles.confirmButton}>
             Подтвердить насаждения
           </button>
@@ -222,11 +207,9 @@ const PlantationPlanner = ({
           ))}
         </div>
 
-        {/* Собственное перемещаемое окно для разметки рядов */}
+        {/* Окно разметки рядов */}
         {isRowModalOpen && (
-            <DraggableWindow
-                // onClose={handleCancelRow}
-                style={{ width: '300px' }}>
+            <DraggableWindow onClose={handleCloseRowModal} style={{ width: '300px' }}>
               <h3 style={{ marginTop: 0 }}>Разметить ряды</h3>
               <div style={styles.modalContent}>
                 <div style={styles.modalInputRow}>
@@ -266,16 +249,8 @@ const PlantationPlanner = ({
                   />
                 </div>
                 <div style={styles.modalButtonRow}>
-                  <button
-                      // onClick={}
-                          style={styles.cancelButton}>
-                    Отмена
-                  </button>
-                  <button
-                      // onClick={}
-                      style={styles.saveButton}>
-                    Подтвердить
-                  </button>
+                  <button style={styles.cancelButton}>Отмена</button>
+                  <button style={styles.saveButton}>Подтвердить</button>
                 </div>
                 <hr style={{ margin: '10px 0' }} />
                 <div>
