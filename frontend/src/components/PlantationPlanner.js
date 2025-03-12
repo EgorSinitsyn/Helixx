@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import * as turf from '@turf/turf';
 
+import { generateTreePointsFromRow } from './trees3D.js';
+
 const PlantationPlanner = ({
                              selectedPoint,
                              onTreeHeightChange,
@@ -19,6 +21,7 @@ const PlantationPlanner = ({
                              onCloseRowModal,
                              rowPoints,
                              setRowPoints,
+                             setPlantationPoints
                            }) => {
   const [hoveredPointIndex, setHoveredPointIndex] = useState(null);
   const [isRowModalOpen, setIsRowModalOpen] = useState(false);
@@ -51,6 +54,12 @@ const PlantationPlanner = ({
     setRowPoints([]);
   };
 
+  // Функция удаления точки (крестик)
+  const deleteRowPoint = (index) => {
+    // console.log('Удаление точки ряда:', rowPoints[index]);
+    setRowPoints(prev => prev.filter((_, i) => i !== index));
+  };
+
   // Используем useEffect, чтобы прокрутить список вниз, когда rowPoints обновляются
   useEffect(() => {
     if (listRef.current) {
@@ -58,13 +67,29 @@ const PlantationPlanner = ({
     }
   }, [rowPoints]);
 
-  // Функция удаления точки (крестик)
-  const deleteRowPoint = (index) => {
-    // console.log('Удаление точки ряда:', rowPoints[index]);
-    setRowPoints(prev => prev.filter((_, i) => i !== index));
+
+  const handleConfirmRows = () => {
+    // Генерируем точки по ряду с использованием введённых параметров
+    const newTreePoints = generateTreePointsFromRow(rowPoints, {
+      treeHeight: rowSettings.treeHeight,
+      crownSize: rowSettings.crownSize,
+      step: rowSettings.step,
+    });
+
+    // Добавляем сгенерированные точки к уже существующим насаждениям
+    setPlantationPoints(prev => [...prev, ...newTreePoints]);
+
+    // Вызываем onConfirmPlantation, если она передана
+    // if (onConfirmPlantation) {
+    //   onConfirmPlantation();
+    // }
+
+    // Закрываем окно разметки рядов и, если требуется, отключаем режим линейки
+    setIsRulerOn(false);
+    handleCloseRowModal();
   };
 
-  // Пример простого DraggableWindow, определённого прямо здесь
+  // Окно разметки рядов деревьев
   const DraggableWindow = ({ children, onClose, style }) => {
     const [dragging, setDragging] = useState(false);
     const [offset, setOffset] = useState({ x: 0, y: 0 });
@@ -185,7 +210,7 @@ const PlantationPlanner = ({
             </button>
           </div>
           {/* Кнопка открытия окна разметки рядов */}
-          <button onClick={handleOpenRowModal} style={styles.rowButton}>
+          <button onClick={handleOpenRowModal} style={styles.rowButton }>
             Разметить ряды
           </button>
           <button onClick={onConfirmPlantation} style={styles.confirmButton}>
@@ -226,7 +251,7 @@ const PlantationPlanner = ({
         {/* Окно разметки рядов */}
         {isRowModalOpen && (
             <DraggableWindow onClose={handleCloseRowModal} style={{ width: '300px' }}>
-              <h3 style={{ marginTop: 0 }}>Разметить ряды</h3>
+              <h3 style={{ marginTop: 0, textAlign: 'center' }}>Разметить ряды</h3>
               <div style={styles.modalContent}>
                 <div style={styles.modalInputRow}>
                   <label style={styles.modalLabel}>Высота дерева:</label>
@@ -266,7 +291,7 @@ const PlantationPlanner = ({
                 </div>
                 <div style={styles.modalButtonRow}>
                   <button style={styles.cancelButton}>Отмена</button>
-                  <button style={styles.saveButton}>Подтвердить</button>
+                  <button style={styles.saveButton} onClick={handleConfirmRows}>Подтвердить</button>
                 </div>
                 <hr style={{ margin: '10px 0' }} />
                 <div>
@@ -290,9 +315,6 @@ const PlantationPlanner = ({
                         </button>
                       </div>
                   ))}
-                  {/*<button onClick={handleAddRowPoint} style={styles.addRowPointButton}>*/}
-                  {/*  Добавить точку ряда*/}
-                  {/*</button>*/}
                 </div>
               </div>
             </div>

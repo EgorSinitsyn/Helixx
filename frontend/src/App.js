@@ -690,6 +690,7 @@ const App = () => {
           onCloseRowModal={handleCloseRowModal}
           rowPoints={rowPoints}
           setRowPoints={setRowPoints}
+          setPlantationPoints={setPlantationPoints}
         />
       )}
     </div>
