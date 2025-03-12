@@ -64,8 +64,22 @@ const App = () => {
   const [tempTreePoints, setTempTreePoints] = useState([]); // Временные (не сохранённые ещё) точки
   const [hoveredTreePoint, setHoveredTreePoint] = useState(null);   // Новое состояние для точки, над которой наведен курсор в списке
 
+  // --- Новые состояния для режима разметки рядов ---
+  const [isRowMarkingActive, setIsRowMarkingActive] = useState(false);
+  const [rowPoints, setRowPoints] = useState([]);
 
-  // Определяем callback для обновления координат точки насаждения
+  const handleOpenRowModal = useCallback(() => {
+    console.log('Открытие окна разметки рядов');
+    setIsRowMarkingActive(true);
+  }, []);
+
+  const handleCloseRowModal = useCallback(() => {
+    console.log('Закрытие окна разметки рядов');
+    setIsRowMarkingActive(false);
+  }, []);
+
+
+  // Обновление высоты дрона
   const updateDroneAltitude = useCallback((newAltitude) => {
     setDronePosition((prev) => ({ ...prev, altitude: newAltitude }));
   }, []);
@@ -165,12 +179,14 @@ const App = () => {
 
   // Когда пользователь кликает по карте в режиме посадки деревьев
   const handleTreeMapClick = useCallback((lat, lng) => {
-    // Добавляем во временный массив
+    if (isRowMarkingActive) {
+      return;
+    }
     setTempTreePoints((prev) => [
       ...prev,
       { lat, lng, height: '', crownSize: '' },
     ]);
-  }, []);
+  }, [isRowMarkingActive]);
 
   const handleTreeHeightChange = useCallback((height) => {
     setSelectedTreePoint(prev => ({ ...prev, height }));
@@ -204,13 +220,11 @@ const App = () => {
   const handleSaveTreePoint = useCallback(() => {
     if (tempTreePoints.length > 0) {
       const lastTempPoint = tempTreePoints[tempTreePoints.length - 1];
-
       // Проверяем, что поля "height" и "crownSize" не пустые
       if (!lastTempPoint.height || !lastTempPoint.crownSize) {
         alert('Введите корректные данные');
         return;
       }
-
       // Переносим последнюю временную точку в "сохранённые"
       setPlantationPoints(prev => [...prev, lastTempPoint]);
       // Убираем её из списка временных
@@ -373,20 +387,28 @@ const App = () => {
     setIsMissionBuilding(true);
   }, []);
 
-  const handleMapClick = useCallback((lat, lng, groundAltitude = 0) => {
-    setSelectedPoint({
-      lat,
-      lng,
-      groundAltitude,
-      flightAltitude: '', // Значение по умолчанию – пустая строка
-      altitude: groundAltitude // Итоговая высота на начальном этапе
-    });
 
-    // Если в режиме расстановки деревьев, можно установить и точку для насаждения
-    if (isTreePlacingActive) {
-      setSelectedTreePoint({ lat, lng, height: '', crownSize: '' });
+ // Универсальный обработчик кликов по карте
+  const handleMapClick = useCallback((lat, lng, groundAltitude = 0) => {
+    // условие для режима расстановки рядов деревьев
+    if (isRowMarkingActive) {
+      console.log('Добавляем точку в rowPoints:', lat, lng);
+      setRowPoints(prev => [...prev, { lat, lng }]);
+    } else {
+      // Маршрутные точки
+      setSelectedPoint({
+        lat,
+        lng,
+        groundAltitude,
+        flightAltitude: '',
+        altitude: groundAltitude
+      });
+      // Одиночные точки для насаждений
+      if (isTreePlacingActive) {
+        setSelectedTreePoint({ lat, lng, height: '', crownSize: '' });
+      }
     }
-  }, [isTreePlacingActive]);
+  }, [isRowMarkingActive, isTreePlacingActive]);
 
   const handleAltitudeChange = useCallback((value, is3D) => {
     const numericValue = Number(value);
@@ -491,6 +513,8 @@ const App = () => {
         confirmedRoute={confirmedRoute}
         onMapClick={handleMapClick}
         isMoving={isMoving}
+        isRowMarkingActive={isRowMarkingActive}
+        rowPoints={rowPoints}
       />
 
       {isDroneInfoVisible && (
@@ -655,6 +679,10 @@ const App = () => {
           onRemoveTreePoint={handleRemoveTreePoint}
           onTreeHover={handleTreeHover}
           onTreeLeave={handleTreeLeave}
+          onOpenRowModal={handleOpenRowModal}
+          onCloseRowModal={handleCloseRowModal}
+          rowPoints={rowPoints}
+          setRowPoints={setRowPoints}
         />
       )}
     </div>

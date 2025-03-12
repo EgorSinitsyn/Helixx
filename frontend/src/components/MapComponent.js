@@ -38,10 +38,12 @@ function MapComponent({
                         onTreeMapClick,
                         routePoints,
                         plantationPoints,
+                        rowPoints,
                         tempTreePoints,
                         hoveredTreePoint,
                         isMissionBuilding,
                         isTreePlacingActive,
+                        isRowMarkingActive,
                         isMoving
                       }) {
   // -------------------------------
@@ -60,7 +62,14 @@ function MapComponent({
   // -------------------------------
   const [treeMarkers, setTreeMarkers] = useState([]);   // Состояние для хранения дерева-маркеров
   const [treeOverlay, setTreeOverlay] = useState(null);  // Храним ссылку на текущий 3D overlay для деревьев для удаления при 2d
+  const isRowMarkingActiveRef = useRef(isRowMarkingActive); // реф для активности режима разметки рядов
 
+  // Обновляем ref, когда флаг меняется
+  useEffect(() => {
+    isRowMarkingActiveRef.current = isRowMarkingActive;
+    console.log('MapComponent: обновлено isRowMarkingActiveRef:', isRowMarkingActiveRef.current);
+  }, [isRowMarkingActive]);
+  
   // состояние для управления камерой в 2d режиме
   const [userAdjusted, setUserAdjusted] = useState(false);
 
@@ -613,6 +622,31 @@ function MapComponent({
     };
   }, [isRulerOn, isPlanimeterOn, isPlacingMarker, onMapClick, onTreeMapClick, isTreePlacingActive, is3D]);
 
+  useEffect(() => {
+    if (!mapRef.current) return;
+
+    const handleRowMarkingClick = (e) => {
+      if (!isRowMarkingActiveRef.current) return; // Если режим не активен, выходим
+      const { lat, lng } = e.lngLat;
+      let altitude = 0;
+      if (is3D && typeof mapRef.current.queryTerrainElevation === 'function') {
+        altitude = mapRef.current.queryTerrainElevation(e.lngLat) || 0;
+      }
+      console.log('Row marking mode active, adding point:', lat, lng, altitude);
+      // Здесь можно напрямую обновить список rowPoints, если onMapClick не делает это
+      // Например, если onMapClick отвечает за обновление rowPoints в родителе:
+      onMapClick(lat, lng, altitude);
+      // Либо, если вы хотите обновлять локальное состояние:
+      // setRowPoints(prev => [...prev, { lat, lng, altitude }]);
+    };
+
+    mapRef.current.on('click', handleRowMarkingClick);
+    return () => {
+      if (mapRef.current) {
+        mapRef.current.off('click', handleRowMarkingClick);
+      }
+    };
+  }, [isRowMarkingActive, is3D, onMapClick]);
 
   // -------------------------------
   // ОБРАБОТЧИК КЛИКА (ЛИНЕЙКА)
