@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import * as turf from '@turf/turf';
 
 const PlantationPlanner = ({
@@ -16,25 +16,18 @@ const PlantationPlanner = ({
                              // новые пропсы для управления режимом разметки рядов
                              onOpenRowModal,
                              onCloseRowModal,
+                             rowPoints,
+                             setRowPoints,
                            }) => {
   const [hoveredPointIndex, setHoveredPointIndex] = useState(null);
   const [isRowModalOpen, setIsRowModalOpen] = useState(false);
   const [rowSettings, setRowSettings] = useState({ treeHeight: '', crownSize: '', step: '' });
-  const [rowPoints, setRowPoints] = useState([]); // точки, задающие ряд
+  const listRef = useRef(null);   // Создаем ref для контейнера списка точек
 
-  const handleAddRowPoint = () => {
-    const lat = parseFloat(window.prompt("Введите широту для точки ряда:", ""));
-    const lng = parseFloat(window.prompt("Введите долготу для точки ряда:", ""));
-    if (!isNaN(lat) && !isNaN(lng)) {
-      setRowPoints(prev => [...prev, { lat, lng }]);
-    } else {
-      alert("Некорректные координаты");
-    }
-  };
 
   // Функции открытия/закрытия окна разметки рядов
   const handleOpenRowModal = () => {
-    // console.log('Открытие окна разметки рядов в PlantationPlanner');
+    console.log('Открытие окна разметки рядов в PlantationPlanner');
     setIsRowModalOpen(true);
     if (onOpenRowModal) {
       onOpenRowModal();
@@ -46,6 +39,19 @@ const PlantationPlanner = ({
     if (onCloseRowModal) {
       onCloseRowModal();
     }
+  };
+
+  // Используем useEffect, чтобы прокрутить список вниз, когда rowPoints обновляются
+  useEffect(() => {
+    if (listRef.current) {
+      listRef.current.scrollTop = listRef.current.scrollHeight;
+    }
+  }, [rowPoints]);
+
+  // Функция удаления точки (крестик)
+  const deleteRowPoint = (index) => {
+    console.log('Удаление точки ряда:', rowPoints[index]);
+    setRowPoints(prev => prev.filter((_, i) => i !== index));
   };
 
   // Пример простого DraggableWindow, определённого прямо здесь
@@ -254,19 +260,32 @@ const PlantationPlanner = ({
                 </div>
                 <hr style={{ margin: '10px 0' }} />
                 <div>
-                  <h4 style={{ fontSize: '14px' }}>Добавленные точки ряда</h4>
+                  <h4 style={{ fontSize: '14px', textAlign: 'center' }}>Добавленные точки ряда</h4>
+                  <div
+                    ref={listRef}
+                    style={{
+                      maxHeight: '150px',
+                      overflow: 'auto',
+                      border: '1px solid #ccc',
+                      padding: '5px',
+                    }}
+                    >
                   {rowPoints.map((pt, idx) => (
                       <div key={idx} style={styles.rowPointItem}>
                         <p style={{ fontSize: '12px' }}>
-                          {idx + 1}. Широта: {pt.lat}, Долгота: {pt.lng}
+                          {idx + 1}. Широта: {pt.lat.toFixed(5)}, Долгота: {pt.lng.toFixed(5)}
                         </p>
+                        <button onClick={() => deleteRowPoint(idx)} style={styles.deleteButtonRow}>
+                          ✖
+                        </button>
                       </div>
                   ))}
-                  <button onClick={handleAddRowPoint} style={styles.addRowPointButton}>
-                    Добавить точку ряда
-                  </button>
+                  {/*<button onClick={handleAddRowPoint} style={styles.addRowPointButton}>*/}
+                  {/*  Добавить точку ряда*/}
+                  {/*</button>*/}
                 </div>
               </div>
+            </div>
             </DraggableWindow>
         )}
       </div>
@@ -411,6 +430,9 @@ const styles = {
     marginBottom: '4px',
     borderRadius: '2px',
     fontSize: '12px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between'
   },
   addRowPointButton: {
     width: '100%',
@@ -420,6 +442,22 @@ const styles = {
     color: 'white',
     border: 'none',
     cursor: 'pointer',
+  },
+  // Пример стилей для кнопок подтверждения и удаления
+  confirmButtonRow: {
+    backgroundColor: 'green',
+    border: 'none',
+    color: 'white',
+    cursor: 'pointer',
+    marginRight: '4px',
+    padding: '4px',
+  },
+  deleteButtonRow: {
+    backgroundColor: 'red',
+    border: 'none',
+    color: 'white',
+    cursor: 'pointer',
+    padding: '4px',
   },
 };
 
