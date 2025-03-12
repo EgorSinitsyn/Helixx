@@ -13,7 +13,8 @@ const PlantationPlanner = ({
                              onTreeHover,
                              onTreeLeave,
                              onClose,
-                             // новые пропсы для управления режимом разметки рядов
+                             isRulerOn,
+                             setIsRulerOn,
                              onOpenRowModal,
                              onCloseRowModal,
                              rowPoints,
@@ -27,18 +28,27 @@ const PlantationPlanner = ({
 
   // Функции открытия/закрытия окна разметки рядов
   const handleOpenRowModal = () => {
-    console.log('Открытие окна разметки рядов в PlantationPlanner');
+    // console.log('Открытие окна разметки рядов в PlantationPlanner');
+    // Врубаем режим разметки рядов
     setIsRowModalOpen(true);
     if (onOpenRowModal) {
       onOpenRowModal();
     }
+    // врубаем рулетку
+    setIsRulerOn(true);
   };
 
   const handleCloseRowModal = () => {
+    // console.log('Закрытие окна разметки рядов в PlantationPlanner');
+    // Выключаем режим разметки рядов
     setIsRowModalOpen(false);
     if (onCloseRowModal) {
       onCloseRowModal();
     }
+    // Выключаем режим линейки
+    setIsRulerOn(false);
+    // Очищаем массив rowPoints
+    setRowPoints([]);
   };
 
   // Используем useEffect, чтобы прокрутить список вниз, когда rowPoints обновляются
@@ -50,7 +60,7 @@ const PlantationPlanner = ({
 
   // Функция удаления точки (крестик)
   const deleteRowPoint = (index) => {
-    console.log('Удаление точки ряда:', rowPoints[index]);
+    // console.log('Удаление точки ряда:', rowPoints[index]);
     setRowPoints(prev => prev.filter((_, i) => i !== index));
   };
 

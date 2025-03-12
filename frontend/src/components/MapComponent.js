@@ -38,7 +38,8 @@ function MapComponent({
                         onTreeMapClick,
                         routePoints,
                         plantationPoints,
-                        rowPoints,
+                        isRulerOn,
+                        setIsRulerOn,
                         tempTreePoints,
                         hoveredTreePoint,
                         isMissionBuilding,
@@ -67,7 +68,7 @@ function MapComponent({
   // Обновляем ref, когда флаг меняется
   useEffect(() => {
     isRowMarkingActiveRef.current = isRowMarkingActive;
-    console.log('MapComponent: обновлено isRowMarkingActiveRef:', isRowMarkingActiveRef.current);
+    // console.log('MapComponent: обновлено isRowMarkingActiveRef:', isRowMarkingActiveRef.current);
   }, [isRowMarkingActive]);
   
   // состояние для управления камерой в 2d режиме
@@ -76,7 +77,7 @@ function MapComponent({
   // -------------------------------
   // Состояния для режима ЛИНЕЙКИ
   // -------------------------------
-  const [isRulerOn, setIsRulerOn] = useState(false);
+  // const [isRulerOn, setIsRulerOn] = useState(false);
 
   // Храним данные для измерений
   const geojsonRef = useRef({
@@ -632,7 +633,7 @@ function MapComponent({
       if (is3D && typeof mapRef.current.queryTerrainElevation === 'function') {
         altitude = mapRef.current.queryTerrainElevation(e.lngLat) || 0;
       }
-      console.log('Row marking mode active, adding point:', lat, lng, altitude);
+      // console.log('Row marking mode active, adding point:', lat, lng, altitude);
       // Здесь можно напрямую обновить список rowPoints, если onMapClick не делает это
       // Например, если onMapClick отвечает за обновление rowPoints в родителе:
       onMapClick(lat, lng, altitude);
@@ -722,6 +723,9 @@ function MapComponent({
   const toggleRuler = () => {
     // if (isMissionBuilding) return; // Если идёт построение миссии – пропускаем. (во избежании конфликтов)
 
+    // Если активен режим разметки рядов, то не разрешаем отключать режим линейки
+    if (isRowMarkingActive) return;
+
     setIsRulerOn((prev) => {
     if (prev) {
       // Если режим уже был включён – сбрасываем измерения и выключаем режим
@@ -760,6 +764,15 @@ function MapComponent({
       mapRef.current.off('mousemove', handleMouseMoveForRuler);
     };
   }, [isRulerOn]);
+
+
+  // Отчистка линий в момент, когда выхожу из режима с рядами деревьев
+  useEffect(() => {
+    if (!isRowMarkingActive) {
+      // Когда режим разметки рядов выключен, сбрасываем измерения
+      resetMeasurements();
+    }
+  }, [isRowMarkingActive]);
 
 
   // -------------------------------
@@ -1561,9 +1574,9 @@ function MapComponent({
 let droneModelCache = null;
 
 function loadDroneModel(callback) {
-  console.log("Загрузка модели дрона...");
+  // console.log("Загрузка модели дрона...");
   if (droneModelCache) {
-    console.log("Используется кешированная модель");
+    // console.log("Используется кешированная модель");
     callback(droneModelCache.clone());
     return;
   }
@@ -1571,7 +1584,7 @@ function loadDroneModel(callback) {
   loader.load(
       'drone-model.glb', // Убедитесь, что путь к модели корректный
       (gltf) => {
-        console.log("Модель успешно загружена:", gltf);
+        // console.log("Модель успешно загружена:", gltf);
         droneModelCache = gltf.scene;
         callback(droneModelCache.clone());
       },
@@ -1587,7 +1600,7 @@ function addDroneModel(map, dronePosition, isMoving) {
     renderingMode: '3d',
     dronePosition: dronePosition,
     onAdd: function (map, gl) {
-      console.log("onAdd вызван");
+      // console.log("onAdd вызван");
 
       // Создаем камеру и сцену
       this.camera = new THREE.Camera();
@@ -1628,7 +1641,7 @@ function addDroneModel(map, dronePosition, isMoving) {
         this.drone.rotation.set(Math.PI / 2, Math.PI , 0);
         this.scene.add(this.drone);
         this.initialized = true;
-        console.log("Модель добавлена в сцену");
+        // console.log("Модель добавлена в сцену");
 
         // Обновляем настройки текстур для сохранения качества PBR-материалов
         this.drone.traverse((child) => {

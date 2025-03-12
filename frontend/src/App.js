@@ -50,6 +50,9 @@ const App = () => {
   const [droneHeading, setDroneHeading] = useState(0);
   const [isDroneInfoVisible, setIsDroneInfoVisible] = useState(false);
 
+  // Поднимаем состояние для режима линейки
+    const [isRulerOn, setIsRulerOn] = useState(false);
+
   // Для построения маршрута
   const [routePoints, setRoutePoints] = useState([]);
   const [selectedPoint, setSelectedPoint] = useState([]);
@@ -392,7 +395,7 @@ const App = () => {
   const handleMapClick = useCallback((lat, lng, groundAltitude = 0) => {
     // условие для режима расстановки рядов деревьев
     if (isRowMarkingActive) {
-      console.log('Добавляем точку в rowPoints:', lat, lng);
+      // console.log('Добавляем точку в rowPoints:', lat, lng);
       setRowPoints(prev => [...prev, { lat, lng }]);
     } else {
       // Маршрутные точки
@@ -504,6 +507,8 @@ const App = () => {
         updateDroneAltitude={updateDroneAltitude}
         isPlacingMarker={isMissionBuilding}
         isMissionBuilding={isMissionBuilding}
+        isRulerOn={isRulerOn}
+        setIsRulerOn={setIsRulerOn}
         isTreePlacingActive={isTreePlacingActive}
         plantationPoints={plantationPoints}
         tempTreePoints={tempTreePoints}
@@ -679,6 +684,8 @@ const App = () => {
           onRemoveTreePoint={handleRemoveTreePoint}
           onTreeHover={handleTreeHover}
           onTreeLeave={handleTreeLeave}
+          isRulerOn={isRulerOn}
+          setIsRulerOn={setIsRulerOn}
           onOpenRowModal={handleOpenRowModal}
           onCloseRowModal={handleCloseRowModal}
           rowPoints={rowPoints}
