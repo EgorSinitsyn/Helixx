@@ -108,6 +108,9 @@ function MapComponent({
   const togglePlanimeter = () => {
     // if (isMissionBuilding) return; // Если идёт построение миссии – пропускаем. Во избежании конфликтов
 
+    // Если режим разметки рядов активен, не разрешаем включение планиметра
+    if (isRowMarkingActive) return;
+
     setIsPlanimeterOn((prev) => {
       if (prev) {
         // Режим отключается
@@ -747,6 +750,7 @@ function MapComponent({
       mapRef.current.getSource('measure-geojson').setData(geojsonRef.current);
     }
   };
+
 
   // Отдельный useEffect для обработчиков линейки:
   useEffect(() => {
