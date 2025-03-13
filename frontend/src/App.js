@@ -70,6 +70,7 @@ const App = () => {
   // --- Новые состояния для режима разметки рядов ---
   const [isRowMarkingActive, setIsRowMarkingActive] = useState(false);
   const [rowPoints, setRowPoints] = useState([]);
+  const [isRowModalOpen, setIsRowModalOpen] = useState(false);
 
   const handleOpenRowModal = useCallback(() => {
     console.log('Открытие окна разметки рядов');
@@ -688,6 +689,8 @@ const App = () => {
           setIsRulerOn={setIsRulerOn}
           onOpenRowModal={handleOpenRowModal}
           onCloseRowModal={handleCloseRowModal}
+          isRowModalOpen={isRowModalOpen}
+          setIsRowModalOpen={setIsRowModalOpen}
           rowPoints={rowPoints}
           setRowPoints={setRowPoints}
           setPlantationPoints={setPlantationPoints}

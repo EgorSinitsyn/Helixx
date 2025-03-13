@@ -1,7 +1,95 @@
 import React, { useState, useRef, useEffect } from 'react';
-import * as turf from '@turf/turf';
-
+import ReactDOM from 'react-dom';
 import { generateTreePointsFromRow } from './trees3D.js';
+
+// Компонент портала для модального окна (рендерит содержимое в document.body)
+const DraggableModalPortal = ({ children }) => {
+  return ReactDOM.createPortal(children, document.body);
+};
+
+// Перетаскиваемое окно
+const DraggableWindow = ({ children, onClose, style }) => {
+  const [dragging, setDragging] = useState(false);
+  const [offset, setOffset] = useState({ x: 0, y: 0 });
+  const [position, setPosition] = useState({ x: 100, y: 100 });
+  const windowRef = useRef(null);
+
+  const handleHeaderMouseDown = (e) => {
+    e.stopPropagation();
+    setDragging(true);
+    const rect = windowRef.current.getBoundingClientRect();
+    setOffset({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+  };
+
+  const handleMouseMove = (e) => {
+    if (dragging) {
+      setPosition({ x: e.clientX - offset.x, y: e.clientY - offset.y });
+    }
+  };
+
+  const handleMouseUp = () => {
+    setDragging(false);
+  };
+
+  useEffect(() => {
+    if (dragging) {
+      window.addEventListener('mousemove', handleMouseMove);
+      window.addEventListener('mouseup', handleMouseUp);
+    } else {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    }
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [dragging, offset]);
+
+  return (
+      <div
+          ref={windowRef}
+          style={{
+            position: 'fixed',
+            top: position.y,
+            left: position.x,
+            backgroundColor: 'gray',
+            color: 'white',
+            border: '1px solid #ccc',
+            padding: '10px',
+            zIndex: 2000,
+            ...style,
+          }}
+      >
+        {/* Заголовок окна для перетаскивания */}
+        <div
+            onMouseDown={handleHeaderMouseDown}
+            style={{
+              cursor: dragging ? 'grabbing' : 'grab',
+              padding: '5px',
+              borderBottom: '1px solid #aaa',
+              marginBottom: '10px',
+            }}
+        >
+        </div>
+        {children}
+        <button
+            onClick={onClose}
+            style={{
+              position: 'absolute',
+              top: '2px',
+              right: '2px',
+              background: 'transparent',
+              border: 'none',
+              cursor: 'pointer',
+              fontWeight: 'bold',
+              color: 'white',
+            }}
+        >
+          X
+        </button>
+      </div>
+  );
+};
 
 const PlantationPlanner = ({
                              selectedPoint,
@@ -15,7 +103,8 @@ const PlantationPlanner = ({
                              onTreeHover,
                              onTreeLeave,
                              onClose,
-                             isRulerOn,
+                             isRowModalOpen,
+                             setIsRowModalOpen,
                              setIsRulerOn,
                              onOpenRowModal,
                              onCloseRowModal,
@@ -24,145 +113,67 @@ const PlantationPlanner = ({
                              setPlantationPoints
                            }) => {
   const [hoveredPointIndex, setHoveredPointIndex] = useState(null);
-  const [isRowModalOpen, setIsRowModalOpen] = useState(false);
   const [rowSettings, setRowSettings] = useState({ treeHeight: '', crownSize: '', step: '' });
-  const listRef = useRef(null);   // Создаем ref для контейнера списка точек
+  const listRef = useRef(null);
 
-
-  // Функции открытия/закрытия окна разметки рядов
+  // Функции открытия/закрытия модального окна
   const handleOpenRowModal = () => {
-    // console.log('Открытие окна разметки рядов в PlantationPlanner');
-    // Врубаем режим разметки рядов
+    if (onOpenRowModal) onOpenRowModal();
     setIsRowModalOpen(true);
-    if (onOpenRowModal) {
-      onOpenRowModal();
-    }
-    // врубаем рулетку
     setIsRulerOn(true);
   };
 
   const handleCloseRowModal = () => {
-    // console.log('Закрытие окна разметки рядов в PlantationPlanner');
-    // Выключаем режим разметки рядов
+    if (onCloseRowModal) onCloseRowModal();
     setIsRowModalOpen(false);
-    if (onCloseRowModal) {
-      onCloseRowModal();
-    }
-    // Выключаем режим линейки
     setIsRulerOn(false);
-    // Очищаем массив rowPoints
     setRowPoints([]);
   };
 
-  // Функция удаления точки (крестик)
+  // Функция удаления точки ряда
   const deleteRowPoint = (index) => {
-    // console.log('Удаление точки ряда:', rowPoints[index]);
     setRowPoints(prev => prev.filter((_, i) => i !== index));
   };
 
-  // Используем useEffect, чтобы прокрутить список вниз, когда rowPoints обновляются
-  useEffect(() => {
-    if (listRef.current) {
-      listRef.current.scrollTop = listRef.current.scrollHeight;
-    }
-  }, [rowPoints]);
+  // Функция отмены
+  const handleCancelRows = () => {
+    // setRowPoints([]);
+    setRowSettings({ treeHeight: '', crownSize: '', step: '' });
+    // Перезапуск режима линейки: временно выключаем isRulerOn и сразу же включаем.
+    // setIsRulerOn(false);
+    // setTimeout(() => {
+    //   setIsRulerOn(true);
+    // }, 2000);
+    // Закрываем окно разметки рядов
+    handleCloseRowModal();
+    // Через небольшой таймаут (например, 500 мс) повторно открываем окно
+    setTimeout(() => {
+      handleOpenRowModal();
+    }, 10);
 
+  };
 
+  // Функция подтверждения ряда: здесь окно закрывается (если требуется) или можно оставить его открытым
   const handleConfirmRows = () => {
-    // Генерируем точки по ряду с использованием введённых параметров
     const newTreePoints = generateTreePointsFromRow(rowPoints, {
       treeHeight: rowSettings.treeHeight,
       crownSize: rowSettings.crownSize,
       step: rowSettings.step,
     });
 
-    // Добавляем сгенерированные точки к уже существующим насаждениям
     setPlantationPoints(prev => [...prev, ...newTreePoints]);
-
-    // Вызываем onConfirmPlantation, если она передана
-    // if (onConfirmPlantation) {
-    //   onConfirmPlantation();
-    // }
-
-    // Закрываем окно разметки рядов и, если требуется, отключаем режим линейки
-    setIsRulerOn(false);
-    handleCloseRowModal();
+    // Можно оставить окно открытым, если требуется, но здесь вызываем закрытие:
+    // handleCloseRowModal();
+    setRowPoints([]);
+    onConfirmPlantation();
   };
 
-  // Окно разметки рядов деревьев
-  const DraggableWindow = ({ children, onClose, style }) => {
-    const [dragging, setDragging] = useState(false);
-    const [offset, setOffset] = useState({ x: 0, y: 0 });
-    const [position, setPosition] = useState({ x: 100, y: 100 });
-    const windowRef = React.useRef(null);
-
-    const handleMouseDown = (e) => {
-      setDragging(true);
-      const rect = windowRef.current.getBoundingClientRect();
-      setOffset({ x: e.clientX - rect.left, y: e.clientY - rect.top });
-      e.stopPropagation();
-    };
-
-    const handleMouseMove = (e) => {
-      if (dragging) {
-        setPosition({ x: e.clientX - offset.x, y: e.clientY - offset.y });
-      }
-    };
-
-    const handleMouseUp = () => {
-      setDragging(false);
-    };
-
-    React.useEffect(() => {
-      if (dragging) {
-        window.addEventListener('mousemove', handleMouseMove);
-        window.addEventListener('mouseup', handleMouseUp);
-      } else {
-        window.removeEventListener('mousemove', handleMouseMove);
-        window.removeEventListener('mouseup', handleMouseUp);
-      }
-      return () => {
-        window.removeEventListener('mousemove', handleMouseMove);
-        window.removeEventListener('mouseup', handleMouseUp);
-      };
-    }, [dragging, offset]);
-
-    return (
-        <div
-            ref={windowRef}
-            style={{
-              position: 'fixed',
-              top: position.y,
-              left: position.x,
-              backgroundColor: 'gray',
-              color: 'white',
-              border: '1px solid #ccc',
-              padding: '10px',
-              zIndex: 2000,
-              cursor: dragging ? 'grabbing' : 'grab',
-              ...style
-            }}
-            onMouseDown={handleMouseDown}
-        >
-          {children}
-          <button
-              onClick={onClose}
-              style={{
-                position: 'absolute',
-                top: '2px',
-                right: '2px',
-                background: 'transparent',
-                border: 'none',
-                cursor: 'pointer',
-                fontWeight: 'bold',
-                color: 'white'
-              }}
-          >
-            X
-          </button>
-        </div>
-    );
-  };
+  // Прокрутка списка точек ряда вниз при добавлении новой точки
+  useEffect(() => {
+    if (listRef.current) {
+      listRef.current.scrollTop = listRef.current.scrollHeight;
+    }
+  }, [rowPoints]);
 
   return (
       <div style={{ ...styles.sidebar, overflowX: 'hidden', overflowY: 'auto' }}>
@@ -170,7 +181,6 @@ const PlantationPlanner = ({
           ✕
         </button>
         <h3 style={styles.header}>Планировщик насаждений</h3>
-
         <div style={styles.pointInputContainer}>
           <p>Добавить точку насаждения</p>
           <div style={styles.inputRow}>
@@ -210,14 +220,16 @@ const PlantationPlanner = ({
             </button>
           </div>
           {/* Кнопка открытия окна разметки рядов */}
-          <button onClick={handleOpenRowModal} style={styles.rowButton }>
+          <button
+              onClick={(e) => { e.stopPropagation(); handleOpenRowModal(); }}
+              style={styles.rowButton}
+          >
             Разметить ряды
           </button>
           <button onClick={onConfirmPlantation} style={styles.confirmButton}>
             Подтвердить насаждения
           </button>
         </div>
-
         <div style={styles.pointListContainer}>
           <h4>Сохранённые точки насаждений</h4>
           {treePoints.map((point, index) => (
@@ -247,78 +259,80 @@ const PlantationPlanner = ({
               </div>
           ))}
         </div>
-
-        {/* Окно разметки рядов */}
         {isRowModalOpen && (
-            <DraggableWindow onClose={handleCloseRowModal} style={{ width: '300px' }}>
-              <h3 style={{ marginTop: 0, textAlign: 'center' }}>Разметить ряды</h3>
-              <div style={styles.modalContent}>
-                <div style={styles.modalInputRow}>
-                  <label style={styles.modalLabel}>Высота дерева:</label>
-                  <input
-                      type="number"
-                      value={rowSettings.treeHeight}
-                      onChange={(e) =>
-                          setRowSettings({ ...rowSettings, treeHeight: e.target.value })
-                      }
-                      placeholder="Введите высоту"
-                      style={styles.modalInput}
-                  />
-                </div>
-                <div style={styles.modalInputRow}>
-                  <label style={styles.modalLabel}>Размер кроны:</label>
-                  <input
-                      type="number"
-                      value={rowSettings.crownSize}
-                      onChange={(e) =>
-                          setRowSettings({ ...rowSettings, crownSize: e.target.value })
-                      }
-                      placeholder="Введите размер кроны"
-                      style={styles.modalInput}
-                  />
-                </div>
-                <div style={styles.modalInputRow}>
-                  <label style={styles.modalLabel}>Шаг (м):</label>
-                  <input
-                      type="number"
-                      value={rowSettings.step}
-                      onChange={(e) =>
-                          setRowSettings({ ...rowSettings, step: e.target.value })
-                      }
-                      placeholder="Введите шаг"
-                      style={styles.modalInput}
-                  />
-                </div>
-                <div style={styles.modalButtonRow}>
-                  <button style={styles.cancelButton}>Отмена</button>
-                  <button style={styles.saveButton} onClick={handleConfirmRows}>Подтвердить</button>
-                </div>
-                <hr style={{ margin: '10px 0' }} />
-                <div>
-                  <h4 style={{ fontSize: '14px', textAlign: 'center' }}>Добавленные точки ряда</h4>
-                  <div
-                    ref={listRef}
-                    style={{
-                      maxHeight: '150px',
-                      overflow: 'auto',
-                      border: '1px solid #ccc',
-                      padding: '5px',
-                    }}
+            <DraggableModalPortal>
+              <DraggableWindow key="rowModal" onClose={handleCloseRowModal} style={{ width: '300px' }}>
+                <h3 style={{ marginTop: 0, textAlign: 'center' }}>Разметить ряды</h3>
+                <div style={styles.modalContent}>
+                  <div style={styles.modalInputRow}>
+                    <label style={styles.modalLabel}>Высота дерева:</label>
+                    <input
+                        type="number"
+                        value={rowSettings.treeHeight}
+                        onChange={(e) =>
+                            setRowSettings({ ...rowSettings, treeHeight: e.target.value })
+                        }
+                        placeholder="Введите высоту"
+                        style={styles.modalInput}
+                    />
+                  </div>
+                  <div style={styles.modalInputRow}>
+                    <label style={styles.modalLabel}>Размер кроны:</label>
+                    <input
+                        type="number"
+                        value={rowSettings.crownSize}
+                        onChange={(e) =>
+                            setRowSettings({ ...rowSettings, crownSize: e.target.value })
+                        }
+                        placeholder="Введите размер кроны"
+                        style={styles.modalInput}
+                    />
+                  </div>
+                  <div style={styles.modalInputRow}>
+                    <label style={styles.modalLabel}>Шаг (м):</label>
+                    <input
+                        type="number"
+                        value={rowSettings.step}
+                        onChange={(e) =>
+                            setRowSettings({ ...rowSettings, step: e.target.value })
+                        }
+                        placeholder="Введите шаг"
+                        style={styles.modalInput}
+                    />
+                  </div>
+                  <div style={styles.modalButtonRow}>
+                    <button onClick={handleCancelRows} style={styles.cancelButton}>Отмена</button>
+                    <button style={styles.saveButton} onClick={handleConfirmRows}>
+                      Подтвердить
+                    </button>
+                  </div>
+                  <hr style={{ margin: '10px 0' }} />
+                  <div>
+                    <h4 style={{ fontSize: '14px', textAlign: 'center' }}>Добавленные точки ряда</h4>
+                    <div
+                        ref={listRef}
+                        style={{
+                          maxHeight: '150px',
+                          overflow: 'auto',
+                          border: '1px solid #ccc',
+                          padding: '5px',
+                        }}
                     >
-                  {rowPoints.map((pt, idx) => (
-                      <div key={idx} style={styles.rowPointItem}>
-                        <p style={{ fontSize: '12px' }}>
-                          {idx + 1}. Широта: {pt.lat.toFixed(5)}, Долгота: {pt.lng.toFixed(5)}
-                        </p>
-                        <button onClick={() => deleteRowPoint(idx)} style={styles.deleteButtonRow}>
-                          ✖
-                        </button>
-                      </div>
-                  ))}
+                      {rowPoints.map((pt, idx) => (
+                          <div key={idx} style={styles.rowPointItem}>
+                            <p style={{ fontSize: '12px' }}>
+                              {idx + 1}. Широта: {pt.lat.toFixed(5)}, Долгота: {pt.lng.toFixed(5)}
+                            </p>
+                            <button onClick={() => deleteRowPoint(idx)} style={styles.deleteButtonRow}>
+                              ✖
+                            </button>
+                          </div>
+                      ))}
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
-            </DraggableWindow>
+              </DraggableWindow>
+            </DraggableModalPortal>
         )}
       </div>
   );
@@ -475,7 +489,6 @@ const styles = {
     border: 'none',
     cursor: 'pointer',
   },
-  // Пример стилей для кнопок подтверждения и удаления
   confirmButtonRow: {
     backgroundColor: 'green',
     border: 'none',
