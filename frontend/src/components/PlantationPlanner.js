@@ -156,6 +156,35 @@ const PlantationPlanner = ({
 
   // Функция подтверждения ряда: здесь окно закрывается (если требуется) или можно оставить его открытым
   const handleConfirmRows = () => {
+    // Проверка на пустоту полей
+    if (!rowSettings.treeHeight || !rowSettings.crownSize || !rowSettings.step) {
+      alert("Пожалуйста, заполните все поля");
+      return;
+    }
+
+    // Регулярное выражение для чисел (целые и десятичные, допускается знак минус)
+    const numberRegex = /^-?\d+(\.\d+)?$/;
+
+    if (
+        !numberRegex.test(rowSettings.treeHeight) ||
+        !numberRegex.test(rowSettings.crownSize) ||
+        !numberRegex.test(rowSettings.step)
+    ) {
+      alert("Значения в полях должны быть числовыми");
+      return;
+    }
+
+    // Преобразование значений в числа
+    const treeHeightNum = parseFloat(rowSettings.treeHeight);
+    const crownSizeNum = parseFloat(rowSettings.crownSize);
+    const stepNum = parseFloat(rowSettings.step);
+
+    // Дополнительная проверка, на случай, если что-то пойдёт не так
+    if (isNaN(treeHeightNum) || isNaN(crownSizeNum) || isNaN(stepNum)) {
+      alert("Значения в полях должны быть числовыми");
+      return;
+    }
+
     const newTreePoints = generateTreePointsFromRow(rowPoints, {
       treeHeight: rowSettings.treeHeight,
       crownSize: rowSettings.crownSize,
