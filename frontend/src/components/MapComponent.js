@@ -38,6 +38,8 @@ function MapComponent({
                         onTreeMapClick,
                         routePoints,
                         plantationPoints,
+                        savedPolygons,
+                        setSavedPolygons,
                         isRulerOn,
                         setIsRulerOn,
                         tempTreePoints,
@@ -100,7 +102,6 @@ function MapComponent({
   // -------------------------------
   const [isPlanimeterOn, setIsPlanimeterOn] = useState(false);
   const [roundedArea, setRoundedArea] = useState(null);
-  const [savedPolygons, setSavedPolygons] = useState(null); // сохраняемые полигоны
 
   // Ref для экземпляра MapboxDraw
   const drawRef = useRef(null);
