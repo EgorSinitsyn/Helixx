@@ -24,13 +24,14 @@ const App = () => {
     lat: CALIBRATION_LATITUDE,
     lng: CALIBRATION_LONGITUDE,
     altitude: CALIBRATION_ALTITUDE,
+    // heading: 0,
   });
 
   const [dronePosition, setDronePosition] = useState({
     lat: CALIBRATION_LATITUDE,
     lng: CALIBRATION_LONGITUDE,
     altitude: CALIBRATION_ALTITUDE,
-    heading: 0,
+    // heading: 0,
   });
 
   const markersRef = useRef([]); // Инициализация markersRef
@@ -49,11 +50,15 @@ const App = () => {
   const [droneHeading, setDroneHeading] = useState(0);
   const [isDroneInfoVisible, setIsDroneInfoVisible] = useState(false);
 
+  // Поднимаем состояние для режима линейки
+    const [isRulerOn, setIsRulerOn] = useState(false);
+
   // Для построения маршрута
   const [routePoints, setRoutePoints] = useState([]);
   const [selectedPoint, setSelectedPoint] = useState([]);
   const [isMissionBuilding, setIsMissionBuilding] = useState(false);
   const [confirmedRoute, setConfirmedRoute] = useState([]);       // для подтверждённого маршрута
+  const [currentRouteIndex, setCurrentRouteIndex] = useState(0); // для отслеживания направления (heading) к текущей точки маршрута
 
   // --- Новые состояния для PlantationPlanner ---
   const [isTreePlacingActive, setIsTreePlacingActive] = useState(false);
@@ -62,8 +67,23 @@ const App = () => {
   const [tempTreePoints, setTempTreePoints] = useState([]); // Временные (не сохранённые ещё) точки
   const [hoveredTreePoint, setHoveredTreePoint] = useState(null);   // Новое состояние для точки, над которой наведен курсор в списке
 
+  // --- Новые состояния для режима разметки рядов ---
+  const [isRowMarkingActive, setIsRowMarkingActive] = useState(false);
+  const [rowPoints, setRowPoints] = useState([]);
+  const [isRowModalOpen, setIsRowModalOpen] = useState(false);
 
-  // Определяем callback для обновления координат точки насаждения
+  const handleOpenRowModal = useCallback(() => {
+    console.log('Открытие окна разметки рядов');
+    setIsRowMarkingActive(true);
+  }, []);
+
+  const handleCloseRowModal = useCallback(() => {
+    console.log('Закрытие окна разметки рядов');
+    setIsRowMarkingActive(false);
+  }, []);
+
+
+  // Обновление высоты дрона
   const updateDroneAltitude = useCallback((newAltitude) => {
     setDronePosition((prev) => ({ ...prev, altitude: newAltitude }));
   }, []);
@@ -85,6 +105,9 @@ const App = () => {
       alert('Маршрут пуст!');
       return;
     }
+
+    setCurrentRouteIndex(0); // сброс индекса чтобы дрон корректно обновлял heading при старте новой миссии
+
     setIsMoving(true);  // Начинаем движение
     moveDroneToRoutePoints(
         dronePosition,
@@ -92,7 +115,8 @@ const App = () => {
         routePoints,
         setIsMoving,
         () => groundElevation,  // функция, возвращающая актуальное значение
-        () => flightAltitudeRef.current  // функция, возвращающая актуальное значение
+        () => flightAltitudeRef.current, // функция, возвращающая актуальное значение
+        () => setCurrentRouteIndex(prevIndex => prevIndex + 1)
     );
   }, [dronePosition, routePoints, groundElevation]); // добавляем groundElevation
 
@@ -159,12 +183,14 @@ const App = () => {
 
   // Когда пользователь кликает по карте в режиме посадки деревьев
   const handleTreeMapClick = useCallback((lat, lng) => {
-    // Добавляем во временный массив
+    if (isRowMarkingActive) {
+      return;
+    }
     setTempTreePoints((prev) => [
       ...prev,
       { lat, lng, height: '', crownSize: '' },
     ]);
-  }, []);
+  }, [isRowMarkingActive]);
 
   const handleTreeHeightChange = useCallback((height) => {
     setSelectedTreePoint(prev => ({ ...prev, height }));
@@ -198,13 +224,11 @@ const App = () => {
   const handleSaveTreePoint = useCallback(() => {
     if (tempTreePoints.length > 0) {
       const lastTempPoint = tempTreePoints[tempTreePoints.length - 1];
-
       // Проверяем, что поля "height" и "crownSize" не пустые
       if (!lastTempPoint.height || !lastTempPoint.crownSize) {
         alert('Введите корректные данные');
         return;
       }
-
       // Переносим последнюю временную точку в "сохранённые"
       setPlantationPoints(prev => [...prev, lastTempPoint]);
       // Убираем её из списка временных
@@ -233,6 +257,16 @@ const App = () => {
     setHoveredTreePoint(null);
     // При изменении plantationPoints в MapComponent обновятся 2D‑символы и 3D‑модели
   }, []);
+
+  // Функция отмены насаждений: очищает treePoints и tempTreePoints
+  const handleCancelPlantation = () => {
+    if (setPlantationPoints) {
+      setPlantationPoints([]);
+    }
+    if (typeof setTempTreePoints === 'function') {
+      setTempTreePoints([]);
+    }
+  };
 
   // Обработчики наведения/снятия наведения
   const handleTreeHover = useCallback((point, index) => {
@@ -337,6 +371,7 @@ const App = () => {
           ...prev,
           lat: latNum,
           lng: lngNum,
+          heading: droneHeading, // добавляем значение heading
         }));
       } else {
         // Для 2D используем введённое значение высоты
@@ -366,20 +401,28 @@ const App = () => {
     setIsMissionBuilding(true);
   }, []);
 
-  const handleMapClick = useCallback((lat, lng, groundAltitude = 0) => {
-    setSelectedPoint({
-      lat,
-      lng,
-      groundAltitude,
-      flightAltitude: '', // Значение по умолчанию – пустая строка
-      altitude: groundAltitude // Итоговая высота на начальном этапе
-    });
 
-    // Если в режиме расстановки деревьев, можно установить и точку для насаждения
-    if (isTreePlacingActive) {
-      setSelectedTreePoint({ lat, lng, height: '', crownSize: '' });
+ // Универсальный обработчик кликов по карте
+  const handleMapClick = useCallback((lat, lng, groundAltitude = 0) => {
+    // условие для режима расстановки рядов деревьев
+    if (isRowMarkingActive) {
+      // console.log('Добавляем точку в rowPoints:', lat, lng);
+      setRowPoints(prev => [...prev, { lat, lng }]);
+    } else {
+      // Маршрутные точки
+      setSelectedPoint({
+        lat,
+        lng,
+        groundAltitude,
+        flightAltitude: '',
+        altitude: groundAltitude
+      });
+      // Одиночные точки для насаждений
+      if (isTreePlacingActive) {
+        setSelectedTreePoint({ lat, lng, height: '', crownSize: '' });
+      }
     }
-  }, [isTreePlacingActive]);
+  }, [isRowMarkingActive, isTreePlacingActive]);
 
   const handleAltitudeChange = useCallback((value, is3D) => {
     const numericValue = Number(value);
@@ -471,9 +514,12 @@ const App = () => {
         isCoverageEnabled={isCoverageEnabled}
         droneHeading={droneHeading}
         setDroneHeading={setDroneHeading}
+        currentRouteIndex={currentRouteIndex}
         updateDroneAltitude={updateDroneAltitude}
         isPlacingMarker={isMissionBuilding}
         isMissionBuilding={isMissionBuilding}
+        isRulerOn={isRulerOn}
+        setIsRulerOn={setIsRulerOn}
         isTreePlacingActive={isTreePlacingActive}
         plantationPoints={plantationPoints}
         tempTreePoints={tempTreePoints}
@@ -483,6 +529,8 @@ const App = () => {
         confirmedRoute={confirmedRoute}
         onMapClick={handleMapClick}
         isMoving={isMoving}
+        isRowMarkingActive={isRowMarkingActive}
+        rowPoints={rowPoints}
       />
 
       {isDroneInfoVisible && (
@@ -579,7 +627,11 @@ const App = () => {
             <div className="arrow"></div>
             <div
               className="compass-rotatable"
-              style={{ transform: `rotate(${-droneHeading}deg)` }}
+              style={{
+                transform: `rotate(${-droneHeading}deg)`,
+                transition: 'transform 2s ease',
+                transitionProperty: 'transform',
+              }}
             >
               <div className="tick tick-0"></div>
               <div className="tick tick-45"></div>
@@ -637,12 +689,22 @@ const App = () => {
           }}
           onSavePoint={handleSaveTreePoint}
           onCancelPoint={handleCancelTreePoint}
+          onCancelPlantation={handleCancelPlantation}
           onConfirmPlantation={handleConfirmPlantation}
           treePoints={plantationPoints}
           onClose= {handleClosePlanner}
           onRemoveTreePoint={handleRemoveTreePoint}
           onTreeHover={handleTreeHover}
           onTreeLeave={handleTreeLeave}
+          isRulerOn={isRulerOn}
+          setIsRulerOn={setIsRulerOn}
+          onOpenRowModal={handleOpenRowModal}
+          onCloseRowModal={handleCloseRowModal}
+          isRowModalOpen={isRowModalOpen}
+          setIsRowModalOpen={setIsRowModalOpen}
+          rowPoints={rowPoints}
+          setRowPoints={setRowPoints}
+          setPlantationPoints={setPlantationPoints}
         />
       )}
     </div>

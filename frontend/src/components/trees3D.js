@@ -4,6 +4,7 @@ import { MapboxOverlay } from '@deck.gl/mapbox';
 import { SimpleMeshLayer } from '@deck.gl/mesh-layers';
 import { TruncatedConeGeometry, SphereGeometry } from '@luma.gl/engine';
 import { COORDINATE_SYSTEM } from '@deck.gl/core';
+import * as turf from '@turf/turf';
 
 import crownTexture from '../assets/leaves.png';
 
@@ -162,6 +163,35 @@ export function removeTree3DLayers(map, overlay) {
         overlay.finalize();
     }
     map.removeControl(overlay);
+}
+
+
+/**
+ * Генерирует точки деревьев по ряду точек на карте.
+ */
+export function generateTreePointsFromRow(rowPoints, { treeHeight, crownSize, step }) {
+    // Если ряд состоит менее чем из 2 точек — ничего не генерируем
+    if (rowPoints.length < 2) return [];
+
+    // Преобразуем rowPoints в массив координат [lng, lat]
+    const coordinates = rowPoints.map(pt => [pt.lng, pt.lat]);
+    const line = turf.lineString(coordinates);
+
+    // Получаем общую длину линии в километрах
+    const totalLengthKm = turf.length(line, { units: 'kilometers' });
+
+    // Переводим шаг из метров в километры
+    const stepKm = step / 1000;
+    const generatedPoints = [];
+
+    // Проходим по линии с шагом stepKm
+    for (let d = 0; d <= totalLengthKm; d += stepKm) {
+        const pt = turf.along(line, d, { units: 'kilometers' });
+        const [lng, lat] = pt.geometry.coordinates;
+        generatedPoints.push({ lat, lng, height: treeHeight, crownSize: crownSize });
+    }
+
+    return generatedPoints;
 }
 
 /**
