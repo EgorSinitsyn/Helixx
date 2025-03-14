@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import ReactDOM from 'react-dom';
 import { generateTreePointsFromRow } from './trees3D.js';
 
@@ -21,15 +21,15 @@ const DraggableWindow = ({ children, onClose, style }) => {
     setOffset({ x: e.clientX - rect.left, y: e.clientY - rect.top });
   };
 
-  const handleMouseMove = (e) => {
+  const handleMouseMove = useCallback((e) => {
     if (dragging) {
       setPosition({ x: e.clientX - offset.x, y: e.clientY - offset.y });
     }
-  };
+  }, [dragging, offset]);
 
-  const handleMouseUp = () => {
+  const handleMouseUp = useCallback(() => {
     setDragging(false);
-  };
+  }, []);
 
   useEffect(() => {
     if (dragging) {
@@ -43,7 +43,7 @@ const DraggableWindow = ({ children, onClose, style }) => {
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [dragging, offset]);
+  }, [dragging, handleMouseMove, handleMouseUp]);
 
   return (
       <div
