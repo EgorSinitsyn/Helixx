@@ -132,7 +132,7 @@ const MissionPlannerSidebar = ({
                 </div>
 
                 <button onClick={onCancelRoute} style={styles.cancelRouteButton}>Отменить маршрут</button>
-                <button onClick={onConfirmRoute} style={styles.confirmButton}>Подтвердить маршрут</button>
+                <button onClick={onConfirmRoute} style={styles.confirmButton}>Подтвердить | Обновить</button>
             </div>
 
             <div style={styles.routeListContainer}>
