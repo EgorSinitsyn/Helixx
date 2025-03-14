@@ -97,6 +97,7 @@ const PlantationPlanner = ({
                              onCrownSizeChange,
                              onSavePoint,
                              onCancelPoint,
+                             onCancelPlantation,
                              onConfirmPlantation,
                              treePoints,
                              onRemoveTreePoint,
@@ -160,13 +161,13 @@ const PlantationPlanner = ({
       crownSize: rowSettings.crownSize,
       step: rowSettings.step,
     });
-
     setPlantationPoints(prev => [...prev, ...newTreePoints]);
     // Можно оставить окно открытым, если требуется, но здесь вызываем закрытие:
     // handleCloseRowModal();
     setRowPoints([]);
     onConfirmPlantation();
   };
+
 
   // Прокрутка списка точек ряда вниз при добавлении новой точки
   useEffect(() => {
@@ -226,8 +227,11 @@ const PlantationPlanner = ({
           >
             Разметить ряды
           </button>
+          <button onClick={onCancelPlantation} style={styles.cancelPlantationButton}>
+            Отменить
+          </button>
           <button onClick={onConfirmPlantation} style={styles.confirmButton}>
-            Подтвердить насаждения
+            Подтвердить | Обновить
           </button>
         </div>
         <div style={styles.pointListContainer}>
@@ -403,6 +407,16 @@ const styles = {
     padding: '8px',
     fontSize: '16px',
     backgroundColor: '#555',
+    color: 'white',
+    border: 'none',
+    cursor: 'pointer',
+  },
+  cancelPlantationButton: {
+    width: '100%',
+    marginTop: '10px',
+    padding: '8px',
+    fontSize: '16px',
+    backgroundColor: '#c9302c',
     color: 'white',
     border: 'none',
     cursor: 'pointer',

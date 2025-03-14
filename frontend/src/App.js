@@ -258,6 +258,16 @@ const App = () => {
     // При изменении plantationPoints в MapComponent обновятся 2D‑символы и 3D‑модели
   }, []);
 
+  // Функция отмены насаждений: очищает treePoints и tempTreePoints
+  const handleCancelPlantation = () => {
+    if (setPlantationPoints) {
+      setPlantationPoints([]);
+    }
+    if (typeof setTempTreePoints === 'function') {
+      setTempTreePoints([]);
+    }
+  };
+
   // Обработчики наведения/снятия наведения
   const handleTreeHover = useCallback((point, index) => {
     // Можно добавить номер точки, если требуется для аннотации
@@ -679,6 +689,7 @@ const App = () => {
           }}
           onSavePoint={handleSaveTreePoint}
           onCancelPoint={handleCancelTreePoint}
+          onCancelPlantation={handleCancelPlantation}
           onConfirmPlantation={handleConfirmPlantation}
           treePoints={plantationPoints}
           onClose= {handleClosePlanner}
