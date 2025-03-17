@@ -11,7 +11,7 @@ import DroneInfoPanel from './components/DroneInfoPanel.js';
 import MissionPlannerSidebar from './components/MissionPlannerSidebar.js';
 import PlantationPlanner from './components/PlantationPlanner';
 import { loadRoute, moveDroneToRoutePoints } from './components/DroneRouteManager.js';
-import { sendMissionDataToServer } from './server/route_transfer.js';
+import { sendMissionDataToServer } from './components/route_transfer.js';
 
 const CALIBRATION_LATITUDE = 55.139592;
 const CALIBRATION_LONGITUDE = 37.962471;
