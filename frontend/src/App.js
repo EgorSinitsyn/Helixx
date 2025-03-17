@@ -11,6 +11,7 @@ import DroneInfoPanel from './components/DroneInfoPanel.js';
 import MissionPlannerSidebar from './components/MissionPlannerSidebar.js';
 import PlantationPlanner from './components/PlantationPlanner';
 import { loadRoute, moveDroneToRoutePoints } from './components/DroneRouteManager.js';
+import { sendMissionDataToServer } from './components/route_transfer.js';
 
 const CALIBRATION_LATITUDE = 55.139592;
 const CALIBRATION_LONGITUDE = 37.962471;
@@ -66,6 +67,9 @@ const App = () => {
   const [plantationPoints, setPlantationPoints] = useState([]);
   const [tempTreePoints, setTempTreePoints] = useState([]); // Временные (не сохранённые ещё) точки
   const [hoveredTreePoint, setHoveredTreePoint] = useState(null);   // Новое состояние для точки, над которой наведен курсор в списке
+
+  // --- Сохраненные полигоны в планимере
+  const [savedPolygons, setSavedPolygons] = useState(null);
 
   // --- Новые состояния для режима разметки рядов ---
   const [isRowMarkingActive, setIsRowMarkingActive] = useState(false);
@@ -497,9 +501,48 @@ const App = () => {
     console.log("Маршрут в формате GeoJSON:", JSON.stringify(geoJson, null, 2));
   }, [routePoints]);
 
-  const handleConfirmRoute = useCallback(() => {
-    setConfirmedRoute([...routePoints]);
-  }, [routePoints]);
+const handleConfirmRoute = useCallback(async () => {
+  // 1) Подтверждаем маршрут в локальном состоянии
+  setConfirmedRoute([...routePoints]);
+
+  // 2) Перед отправкой данных на сервер можно подготовить то, что мы хотим отправить
+  // Допустим, мы хотим отправить:
+  //   - dronePosition => droneData
+  //   - routePoints
+  //   - plantationPoints как savedPolygons (или пустой объект, если не нужно)
+  const droneData = {
+    lat: dronePosition.lat,
+    lng: dronePosition.lng,
+    altitude: dronePosition.altitude,
+  };
+
+  // Если вы хотите передавать свои «полилинии» вместо «полигонов», или вообще не передавать,
+  // можно передать пустой объект/массив. Для примера возьмём plantationPoints.
+  const polygonsToSend = savedPolygons || {
+    type: 'FeatureCollection',
+    features: []
+  };
+
+  try {
+    // 3) Вызываем функцию отправки на бэкенд
+    const response = await sendMissionDataToServer(
+      droneData,       // droneData
+      routePoints,     // routePoints
+      savedPolygons    // savedPolygons или другое, что хотите отправить
+    );
+
+    console.log('[handleConfirmRoute] Ответ от сервера:', response);
+
+    // При необходимости, если сервер вернул обновлённые данные (updatedRoutePoints),
+    // вы можете обновить их в стейте:
+    if (response.updatedRoutePoints) {
+      setRoutePoints(response.updatedRoutePoints);
+    }
+
+  } catch (error) {
+    console.error('[handleConfirmRoute] Ошибка при отправке данных:', error);
+  }
+}, [routePoints, dronePosition, plantationPoints]);
 
   return (
     <div>
@@ -522,6 +565,8 @@ const App = () => {
         setIsRulerOn={setIsRulerOn}
         isTreePlacingActive={isTreePlacingActive}
         plantationPoints={plantationPoints}
+        savedPolygons={savedPolygons}
+        setSavedPolygons={setSavedPolygons}
         tempTreePoints={tempTreePoints}
         hoveredTreePoint={hoveredTreePoint}
         onTreeMapClick={handleTreeMapClick}
