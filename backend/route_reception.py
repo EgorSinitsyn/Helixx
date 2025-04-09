@@ -1,55 +1,63 @@
-# server.py
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 
 app = Flask(__name__)
-CORS(app)  # чтобы разрешить CORS для всех маршрутов, если фронтенд на другом порту
+CORS(app)  # чтобы разрешить CORS для всех маршрутов, если фронтентд на другом порту
 
-# Объявляем глобальную переменную для хранения последней миссии
+# Глобальная переменная для хранения данных миссии
 last_mission_data = {}
 
-@app.route('/update-mission', methods=['POST'])
+@app.route('/get-mission', methods=['GET', 'POST'])
 def update_mission():
-    global last_mission_data  # объявляем, что будем изменять глобальную переменную
-    try:
-        # Получаем JSON из тела запроса
-        data = request.get_json()
+    """
+    Обрабатывает получение данных (местоположение дрона, маршрутных точек, полигонов) с frontenda и
+    перенаправляет их на сервер для последующей обработки
 
-        # Извлекаем нужные поля
-        drone_data = data.get('droneData', {})
-        route_points = data.get('routePoints', [])
-        saved_polygons = data.get('savedPolygons', {})
+    Метод поддерживает два HTTP-метода:
 
-        # Логируем для отладки
-        print("Данные дрона:", drone_data)
-        print("Маршрутные точки:", route_points)
-        print("Сохранённые полигоны:", saved_polygons)
+    POST:
+        Получает JSON-данные из тела запроса с ключами:
+          - 'droneData': данные дрона (словарь, по умолчанию пустой словарь).
+          - 'routePoints': список маршрутных точек (по умолчанию пустой список).
+          - 'savedPolygons': сохранённые полигоны (словарь, по умолчанию пустой словарь).
+        Обновляет глобальную переменную last_mission_data и возвращает обновлённые данные в формате JSON.
 
-        # Сохраняем последнюю миссию для последующего анализа и обработки
-        last_mission_data = {
-            "droneData": drone_data,
-            "routePoints": route_points,
-            "savedPolygons": saved_polygons,
-        }
+    GET:
+        Возвращает текущее содержимое переменной last_mission_data в формате JSON.
 
-        # Подготовим ответ
-        response_data = {
-            "status": "ok",
-            "message": "Миссия успешно обновлена на сервере!",
-            "updatedRoutePoints": route_points,
-        }
+    :return:
+            JSON-ответ с данными миссии и статусом HTTP 200 для успешного выполнения,
+            либо JSON-ответ с сообщением об ошибке и статусом HTTP 500 в случае исключения.
+    """
 
-        return jsonify(response_data), 200
+    global last_mission_data
 
-    except Exception as e:
-        print("Ошибка на сервере:", e)
-        return jsonify({"status": "error", "message": str(e)}), 500
+    if request.method == 'POST':
+        try:
+            # Получаем JSON из тела запроса
+            data = request.get_json()
 
+            # Извлекаем нужные поля
+            drone_data = data.get('droneData', {})
+            route_points = data.get('routePoints', [])
+            saved_polygons = data.get('savedPolygons', {})
 
-# Новый эндпоинт для получения последней миссии
-@app.route('/get-mission', methods=['GET'])
-def get_mission():
-    return jsonify(last_mission_data), 200
+            # Обновляем глобальную переменную
+            last_mission_data = {
+                "droneData": drone_data,
+                "routePoints": route_points,
+                "savedPolygons": saved_polygons,
+            }
+
+            # Возвращаем обновлённые данные
+            return jsonify(last_mission_data), 200
+
+        except Exception as e:
+            return jsonify({"status": "error", "message": str(e)}), 500
+
+    elif request.method == 'GET':
+        # При GET-запросе возвращаем сохранённые данные миссии
+        return jsonify(last_mission_data), 200
 
 
 if __name__ == '__main__':

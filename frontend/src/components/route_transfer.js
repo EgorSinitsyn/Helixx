@@ -18,7 +18,7 @@ export async function sendMissionDataToServer(droneData, routePoints, savedPolyg
 
   try {
     // Отправляем запрос на Flask-сервер
-    const response = await fetch('http://localhost:5005/update-mission', {
+    const response = await fetch('http://localhost:5005/get-mission', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
