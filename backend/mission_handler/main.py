@@ -715,12 +715,35 @@ class MissionManager:
         dists = np.linalg.norm(arr - np.array(pt.coords[0]), axis=1)
         return int(np.argmin(dists))
 
+    def _find_nearest_altitude(self, lat: float, lng: float) -> any:
+        """
+        Находит значение altitude из исходного маршрута для точки (lat, lng),
+        выбирая точку, ближайшую к заданным координатам.
+
+        Args:
+            lat (float): Широта обработанной точки.
+            lng (float): Долгота обработанной точки.
+
+        Returns:
+            Значение altitude ближайшей точки из self.route_pts.
+        """
+        best_distance = float("inf")
+        best_altitude = ""
+        for pt in self.route_pts:
+            # Вычисляем расстояние между точками (lat, lng) и точкой из исходного маршрута.
+            d = geodesic((lat, lng), (pt["lat"], pt["lng"])).meters
+            if d < best_distance:
+                best_distance = d
+                best_altitude = pt["altitude"]
+        return best_altitude
+
     # -------------------------
     # Вывод результатов: сохранение карты и маршрута
     # -------------------------
     def _save_outputs(self, out_html: pathlib.Path, route: List[Tuple[float, float]]) -> None:
         """
-        Сохраняет итоговый маршрут:
+        Сохраняет итоговый маршрут с заданной струтурой. Применяет функцию _find_nearest_altitude для ключа altitude:
+
         - Формирует HTML-карту (mission_map.html) с использованием Folium.
         - Сохраняет маршрут в JSON (offset_route.json).
 
@@ -732,8 +755,21 @@ class MissionManager:
         self._save_map(out_html, route)
         json_path = out_html.with_name("offset_route.json")
         with json_path.open("w", encoding="utf8") as f:
-            json.dump([{"lat": lat, "lng": lng} for lat, lng in route],
-                      f, ensure_ascii=False, indent=2)
+            json.dump(
+                [
+                    {
+                     "lat": lat,
+                     "lng": lng,
+                     "altitude": self._find_nearest_altitude(lat, lng),
+                     "flightAltitude": "",
+                     "groundAltitude": ""
+                     }
+                    for lat, lng in route
+                ],
+                f,
+                ensure_ascii=False,
+                indent=2
+            )
         print(f"[INFO] Offset route saved to {json_path}")
         try:
             webbrowser.open(out_html.as_uri())
