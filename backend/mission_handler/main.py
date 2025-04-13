@@ -54,9 +54,29 @@ TRANS_TO_M = Transformer.from_crs("epsg:4326", "epsg:32637", always_xy=True)   #
 TRANS_TO_WGS = Transformer.from_crs("epsg:32637", "epsg:4326", always_xy=True)   # UTM → WGS84
 
 def wgs_to_utm(lng: float, lat: float) -> Tuple[float, float]:
+    """
+    Преобразует координаты из формата WGS84 (lng, lat) в UTM.
+
+    Args:
+        lng (float): Долгота.
+        lat (float): Широта.
+
+    Returns:
+        Tup
+    """
     return TRANS_TO_M.transform(lng, lat)
 
 def utm_to_wgs(x: float, y: float) -> Tuple[float, float]:
+    """
+    Преобразует координаты из формата UTM в WGS84 (lat, lng).
+
+    Args:
+        x (float): Координата X в UTM.
+        y (float): Координата Y в UTM.
+
+    Returns:
+        Tuple[float, float]: Координаты в формате (lat, lng) WGS84.
+    """
     lng, lat = TRANS_TO_WGS.transform(x, y)
     return lat, lng
 
@@ -65,7 +85,14 @@ def utm_to_wgs(x: float, y: float) -> Tuple[float, float]:
 # -------------------------
 def reduce_route(route: List[Tuple[float, float]], min_distance_m: float = 0.9) -> List[Tuple[float, float]]:
     """
-    Удаляет «лишние» точки, которые ближе, чем min_distance_m (в метрах) к предыдущей сохранённой точке.
+    Удаляет из маршрута точки, которые расположены ближе друг к другу, чем min_distance_m.
+
+    Args:
+        route (List[Tuple[float, float]]): Список точек маршрута в формате (lat, lng).
+        min_distance_m (float): Минимальное допустимое расстояние между соседними точками (в метрах).
+
+    Returns:
+        List[Tuple[float, float]]: Разрежённый маршрут без избыточных точек.
     """
     if not route:
         return []
@@ -84,12 +111,19 @@ def remove_loops_composite(route: List[Tuple[float, float]],
                            distance_threshold: float = 2.0,
                            angle_threshold: float = 150.0) -> List[Tuple[float, float]]:
     """
-    Удаляет циклы из маршрута.
+    Удаляет циклы из маршрута, используя сочетание проверки расстояния и направления движения.
 
-    Если точка route[j] оказывается ближе, чем distance_threshold (в метрах)
-    к точке route[i] (при условии, что минимум 2 точки между ними), а угол между направлением
-    движения (вектора от route[i]→route[i+1] и от route[j-1]→route[j]) больше или равен angle_threshold,
-    то считается, что был повторный проход, и удаляются все промежуточные точки между route[i] и route[j].
+    Если точка route[j] оказывается ближе, чем distance_threshold к точке route[i] (при условии, что между ними как минимум 2 точки),
+    и угол между векторами направления (от route[i]→route[i+1] и от route[j-1]→route[j]) превышает angle_threshold,
+    удаляются все точки между route[i] и route[j].
+
+    Args:
+        route (List[Tuple[float, float]]): Маршрут в виде списка точек (lat, lng).
+        distance_threshold (float): Порог расстояния для определения повторного прохода (в метрах).
+        angle_threshold (float): Порог угла (в градусах) для определения разворота.
+
+    Returns:
+        List[Tuple[float, float]]: Очистенный маршрут без циклических повторов.
     """
     if not route:
         return []
@@ -124,13 +158,34 @@ def remove_loops_composite(route: List[Tuple[float, float]],
 # Функции для обработки boundary‑участков (ваша логика смещения)
 # -------------------------
 def is_valid(pt: Point, poly: Polygon) -> bool:
-    """Точка валидна, если не содержится в полигоне и не касается его границы."""
+    """
+    Проверяет, что точка не находится внутри полигона и не касается его границ.
+
+    Args:
+        pt (Point): Объект точки (Shapely).
+        poly (Polygon): Объект полигона (Shapely).
+
+    Returns:
+        bool: True, если точка валидна, иначе False.
+    """
     return (not poly.contains(pt)) and (not poly.touches(pt))
 
 def shift_by_neighbor(point: Point, idx: int, points: List[Point], poly: Polygon, base_offset: float) -> Point:
     """
-    Вычисляет смещение точки по биссектрисе угла, образованного векторами к соседям.
-    Если один из кандидатов валиден, возвращает его, иначе возвращает исходную точку.
+    Вычисляет смещение точки по биссектрисе угла, образованного соседними точками.
+
+    Если один из рассчитанных кандидатов удовлетворяет условию (точка выходит за границы полигона),
+    возвращается смещенная точка, иначе возвращается исходная точка.
+
+    Args:
+        point (Point): Текущая точка, которую нужно сместить.
+        idx (int): Индекс точки в списке.
+        points (List[Point]): Список точек (сегмент) в UTM.
+        poly (Polygon): Полигон (в UTM), относительно которого вычисляется смещение.
+        base_offset (float): Базовое смещение (в метрах).
+
+    Returns:
+        Point: Смещённая точка (если вычисление прошло успешно) или исходная точка.
     """
     n = len(points)
     if n < 2:
@@ -171,8 +226,21 @@ def shift_by_neighbor(point: Point, idx: int, points: List[Point], poly: Polygon
 def shift_point(point: Point, idx: int, points: List[Point], poly: Polygon,
                 base_offset: float, poly_offset: Polygon) -> Point:
     """
-    Смещает точку, используя shift_by_neighbor. Если кандидат невалиден,
-    применяется fallback‑механизм: проекция на внешний контур offset‑полигона.
+    Смещает точку, используя функцию shift_by_neighbor.
+
+    Если полученный кандидат не удовлетворяет условиям валидности, применяется fallback‑механизм:
+    проекция точки на внешний контур offset‑полигона с корректировкой.
+
+    Args:
+        point (Point): Исходная точка для смещения.
+        idx (int): Индекс точки в списке.
+        points (List[Point]): Список точек, составляющих сегмент (в UTM).
+        poly (Polygon): Полигон (в UTM), относительно которого происходит смещение.
+        base_offset (float): Базовое смещение (в метрах).
+        poly_offset (Polygon): Буферный полигон для fallback‑проекции.
+
+    Returns:
+        Point: Смещённая точка (в UTM), соответствующая заданным критериям.
     """
     candidate = shift_by_neighbor(point, idx, points, poly, base_offset)
     if candidate is None or not is_valid(candidate, poly):
@@ -188,6 +256,14 @@ def shift_point(point: Point, idx: int, points: List[Point], poly: Polygon,
 class MissionManager:
     def __init__(self, drone: Dict[str, Any], route_pts: List[Dict[str, float]],
                  polygons_geojson: Dict[str, Any]):
+        """
+        Инициализирует MissionManager с данными миссии.
+
+        Args:
+            drone (Dict[str, Any]): Данные дрона, содержащие координаты.
+            route_pts (List[Dict[str, float]]): Список точек исходного маршрута.
+            polygons_geojson (Dict[str, Any]): GeoJSON-структура с запрещёнными полигонами.
+        """
         self.drone = drone
         self.route_pts = route_pts
         self.polygons_geojson = polygons_geojson
@@ -204,6 +280,15 @@ class MissionManager:
 
     @classmethod
     def from_server(cls, url: str = "http://localhost:5005/get-mission") -> "MissionManager":
+        """
+        Фабричный метод для создания экземпляра MissionManager путём загрузки данных миссии с сервера.
+
+        Args:
+            url (str): URL для получения данных миссии.
+
+        Returns:
+            MissionManager: Новый экземпляр с загруженными данными.
+        """
         print("[INFO] Fetching mission data …")
         data = requests.get(url, timeout=5).json()
         required = {"droneData", "routePoints", "savedPolygons"}
@@ -212,6 +297,18 @@ class MissionManager:
         return cls(data["droneData"], data["routePoints"], data["savedPolygons"])
 
     def run(self, out_html: pathlib.Path | str = "mission_map.html") -> None:
+        """
+        Запускает процесс построения маршрута и сохраняет результаты.
+
+        Этапы:
+        1. Дискретизация исходного маршрута и классификация точек.
+        2. Вычисление offset‑точек (для safe и boundary участков).
+        3. Очистка маршрута от избыточных точек и циклов.
+        4. Сохранение карты и JSON-результата.
+
+        Args:
+            out_html (pathlib.Path | str): Путь для сохранения HTML-карты.
+        """
         t0 = time.time()
         self._classify_points()
         self._build_offsets()
@@ -226,6 +323,15 @@ class MissionManager:
     # 1. Дискретизация маршрута и классификация точек
     # -------------------------
     def _classify_points(self) -> None:
+        """
+        Дискретизирует исходный маршрут и классифицирует каждую точку как "safe" или "boundary".
+
+        - Строится линия маршрута из входных точек.
+        - Корректируются сегменты, пересекающие полигоны.
+        - Выполняется дискретизация с шагом STEP (1 м).
+        - Каждая точка сравнивается с исходным маршрутом, и если расстояние меньше TOLERANCE_M, то метка "safe",
+          иначе – "boundary".
+        """
         route_line = LineString([(pt["lng"], pt["lat"]) for pt in self.route_pts])
         segments = [LineString([route_line.coords[i], route_line.coords[i+1]])
                     for i in range(len(route_line.coords)-1)]
@@ -260,6 +366,14 @@ class MissionManager:
     # 2. Вычисление offset‑точек для safe и boundary участков
     # -------------------------
     def _build_offsets(self) -> None:
+        """
+        Вычисляет offset‑точки для маршрута.
+
+        - Для каждой "safe" точки вычисляется offset‑координата через проекцию на ближайшую грань полигона.
+        - Для последовательных "boundary" точек формируются сегменты, переводятся в UTM,
+          для которых рассчитывается смещение с использованием функций shift_by_neighbor и shift_point.
+        - Результаты преобразуются обратно в WGS84 и записываются в итоговый маршрут.
+        """
         offset_points = [None] * len(self.disc_points)
         # Обработка safe‑точек
         for i, dp in enumerate(self.disc_points):
@@ -342,6 +456,20 @@ class MissionManager:
     # Вычисление safe‑offset точки (по проекции на ближайшую грань полигона)
     # -------------------------
     def _compute_safe_offset(self, pt_wgs: Tuple[float, float]) -> Tuple[float, float]:
+        """
+        Вычисляет safe‑offset точку для заданной точки.
+
+        Функция:
+        - Находит ближайшую грань полигона (с использованием _project_to_nearest_polygon).
+        - Вычисляет вектор от проекции до исходной точки и смещает её на фиксированное расстояние (OFFSET).
+        - Если полученная точка оказывается внутри полигона, смещение производится в обратную сторону.
+
+        Args:
+            pt_wgs (Tuple[float, float]): Исходная точка в формате WGS84 (lat, lng).
+
+        Returns:
+            Tuple[float, float]: Точка с рассчитанным safe‑offset в формате WGS84.
+        """
         proj, poly = self._project_to_nearest_polygon(pt_wgs)
         if proj is None:
             return pt_wgs
@@ -360,6 +488,17 @@ class MissionManager:
     # Геометрические вспомогательные функции
     # -------------------------
     def _project_to_nearest_polygon(self, pt_wgs: Tuple[float, float]) -> Tuple[Any, Any]:
+        """
+        Находит ближайшую точку проекции заданной точки pt_wgs на грань полигона,
+        а также возвращает соответствующий полигон.
+
+        Args:
+            pt_wgs (Tuple[float, float]): Точка в формате WGS84 (lat, lng).
+
+        Returns:
+            Tuple[Any, Any]: Пара (проекция (Point в UTM), полигон (Polygon)).
+                             Если проекция не найдена – (None, None).
+        """
         best_proj, best_poly, best_dist = None, None, float("inf")
         x, y = wgs_to_utm(pt_wgs[1], pt_wgs[0])
         for poly in self.polygons_utm:
@@ -372,6 +511,17 @@ class MissionManager:
         return Point(best_proj), best_poly
 
     def _point_to_segment_projection(self, p, a, b) -> Tuple[Any, float]:
+        """
+        Вычисляет проекцию точки p на отрезок (a, b) и возвращает проекцию и расстояние от p до проекции.
+
+        Args:
+            p: Координаты точки (массив или кортеж).
+            a: Начало отрезка.
+            b: Конец отрезка.
+
+        Returns:
+            Tuple[Any, float]: Пара (проекция на отрезок, расстояние от p до проекции).
+        """
         p, a, b = np.array(p), np.array(a), np.array(b)
         ab = b - a
         if np.allclose(ab, 0):
@@ -381,6 +531,15 @@ class MissionManager:
         return proj, np.linalg.norm(p - proj)
 
     def _poly_to_utm(self, poly_wgs: Polygon) -> Polygon:
+        """
+        Преобразует полигон, заданный в WGS84, в систему UTM.
+
+        Args:
+            poly_wgs (Polygon): Полигон в системе WGS84.
+
+        Returns:
+            Polygon: Полигон, преобразованный в UTM.
+        """
         coords = list(poly_wgs.exterior.coords)
         if coords[0] != coords[-1]:
             coords.append(coords[0])
@@ -388,6 +547,20 @@ class MissionManager:
         return Polygon(utm_coords)
 
     def _correct_segment(self, segment: LineString) -> LineString:
+        """
+        Корректирует сегмент маршрута, если он пересекается с границами полигонов.
+
+        Для каждого полигона, с которым пересекается сегмент, происходит:
+        - Вычисление точек входа и выхода через пересечение.
+        - Построение обхода вдоль границы полигона.
+        - Замена части исходного сегмента обходным путем.
+
+        Args:
+            segment (LineString): Исходный сегмент маршрута.
+
+        Returns:
+            LineString: Скорректированный сегмент маршрута.
+        """
         for poly in self.polygons_wgs:
             if not segment.intersects(poly):
                 continue
@@ -418,6 +591,16 @@ class MissionManager:
         return segment
 
     def _nearest_index(self, coords: List[Tuple[float, float]], pt: Point) -> int:
+        """
+        Находит индекс точки из списка coords, ближайшей к заданной точке pt.
+
+        Args:
+            coords (List[Tuple[float, float]]): Список координат (lat, lng).
+            pt (Point): Целевая точка.
+
+        Returns:
+            int: Индекс ближайшей точки в списке.
+        """
         arr = np.array(coords)
         dists = np.linalg.norm(arr - np.array(pt.coords[0]), axis=1)
         return int(np.argmin(dists))
@@ -426,6 +609,15 @@ class MissionManager:
     # Вывод результатов: сохранение карты и маршрута
     # -------------------------
     def _save_outputs(self, out_html: pathlib.Path) -> None:
+        """
+        Сохраняет итоговый маршрут и карту.
+
+        - Формирует HTML-страницу с картой (mission_map.html) с использованием Folium.
+        - Сохраняет итоговый маршрут в JSON (offset_route.json).
+
+        Args:
+            out_html (pathlib.Path): Путь для сохранения HTML-файла с картой.
+        """
         out_html = out_html.expanduser().resolve()
         self._save_map(out_html)
         json_path = out_html.with_name("offset_route.json")
@@ -440,6 +632,15 @@ class MissionManager:
             webbrowser.open(f"file://{out_html}")
 
     def _save_map(self, out_html: pathlib.Path) -> None:
+        """
+        Формирует и сохраняет карту маршрута с использованием Folium.
+
+        - Добавляет полигоны, исходный маршрут и маркер дрона на карту.
+        - Визуализирует маршрут через TimestampedGeoJson слой.
+
+        Args:
+            out_html (pathlib.Path): Путь для сохранения HTML-файла с картой.
+        """
         m = folium.Map(location=[self.drone["lat"], self.drone["lng"]], zoom_start=16)
         folium.GeoJson(
             self.polygons_geojson,
