@@ -12,6 +12,7 @@ import MissionPlannerSidebar from './components/MissionPlannerSidebar.js';
 import PlantationPlanner from './components/PlantationPlanner';
 import { loadRoute, moveDroneToRoutePoints } from './components/DroneRouteManager.js';
 import { sendMissionDataToServer } from './components/route_transfer.js';
+import ConfirmRouteModal from './components/AdjustedRouteModal';
 
 const CALIBRATION_LATITUDE = 55.139592;
 const CALIBRATION_LONGITUDE = 37.962471;
@@ -85,6 +86,10 @@ const App = () => {
     console.log('Закрытие окна разметки рядов');
     setIsRowMarkingActive(false);
   }, []);
+
+  // -- Модальное окно для корректировки маршрута
+  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+  const initialMapUrl = "http://localhost:5005/mission_map"; // URL для изначальной карты
 
 
   // Обновление высоты дрона
@@ -505,6 +510,9 @@ const handleConfirmRoute = useCallback(async () => {
   // 1) Подтверждаем маршрут в локальном состоянии
   setConfirmedRoute([...routePoints]);
 
+  // Открываем модальное окно с картой
+  setIsConfirmModalOpen(true);
+
   // 2) Перед отправкой данных на сервер можно подготовить то, что мы хотим отправить
   // Допустим, мы хотим отправить:
   //   - dronePosition => droneData
@@ -706,6 +714,19 @@ const handleConfirmRoute = useCallback(async () => {
         </div>
         <button onClick={handleConfirmDronePosition} style={styles.confirmButton}>Подтвердить местоположение</button>
       </DraggableModal>
+
+      {/* Окно с корректировкой миссии */}
+      {isConfirmModalOpen && (
+          <ConfirmRouteModal
+            isOpen={isConfirmModalOpen}
+            onClose={() => setIsConfirmModalOpen(false)}
+            initialMapUrl={initialMapUrl}
+            onRouteProcessed={(newMapUrl) => {
+              console.log("Новый URL карты:", newMapUrl);
+              // Если нужно, можно обновить состояние и/или выполнить другие действия
+            }}
+          />
+        )}
 
       {/* Отображение PlantationPlanner, если включён режим расстановки насаждений */}
       {isTreePlacingActive && (
