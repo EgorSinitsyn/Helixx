@@ -1,5 +1,6 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template_string
 from flask_cors import CORS
+import folium
 
 app = Flask(__name__)
 CORS(app)
@@ -65,6 +66,86 @@ def mission_endpoint():
 
     # GET – гарантируем, что структура всегда корректная
     return jsonify(_normalize(last_mission_data)), 200
+
+
+@app.route("/mission_map", methods=["GET"])
+def mission_map():
+    """
+    Генерирует карту Folium на основе данных миссии:
+      - Маркер дрона (droneData)
+      - Маршрут (routePoints), линия оранжевого цвета
+      - Пунктирная линия, соединяющая начальное положение дрона с первой точкой маршрута
+      - Полигоны (savedPolygons)
+    И возвращает HTML-код карты.
+    """
+    # Используем координаты дрона из last_mission_data (если они заданы)
+    drone_data = last_mission_data.get("droneData", {})
+    default_lat = 55.139592
+    default_lng = 37.962471
+    lat = drone_data.get("lat", default_lat)
+    lng = drone_data.get("lng", default_lng)
+
+    # Создаем карту Folium
+    m = folium.Map(location=[lat, lng], zoom_start=15)
+
+    # Добавляем маркер дрона
+    if drone_data:
+        folium.Marker(
+            [lat, lng],
+            popup="Дрон",
+            icon=folium.Icon(color="blue")
+        ).add_to(m)
+
+    # Отрисовываем маршрут: собираем точки, добавляем маркеры и рисуем оранжевую линию
+    route_points = last_mission_data.get("routePoints", [])
+    polyline_points = []
+    if route_points:
+        for pt in route_points:
+            try:
+                # Преобразуем координаты; учитываем, что они могут передаваться как строки или числа
+                lat_pt = float(pt.get("lat", default_lat))
+                lng_pt = float(pt.get("lng", default_lng))
+                polyline_points.append([lat_pt, lng_pt])
+                # Рисуем маленький круг (маркер) для каждой точки
+                folium.CircleMarker(
+                    [lat_pt, lng_pt],
+                    radius=3,
+                    color="orange",
+                    fill=True
+                ).add_to(m)
+            except Exception as e:
+                print("Ошибка обработки точки маршрута:", pt, e)
+        if polyline_points:
+            # Рисуем основную линию маршрута оранжевого цвета
+            folium.PolyLine(polyline_points, color="orange", weight=2).add_to(m)
+            # Рисуем пунктирную линию, соединяющую начальное положение дрона с первой точкой маршрута
+            first_point = polyline_points[0]
+            folium.PolyLine([[lat, lng], first_point],
+                            color="orange", weight=2,
+                            dash_array="5,10").add_to(m)
+
+    # Отрисовываем полигоны из savedPolygons
+    saved_polygons = last_mission_data.get("savedPolygons", {}).get("features", [])
+    for feature in saved_polygons:
+        geometry = feature.get("geometry")
+        if geometry and geometry.get("type") == "Polygon":
+            coords = geometry.get("coordinates", [])
+            if coords and len(coords) > 0:
+                # GeoJSON задает координаты как [[lng, lat], [lng, lat], ...]
+                # Folium ожидает список точек в формате [lat, lng]
+                # Берем первый кольцо (exterior) полигона
+                ring = coords[0]
+                if ring:
+                    converted_ring = [[point[1], point[0]] for point in ring]
+                    folium.Polygon(
+                        locations=converted_ring,
+                        color="blue",
+                        fill=True,
+                        fill_opacity=0.3
+                    ).add_to(m)
+
+    # Возвращаем HTML-код сгенерированной карты
+    return m.get_root().render()
 
 
 if __name__ == "__main__":
