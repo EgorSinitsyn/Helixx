@@ -1,8 +1,13 @@
-from flask import Flask, request, jsonify, render_template_string
+from flask import Flask, request, jsonify, send_file, abort, url_for
 from flask_cors import CORS
 import folium
+import time
+import pathlib
+import traceback
 
-app = Flask(__name__)
+from backend.mission_handler.mission_handler import MissionManager
+
+app = Flask(__name__, static_folder="mission_handler")
 CORS(app)
 
 # Изначально храним миссию в нормализованной форме
@@ -146,6 +151,55 @@ def mission_map():
 
     # Возвращаем HTML-код сгенерированной карты
     return m.get_root().render()
+
+
+@app.route("/process-route", methods=["POST"])
+def process_route():
+    """
+    POST { offset: число }
+    -> запускает adjust_route, перезаписывает mission_map.html
+       и возвращает JSON { success: True, mapUrl: "<URL карты>" }
+    """
+    data = request.get_json(force=True) or {}
+    raw_offset = data.get("offset", 3.0)
+    # 1) Приводим к числу
+    try:
+        offset = float(raw_offset)
+    except (TypeError, ValueError):
+        return jsonify({
+            "success": False,
+            "error": f"Неверное значение offset: {raw_offset}"
+        }), 400
+
+    try:
+        # 2) Запускаем пересчёт
+        map_path = MissionManager.adjust_route(offset)
+        # 3) Генерируем корректный URL
+        map_url = url_for("mission_map_file", ts=int(time.time()), _external=True)
+        return jsonify({"success": True, "mapUrl": map_url})
+    except Exception as e:
+        # логируем полный трейсбек
+        app.logger.error(traceback.format_exc())
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
+
+
+@app.route("/mission_map_final", methods=["GET"])
+def mission_map_file():
+    """
+    Отдаёт HTML, записанный adjust_route() в mission_handler/mission_map.html
+    """
+    # каталог backend/
+    project_root = pathlib.Path(__file__).parent.parent
+    file = project_root / "mission_handler" / "mission_map.html"
+
+    if not file.exists():
+        abort(404, description="Файл карты ещё не создан")
+
+    return send_file(file, mimetype="text/html")
 
 
 if __name__ == "__main__":
