@@ -9,9 +9,11 @@ const ConfirmRouteModal = ({ isOpen, onClose, initialMapUrl, onRouteProcessed })
   const [offset, setOffset] = useState(3); // значение по умолчанию
   const [mapUrl, setMapUrl] = useState(initialMapUrl);
 
+  const cacheBusted = url => `${url}?ts=${Date.now()}`
+
   // Обработчик для кнопки "Изначальный маршрут"
   const handleOriginalRoute = () => {
-    onClose();
+    setMapUrl(cacheBusted(initialMapUrl))
   };
 
   // Обработчик для кнопки "Скорректированный маршрут"
