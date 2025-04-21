@@ -819,7 +819,7 @@ class MissionManager:
         - Анимацию скорректированного маршрута.
         """
          # 1) Базовая карта, центрированная на дроне
-         m = folium.Map(location=[self.drone["lat"], self.drone["lng"]], zoom_start=16)
+         m = folium.Map(location=[self.drone["lat"], self.drone["lng"]], zoom_start=15)
 
          # 2) Запрещённые полигоны с заливкой
          for feature in self.polygons_geojson.get("features", []):
@@ -857,7 +857,7 @@ class MissionManager:
          folium.Marker(
              [self.drone["lat"], self.drone["lng"]],
              popup="Drone",
-             icon=folium.Icon(color="black")
+             icon=folium.Icon(color="red")
          ).add_to(m)
 
          # 5) Анимация скорректированного маршрута

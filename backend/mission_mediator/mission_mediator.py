@@ -2,13 +2,17 @@ from flask import Flask, request, jsonify, send_file, abort, url_for
 from flask_cors import CORS
 import folium
 import time
+import os
 import pathlib
 import traceback
+import requests
 
-from backend.mission_handler.mission_handler import MissionManager
 
 app = Flask(__name__, static_folder="mission_handler")
 CORS(app)
+
+# перед реализацией process_route вверху файла:
+MH_URL = os.getenv("MISSION_HANDLER_URL", "http://localhost:5006")
 
 # Изначально храним миссию в нормализованной форме
 last_mission_data = {
@@ -98,7 +102,7 @@ def mission_map():
         folium.Marker(
             [lat, lng],
             popup="Дрон",
-            icon=folium.Icon(color="blue")
+            icon=folium.Icon(color="red")
         ).add_to(m)
 
     # Отрисовываем маршрут: собираем точки, добавляем маркеры и рисуем оранжевую линию
@@ -161,45 +165,45 @@ def process_route():
        и возвращает JSON { success: True, mapUrl: "<URL карты>" }
     """
     data = request.get_json(force=True) or {}
-    raw_offset = data.get("offset", 3.0)
     # 1) Приводим к числу
     try:
-        offset = float(raw_offset)
-    except (TypeError, ValueError):
-        return jsonify({
-            "success": False,
-            "error": f"Неверное значение offset: {raw_offset}"
-        }), 400
+        offset = float(data.get("offset", 3.0))
+    except:
+        return jsonify(success=False, error="Bad offset"), 400
 
+    # 2) вызываем отдельный микросервис
     try:
-        # 2) Запускаем пересчёт
-        map_path = MissionManager.adjust_route(offset)
-        # 3) Генерируем корректный URL
-        map_url = url_for("mission_map_file", ts=int(time.time()), _external=True)
-        return jsonify({"success": True, "mapUrl": map_url})
+        resp = requests.post(f"{MH_URL}/compute-route",
+                         json={"offset": offset},
+                         timeout=10)
+        resp.raise_for_status()
+        jr = resp.json()
     except Exception as e:
-        # логируем полный трейсбек
-        app.logger.error(traceback.format_exc())
-        return jsonify({
-            "success": False,
-            "error": str(e)
-        }), 500
+        return jsonify(success=False, error=str(e)), 500
+
+    if not jr.get("success"):
+        return jsonify(success=False, error=j.get("error", "unknown")), 500
+
+    # 3) вернём URL на карту, которую рисует mission_handler
+    map_url = url_for("mission_map_file", _external=True) + f"?ts={int(time.time())}"
+    return jsonify(success=True, mapUrl=map_url)
 
 
 
-@app.route("/mission_map_final", methods=["GET"])
+@app.route("/mission_map_final")
 def mission_map_file():
     """
-    Отдаёт HTML, записанный adjust_route() в mission_handler/mission_map.html
+    Реверс-прокси к mission_handler для получения mission_map.html
     """
-    # каталог backend/
-    project_root = pathlib.Path(__file__).parent.parent
-    file = project_root / "mission_handler" / "mission_map.html"
-
-    if not file.exists():
-        abort(404, description="Файл карты ещё не создан")
-
-    return send_file(file, mimetype="text/html")
+    try:
+        r = requests.get(f"{MH_URL}/mission_map.html", timeout=5)
+        r.raise_for_status()
+        # Отдаем чистый HTML с нужным заголовком
+        return (r.content, r.status_code, {'Content-Type': 'text/html'})
+    except requests.RequestException as e:
+        # Если не удалось получить файл, возвращаем ошибку 500
+        app.logger.error(traceback.format_exc())
+        abort(502, description="Не удалось получить карту из сервиса mission_handler")
 
 
 if __name__ == "__main__":
