@@ -90,6 +90,7 @@ const App = () => {
   // -- Модальное окно для корректировки маршрута
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const initialMapUrl = "http://localhost:5005/mission_map"; // URL для изначальной карты
+  const finalMapUrl = "http://localhost:5005/mission_map_final"; // URL для финальной карты
 
 
   // Обновление высоты дрона
@@ -510,9 +511,6 @@ const handleConfirmRoute = useCallback(async () => {
   // 1) Подтверждаем маршрут в локальном состоянии
   setConfirmedRoute([...routePoints]);
 
-  // Открываем модальное окно с картой
-  setIsConfirmModalOpen(true);
-
   // 2) Перед отправкой данных на сервер можно подготовить то, что мы хотим отправить
   // Допустим, мы хотим отправить:
   //   - dronePosition => droneData
@@ -550,6 +548,10 @@ const handleConfirmRoute = useCallback(async () => {
   } catch (error) {
     console.error('[handleConfirmRoute] Ошибка при отправке данных:', error);
   }
+
+  //3) Открываем модальное окно с картой
+  setIsConfirmModalOpen(true);
+
 }, [routePoints, dronePosition, plantationPoints]);
 
   return (
