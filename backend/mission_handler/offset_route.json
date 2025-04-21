@@ -1,0 +1,3852 @@
+[
+  {
+    "lat": 55.14054259543987,
+    "lng": 37.96179064099611,
+    "altitude": 303.0466611761795,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.1405415467725,
+    "lng": 37.961782118607566,
+    "altitude": 303.0466611761795,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14054049810454,
+    "lng": 37.96177359621947,
+    "altitude": 303.0466611761795,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.140538347368484,
+    "lng": 37.9617561174837,
+    "altitude": 303.0466611761795,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.140538976869735,
+    "lng": 37.9617453127115,
+    "altitude": 303.0466611761795,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.1405369098183,
+    "lng": 37.96172851721304,
+    "altitude": 303.0466611761795,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.140534884807785,
+    "lng": 37.96171206329159,
+    "altitude": 303.0466611761795,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14053290183867,
+    "lng": 37.961695950946904,
+    "altitude": 303.0466611761795,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.1405310143102,
+    "lng": 37.96168061413946,
+    "altitude": 303.0466611761795,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14052638858015,
+    "lng": 37.96165894495374,
+    "altitude": 303.0466611761795,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.140524501447445,
+    "lng": 37.961643608065025,
+    "altitude": 303.0466611761795,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14052261431483,
+    "lng": 37.961628271177005,
+    "altitude": 303.0466611761795,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14052072718228,
+    "lng": 37.9616129342897,
+    "altitude": 303.0466611761795,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14051884004982,
+    "lng": 37.961597597403106,
+    "altitude": 303.0466611761795,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14051695291745,
+    "lng": 37.96158226051721,
+    "altitude": 303.0466611761795,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14051506578518,
+    "lng": 37.96156692363199,
+    "altitude": 303.0466611761795,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14051317865298,
+    "lng": 37.961551586747454,
+    "altitude": 303.0466611761795,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14051129152091,
+    "lng": 37.96153624986363,
+    "altitude": 303.0466611761795,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14050940438896,
+    "lng": 37.96152091298053,
+    "altitude": 303.0466611761795,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14050751725708,
+    "lng": 37.96150557609816,
+    "altitude": 303.0466611761795,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.140505630125304,
+    "lng": 37.961490239216545,
+    "altitude": 303.0466611761795,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14050374299361,
+    "lng": 37.961474902335674,
+    "altitude": 303.0466611761795,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.140501855861984,
+    "lng": 37.96145956545552,
+    "altitude": 303.0466611761795,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14049996873047,
+    "lng": 37.961444228576084,
+    "altitude": 303.0466611761795,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14049808159902,
+    "lng": 37.96142889169735,
+    "altitude": 303.0466611761795,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.140496194467666,
+    "lng": 37.96141355481935,
+    "altitude": 303.0466611761795,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.140494304785236,
+    "lng": 37.96139819709366,
+    "altitude": 303.0466611761795,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.140493506779784,
+    "lng": 37.96137495768176,
+    "altitude": 303.0466611761795,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.140499548181296,
+    "lng": 37.9613515889651,
+    "altitude": 303.0466611761795,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14050880852786,
+    "lng": 37.9613336888615,
+    "altitude": 303.0466611761795,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.1405200185342,
+    "lng": 37.96132037582766,
+    "altitude": 303.0466611761795,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.140533180752854,
+    "lng": 37.96131167071337,
+    "altitude": 303.0466611761795,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14054720096112,
+    "lng": 37.96131543437282,
+    "altitude": 303.0466611761795,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14055633142183,
+    "lng": 37.961323914427076,
+    "altitude": 303.0466611761795,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14056419259552,
+    "lng": 37.96133151293891,
+    "altitude": 303.0466611761795,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14057205376966,
+    "lng": 37.96133911145097,
+    "altitude": 303.0466611761795,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14057991494433,
+    "lng": 37.961346709963635,
+    "altitude": 303.0466611761795,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.140587776119304,
+    "lng": 37.961354308476665,
+    "altitude": 303.0466611761795,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.140595637294446,
+    "lng": 37.96136190698988,
+    "altitude": 303.0466611761795,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.140603498470064,
+    "lng": 37.961369505503356,
+    "altitude": 303.0466611761795,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.140611359646186,
+    "lng": 37.96137710401742,
+    "altitude": 303.0466611761795,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14061922082257,
+    "lng": 37.96138470253184,
+    "altitude": 301.5146378214194,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14062708199917,
+    "lng": 37.96139230104643,
+    "altitude": 301.5146378214194,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14063494317623,
+    "lng": 37.96139989956134,
+    "altitude": 301.5146378214194,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.140642804353796,
+    "lng": 37.9614074980768,
+    "altitude": 301.5146378214194,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.140650665531595,
+    "lng": 37.961415096592596,
+    "altitude": 301.5146378214194,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14065852670964,
+    "lng": 37.96142269510857,
+    "altitude": 301.5146378214194,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14066638788819,
+    "lng": 37.96143029362489,
+    "altitude": 301.5146378214194,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.140674249067196,
+    "lng": 37.961437892141774,
+    "altitude": 301.5146378214194,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14068211024642,
+    "lng": 37.96144549065894,
+    "altitude": 301.5146378214194,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14068997142591,
+    "lng": 37.96145308917628,
+    "altitude": 301.5146378214194,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14069783260591,
+    "lng": 37.96146068769404,
+    "altitude": 301.5146378214194,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.140705693786366,
+    "lng": 37.961468286212316,
+    "altitude": 301.5146378214194,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.140713554967014,
+    "lng": 37.96147588473087,
+    "altitude": 301.5146378214194,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14072141614797,
+    "lng": 37.96148348324961,
+    "altitude": 301.5146378214194,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14072927732942,
+    "lng": 37.961491081768784,
+    "altitude": 301.5146378214194,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14073713851131,
+    "lng": 37.961498680288464,
+    "altitude": 301.5146378214194,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14074499980492,
+    "lng": 37.961506278401075,
+    "altitude": 301.5146378214194,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14075286121016,
+    "lng": 37.96151387610178,
+    "altitude": 301.5146378214194,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.140761258341904,
+    "lng": 37.961521991598026,
+    "altitude": 301.5146378214194,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.140770029122464,
+    "lng": 37.96153046823139,
+    "altitude": 301.5146378214194,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14077917355154,
+    "lng": 37.96153930600275,
+    "altitude": 301.5146378214194,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.140788691517564,
+    "lng": 37.96154850532054,
+    "altitude": 301.5146378214194,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14079858302049,
+    "lng": 37.96155806619072,
+    "altitude": 301.5146378214194,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.140808312445465,
+    "lng": 37.961567470405846,
+    "altitude": 301.5146378214194,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.140818041869714,
+    "lng": 37.961576874625536,
+    "altitude": 301.5146378214194,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14082777129325,
+    "lng": 37.96158627884977,
+    "altitude": 301.5146378214194,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14083750071607,
+    "lng": 37.96159568307856,
+    "altitude": 301.5146378214194,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14084723013815,
+    "lng": 37.961605087311916,
+    "altitude": 301.5146378214194,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14085695955953,
+    "lng": 37.96161449154982,
+    "altitude": 301.5146378214194,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14086668898016,
+    "lng": 37.96162389579228,
+    "altitude": 301.5146378214194,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14087641840009,
+    "lng": 37.96163330003929,
+    "altitude": 301.5146378214194,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14088614781929,
+    "lng": 37.96164270429086,
+    "altitude": 301.5146378214194,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.140895877237774,
+    "lng": 37.961652108546986,
+    "altitude": 301.5146378214194,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.140905606655515,
+    "lng": 37.961661512807666,
+    "altitude": 301.5146378214194,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14091584478099,
+    "lng": 37.96167140878071,
+    "altitude": 301.5146378214194,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14092567558556,
+    "lng": 37.96168091105077,
+    "altitude": 301.5146378214194,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14093509906932,
+    "lng": 37.961690019617265,
+    "altitude": 301.5146378214194,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14094411523235,
+    "lng": 37.96169873447963,
+    "altitude": 301.5146378214194,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.140952724074765,
+    "lng": 37.96170705563736,
+    "altitude": 301.5146378214194,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14096041688836,
+    "lng": 37.96171449138102,
+    "altitude": 301.5146378214194,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14096810970151,
+    "lng": 37.96172192712752,
+    "altitude": 301.5146378214194,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.140975802514205,
+    "lng": 37.961729362876866,
+    "altitude": 301.5146378214194,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14098349532646,
+    "lng": 37.96173679862907,
+    "altitude": 301.5146378214194,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14099118813826,
+    "lng": 37.96174423438411,
+    "altitude": 301.5146378214194,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.1409988809496,
+    "lng": 37.961751670142,
+    "altitude": 301.5146378214194,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14100657376049,
+    "lng": 37.96175910590274,
+    "altitude": 301.5146378214194,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14101426657094,
+    "lng": 37.96176654166633,
+    "altitude": 301.5146378214194,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14102195938092,
+    "lng": 37.96177397743276,
+    "altitude": 301.5146378214194,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.141029652190454,
+    "lng": 37.96178141320205,
+    "altitude": 301.5146378214194,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14103734499955,
+    "lng": 37.96178884897418,
+    "altitude": 301.5146378214194,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14104503780821,
+    "lng": 37.961796284749155,
+    "altitude": 301.5146378214194,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14105273061637,
+    "lng": 37.96180372052699,
+    "altitude": 301.5146378214194,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.141060423424115,
+    "lng": 37.96181115630766,
+    "altitude": 301.5146378214194,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14106811623141,
+    "lng": 37.961818592091184,
+    "altitude": 301.5146378214194,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14107580903823,
+    "lng": 37.96182602787755,
+    "altitude": 301.5146378214194,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14108350184462,
+    "lng": 37.961833463666764,
+    "altitude": 301.5146378214194,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.141091194650535,
+    "lng": 37.961840899458835,
+    "altitude": 301.5146378214194,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14109888745602,
+    "lng": 37.96184833525374,
+    "altitude": 301.5146378214194,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14110658026103,
+    "lng": 37.9618557710515,
+    "altitude": 301.5146378214194,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14111427306562,
+    "lng": 37.961863206852115,
+    "altitude": 301.5146378214194,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14112196586974,
+    "lng": 37.96187064265556,
+    "altitude": 301.5146378214194,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.141129658673414,
+    "lng": 37.96187807846187,
+    "altitude": 301.5146378214194,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.141137351476644,
+    "lng": 37.96188551427102,
+    "altitude": 301.5146378214194,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14114504427939,
+    "lng": 37.961892950083026,
+    "altitude": 301.5146378214194,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14115273708172,
+    "lng": 37.96190038589786,
+    "altitude": 301.5146378214194,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14116042988358,
+    "lng": 37.961907821715556,
+    "altitude": 301.5146378214194,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.141168122684995,
+    "lng": 37.9619152575361,
+    "altitude": 301.5146378214194,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.141175815485965,
+    "lng": 37.96192269335948,
+    "altitude": 301.5146378214194,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14118350828646,
+    "lng": 37.961930129185724,
+    "altitude": 301.5146378214194,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14119120108652,
+    "lng": 37.961937565014814,
+    "altitude": 301.5146378214194,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.141198893886134,
+    "lng": 37.96194500084675,
+    "altitude": 301.5146378214194,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.1412065866853,
+    "lng": 37.96195243668152,
+    "altitude": 301.5146378214194,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.141214279484,
+    "lng": 37.96195987251915,
+    "altitude": 301.5146378214194,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14122197228226,
+    "lng": 37.961967308359625,
+    "altitude": 301.5146378214194,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.141229665080076,
+    "lng": 37.96197474420295,
+    "altitude": 301.5146378214194,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14123735787741,
+    "lng": 37.96198218004912,
+    "altitude": 301.5146378214194,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14124505067433,
+    "lng": 37.96198961589814,
+    "altitude": 301.5146378214194,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.141252743470766,
+    "lng": 37.961997051750004,
+    "altitude": 301.5146378214194,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14126043626676,
+    "lng": 37.96200448760472,
+    "altitude": 301.5146378214194,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14126812906232,
+    "lng": 37.962011923462285,
+    "altitude": 301.5146378214194,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.141275821857406,
+    "lng": 37.962019359322696,
+    "altitude": 301.5146378214194,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14128351465205,
+    "lng": 37.96202679518595,
+    "altitude": 301.5146378214194,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14129120744623,
+    "lng": 37.96203423105206,
+    "altitude": 301.5146378214194,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14129890023999,
+    "lng": 37.962041666921,
+    "altitude": 301.5146378214194,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.141306593033285,
+    "lng": 37.96204910279281,
+    "altitude": 301.5146378214194,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.141314285826105,
+    "lng": 37.962056538667454,
+    "altitude": 301.5146378214194,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14132197861849,
+    "lng": 37.962063974544954,
+    "altitude": 301.5146378214194,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.141329671410425,
+    "lng": 37.962071410425295,
+    "altitude": 300.80167424989736,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14133736420192,
+    "lng": 37.962078846308486,
+    "altitude": 300.80167424989736,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14134505699295,
+    "lng": 37.96208628219453,
+    "altitude": 300.80167424989736,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14135274978353,
+    "lng": 37.962093718083416,
+    "altitude": 300.80167424989736,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14136044257366,
+    "lng": 37.96210115397515,
+    "altitude": 300.80167424989736,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14136813536334,
+    "lng": 37.96210858986973,
+    "altitude": 300.80167424989736,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.141375828152555,
+    "lng": 37.96211602576716,
+    "altitude": 300.80167424989736,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14138352094134,
+    "lng": 37.96212346166744,
+    "altitude": 300.80167424989736,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14139121372966,
+    "lng": 37.96213089757056,
+    "altitude": 300.80167424989736,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.141398906517516,
+    "lng": 37.96213833347654,
+    "altitude": 300.80167424989736,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14140659930495,
+    "lng": 37.96214576938536,
+    "altitude": 300.80167424989736,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14141429209193,
+    "lng": 37.96215320529703,
+    "altitude": 300.80167424989736,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.141421984878434,
+    "lng": 37.96216064121155,
+    "altitude": 300.80167424989736,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.141429677664505,
+    "lng": 37.962168077128915,
+    "altitude": 300.80167424989736,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14143737045012,
+    "lng": 37.962175513049125,
+    "altitude": 300.80167424989736,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.141445063235295,
+    "lng": 37.962182948972185,
+    "altitude": 300.80167424989736,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14145275601998,
+    "lng": 37.962190384898086,
+    "altitude": 300.80167424989736,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14146044880424,
+    "lng": 37.962197820826844,
+    "altitude": 300.80167424989736,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.141468141588064,
+    "lng": 37.962205256758445,
+    "altitude": 300.80167424989736,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14147583437143,
+    "lng": 37.9622126926929,
+    "altitude": 300.80167424989736,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14148352715433,
+    "lng": 37.9622201286302,
+    "altitude": 300.80167424989736,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14149121993679,
+    "lng": 37.96222756457035,
+    "altitude": 300.80167424989736,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.141498912718795,
+    "lng": 37.96223500051334,
+    "altitude": 300.80167424989736,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14150660550034,
+    "lng": 37.962242436459185,
+    "altitude": 300.80167424989736,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14151429828143,
+    "lng": 37.962249872407874,
+    "altitude": 300.80167424989736,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.1415219910621,
+    "lng": 37.96225730835941,
+    "altitude": 300.80167424989736,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.141529726577446,
+    "lng": 37.9622649065725,
+    "altitude": 300.80167424989736,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14153709803315,
+    "lng": 37.962273194415076,
+    "altitude": 300.80167424989736,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.141543698167794,
+    "lng": 37.9622829867643,
+    "altitude": 300.80167424989736,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14154890630072,
+    "lng": 37.962294300542496,
+    "altitude": 300.80167424989736,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14155216029478,
+    "lng": 37.962307098619036,
+    "altitude": 300.80167424989736,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.141552364233185,
+    "lng": 37.96232316303006,
+    "altitude": 300.80167424989736,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.141550577423814,
+    "lng": 37.96233974299187,
+    "altitude": 300.80167424989736,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14154720712821,
+    "lng": 37.96235602362558,
+    "altitude": 300.80167424989736,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.141542874026754,
+    "lng": 37.96237198800842,
+    "altitude": 300.80167424989736,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14153814025633,
+    "lng": 37.9623876732705,
+    "altitude": 300.80167424989736,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14153405899949,
+    "lng": 37.96240113511797,
+    "altitude": 300.80167424989736,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14152997774116,
+    "lng": 37.9624145969627,
+    "altitude": 300.80167424989736,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.141525896481326,
+    "lng": 37.962428058804704,
+    "altitude": 300.80167424989736,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14152181521997,
+    "lng": 37.962441520643964,
+    "altitude": 300.80167424989736,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14151773395713,
+    "lng": 37.962454982480494,
+    "altitude": 300.80167424989736,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.141513652692794,
+    "lng": 37.96246844431429,
+    "altitude": 300.80167424989736,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.141509571426944,
+    "lng": 37.96248190614535,
+    "altitude": 300.80167424989736,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14150549015958,
+    "lng": 37.96249536797368,
+    "altitude": 300.80167424989736,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14150140889074,
+    "lng": 37.962508829799276,
+    "altitude": 300.80167424989736,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14149732762041,
+    "lng": 37.96252229162214,
+    "altitude": 300.80167424989736,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14149324634855,
+    "lng": 37.96253575344227,
+    "altitude": 300.80167424989736,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.1414891650752,
+    "lng": 37.96254921525966,
+    "altitude": 300.80167424989736,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.141485083800355,
+    "lng": 37.96256267707432,
+    "altitude": 300.80167424989736,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.141481002524,
+    "lng": 37.96257613888625,
+    "altitude": 300.80167424989736,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14147692124616,
+    "lng": 37.96258960069544,
+    "altitude": 300.80167424989736,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.141472839966795,
+    "lng": 37.962603062501884,
+    "altitude": 300.80167424989736,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14146875868594,
+    "lng": 37.96261652430561,
+    "altitude": 299.4695280792557,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14146467740359,
+    "lng": 37.96262998610659,
+    "altitude": 299.4695280792557,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14146059611973,
+    "lng": 37.962643447904846,
+    "altitude": 299.4695280792557,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14145651483438,
+    "lng": 37.962656909700364,
+    "altitude": 299.4695280792557,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14145243354752,
+    "lng": 37.962670371493154,
+    "altitude": 299.4695280792557,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14144835225917,
+    "lng": 37.9626838332832,
+    "altitude": 299.4695280792557,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.1414442709693,
+    "lng": 37.96269729507052,
+    "altitude": 299.4695280792557,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.141440189677965,
+    "lng": 37.9627107568551,
+    "altitude": 299.4695280792557,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.1414361083851,
+    "lng": 37.96272421863695,
+    "altitude": 299.4695280792557,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14143202709074,
+    "lng": 37.96273768041606,
+    "altitude": 299.4695280792557,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14142794579488,
+    "lng": 37.962751142192445,
+    "altitude": 299.4695280792557,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14142386449751,
+    "lng": 37.96276460396609,
+    "altitude": 299.4695280792557,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.141419783198636,
+    "lng": 37.962778065737005,
+    "altitude": 299.4695280792557,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14141570189829,
+    "lng": 37.96279152750518,
+    "altitude": 299.4695280792557,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.141411620596415,
+    "lng": 37.96280498927062,
+    "altitude": 299.4695280792557,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14140753929304,
+    "lng": 37.962818451033336,
+    "altitude": 299.4695280792557,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14140345798818,
+    "lng": 37.96283191279331,
+    "altitude": 299.4695280792557,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14139937668182,
+    "lng": 37.96284537455055,
+    "altitude": 299.4695280792557,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14139529537395,
+    "lng": 37.96285883630505,
+    "altitude": 299.4695280792557,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.141391214064576,
+    "lng": 37.96287229805683,
+    "altitude": 299.4695280792557,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14138713275371,
+    "lng": 37.962885759805864,
+    "altitude": 299.4695280792557,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14138305144133,
+    "lng": 37.96289922155217,
+    "altitude": 299.4695280792557,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14137897012746,
+    "lng": 37.96291268329574,
+    "altitude": 299.4695280792557,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14137488881208,
+    "lng": 37.962926145036576,
+    "altitude": 299.4695280792557,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.141370807495214,
+    "lng": 37.96293960677468,
+    "altitude": 299.4695280792557,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14136672617685,
+    "lng": 37.96295306851005,
+    "altitude": 299.4695280792557,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14136264485697,
+    "lng": 37.96296653024268,
+    "altitude": 299.4695280792557,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14135856353559,
+    "lng": 37.96297999197259,
+    "altitude": 299.4695280792557,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14135448221271,
+    "lng": 37.96299345369975,
+    "altitude": 299.4695280792557,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.141350400888335,
+    "lng": 37.96300691542418,
+    "altitude": 299.4695280792557,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.141346319562466,
+    "lng": 37.96302037714588,
+    "altitude": 299.4695280792557,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14134222042328,
+    "lng": 37.96303389761466,
+    "altitude": 299.4695280792557,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.141338096846354,
+    "lng": 37.963047498680325,
+    "altitude": 299.4695280792557,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14133394883166,
+    "lng": 37.96306118034282,
+    "altitude": 299.4695280792557,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14132977637913,
+    "lng": 37.9630749426021,
+    "altitude": 299.4695280792557,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14132557948879,
+    "lng": 37.9630887854581,
+    "altitude": 299.4695280792557,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.1413213759724,
+    "lng": 37.963102650161034,
+    "altitude": 299.4695280792557,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14131717245443,
+    "lng": 37.963116514861056,
+    "altitude": 299.4695280792557,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.141312968934855,
+    "lng": 37.96313037955819,
+    "altitude": 299.4695280792557,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14130876541369,
+    "lng": 37.96314424425241,
+    "altitude": 299.4695280792557,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14130456189091,
+    "lng": 37.963158108943745,
+    "altitude": 299.4695280792557,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14130035836657,
+    "lng": 37.96317197363217,
+    "altitude": 299.4695280792557,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14129615484064,
+    "lng": 37.963185838317706,
+    "altitude": 299.4695280792557,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.141291951313086,
+    "lng": 37.963199703000335,
+    "altitude": 299.4695280792557,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14128774778396,
+    "lng": 37.963213567680064,
+    "altitude": 299.4695280792557,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.141283544253255,
+    "lng": 37.963227432356895,
+    "altitude": 299.4695280792557,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.141279340720935,
+    "lng": 37.96324129703081,
+    "altitude": 299.4695280792557,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.141275015796936,
+    "lng": 37.9632549413677,
+    "altitude": 299.4695280792557,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14127012388273,
+    "lng": 37.96326775135026,
+    "altitude": 299.4695280792557,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.141264452079774,
+    "lng": 37.96327879141728,
+    "altitude": 299.4695280792557,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14125790122067,
+    "lng": 37.963287119657565,
+    "altitude": 299.4695280792557,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14111668259341,
+    "lng": 37.963641462648596,
+    "altitude": 299.4695280792557,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14097775192508,
+    "lng": 37.96399652612326,
+    "altitude": 299.4695280792557,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.140841629865236,
+    "lng": 37.96435313391485,
+    "altitude": 276,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14070852928854,
+    "lng": 37.964712221639026,
+    "altitude": 276,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14057854932754,
+    "lng": 37.96507473125299,
+    "altitude": 276,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.140585483875604,
+    "lng": 37.96509194801293,
+    "altitude": 276,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14059249348227,
+    "lng": 37.965109374535615,
+    "altitude": 276,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.140599503086456,
+    "lng": 37.96512680106443,
+    "altitude": 276,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14060651268818,
+    "lng": 37.96514422759935,
+    "altitude": 276,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14061352228741,
+    "lng": 37.96516165414041,
+    "altitude": 276,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.140620531884174,
+    "lng": 37.96517908068759,
+    "altitude": 276,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.140627541478466,
+    "lng": 37.9651965072409,
+    "altitude": 276,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.140634551070285,
+    "lng": 37.96521393380032,
+    "altitude": 276,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.140641560659624,
+    "lng": 37.96523136036588,
+    "altitude": 276,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14064857024649,
+    "lng": 37.96524878693756,
+    "altitude": 276,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.140655579830884,
+    "lng": 37.96526621351536,
+    "altitude": 276,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14066258941279,
+    "lng": 37.96528364009929,
+    "altitude": 276,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.140669726827916,
+    "lng": 37.96530138450307,
+    "altitude": 276,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.1406764950654,
+    "lng": 37.9653182111022,
+    "altitude": 276,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14068289412567,
+    "lng": 37.965334119895736,
+    "altitude": 276,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.140688924009034,
+    "lng": 37.9653491108828,
+    "altitude": 276,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14069458471584,
+    "lng": 37.965363184062554,
+    "altitude": 276,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14069974841096,
+    "lng": 37.96537602162002,
+    "altitude": 276,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14070491210472,
+    "lng": 37.96538885918079,
+    "altitude": 276,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.140710075797145,
+    "lng": 37.96540169674489,
+    "altitude": 276,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14071523948823,
+    "lng": 37.96541453431231,
+    "altitude": 276,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.140720403177966,
+    "lng": 37.96542737188305,
+    "altitude": 276,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.140725566866365,
+    "lng": 37.96544020945712,
+    "altitude": 276,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14073073055342,
+    "lng": 37.965453047034515,
+    "altitude": 276,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14073589423913,
+    "lng": 37.96546588461523,
+    "altitude": 276,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.1407410579235,
+    "lng": 37.96547872219928,
+    "altitude": 276,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14074622160652,
+    "lng": 37.965491559786635,
+    "altitude": 276,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14075138528819,
+    "lng": 37.96550439737732,
+    "altitude": 276,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14075654896855,
+    "lng": 37.96551723497134,
+    "altitude": 276,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.140761712647524,
+    "lng": 37.965530072568676,
+    "altitude": 276,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14076687632519,
+    "lng": 37.96554291016933,
+    "altitude": 276,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14077204000149,
+    "lng": 37.96555574777332,
+    "altitude": 276,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14077720367646,
+    "lng": 37.96556858538062,
+    "altitude": 276,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14078236735008,
+    "lng": 37.965581422991264,
+    "altitude": 276,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14078753102236,
+    "lng": 37.96559426060521,
+    "altitude": 276,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.1407926946933,
+    "lng": 37.965607098222485,
+    "altitude": 276,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14079785836291,
+    "lng": 37.965619935843094,
+    "altitude": 276,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14080302203116,
+    "lng": 37.965632773467014,
+    "altitude": 276,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14080818569807,
+    "lng": 37.96564561109427,
+    "altitude": 276,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14081334936362,
+    "lng": 37.96565844872484,
+    "altitude": 276,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14081851302786,
+    "lng": 37.965671286358734,
+    "altitude": 276,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.140823676690744,
+    "lng": 37.965684123995956,
+    "altitude": 276,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14082884035229,
+    "lng": 37.965696961636496,
+    "altitude": 276,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14083400401248,
+    "lng": 37.96570979928036,
+    "altitude": 276,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14083916767134,
+    "lng": 37.96572263692755,
+    "altitude": 276,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14084433132884,
+    "lng": 37.96573547457807,
+    "altitude": 308.27099116537073,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14084949498503,
+    "lng": 37.96574831223191,
+    "altitude": 308.27099116537073,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.140854658639846,
+    "lng": 37.96576114988907,
+    "altitude": 308.27099116537073,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14085982229332,
+    "lng": 37.965773987549554,
+    "altitude": 308.27099116537073,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14086498594547,
+    "lng": 37.965786825213364,
+    "altitude": 308.27099116537073,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.140870149596275,
+    "lng": 37.96579966288049,
+    "altitude": 308.27099116537073,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14087531324571,
+    "lng": 37.965812500550946,
+    "altitude": 308.27099116537073,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14088047689383,
+    "lng": 37.96582533822473,
+    "altitude": 308.27099116537073,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.140885640540596,
+    "lng": 37.96583817590184,
+    "altitude": 308.27099116537073,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14089080418603,
+    "lng": 37.96585101358227,
+    "altitude": 308.27099116537073,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14089596783009,
+    "lng": 37.965863851266015,
+    "altitude": 308.27099116537073,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14090113147283,
+    "lng": 37.96587668895309,
+    "altitude": 308.27099116537073,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14090629511425,
+    "lng": 37.965889526643494,
+    "altitude": 308.27099116537073,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.140911458754296,
+    "lng": 37.96590236433721,
+    "altitude": 308.27099116537073,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.140916622393014,
+    "lng": 37.96591520203425,
+    "altitude": 308.27099116537073,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14092178603037,
+    "lng": 37.96592803973463,
+    "altitude": 308.27099116537073,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14092694966641,
+    "lng": 37.96594087743832,
+    "altitude": 308.27099116537073,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14093211330109,
+    "lng": 37.96595371514533,
+    "altitude": 308.27099116537073,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14093727693443,
+    "lng": 37.965966552855676,
+    "altitude": 308.27099116537073,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14094244056643,
+    "lng": 37.965979390569345,
+    "altitude": 308.27099116537073,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14094760419708,
+    "lng": 37.965992228286325,
+    "altitude": 308.27099116537073,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.140952767826406,
+    "lng": 37.96600506600664,
+    "altitude": 308.27099116537073,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.140957931454366,
+    "lng": 37.966017903730275,
+    "altitude": 308.27099116537073,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14096309508099,
+    "lng": 37.96603074145723,
+    "altitude": 308.27099116537073,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14096825870627,
+    "lng": 37.96604357918751,
+    "altitude": 308.27099116537073,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14097342233022,
+    "lng": 37.96605641692111,
+    "altitude": 308.27099116537073,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.1409785859528,
+    "lng": 37.966069254658045,
+    "altitude": 308.27099116537073,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.140983749574076,
+    "lng": 37.9660820923983,
+    "altitude": 308.27099116537073,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.140989142427195,
+    "lng": 37.9660955000595,
+    "altitude": 308.27099116537073,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.140994755844126,
+    "lng": 37.96610945609211,
+    "altitude": 308.27099116537073,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14100058982469,
+    "lng": 37.96612396049661,
+    "altitude": 308.27099116537073,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.1410066443687,
+    "lng": 37.96613901327347,
+    "altitude": 308.27099116537073,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14101291947591,
+    "lng": 37.96615461442319,
+    "altitude": 308.27099116537073,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14101918591331,
+    "lng": 37.9661701940278,
+    "altitude": 308.27099116537073,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14102545234871,
+    "lng": 37.96618577363731,
+    "altitude": 308.27099116537073,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14103221773341,
+    "lng": 37.96620259374539,
+    "altitude": 308.27099116537073,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14103979454482,
+    "lng": 37.966221434045025,
+    "altitude": 308.27099116537073,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14104715082149,
+    "lng": 37.966239726029634,
+    "altitude": 308.27099116537073,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14105428656368,
+    "lng": 37.96625746969772,
+    "altitude": 308.27099116537073,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.141061201772175,
+    "lng": 37.96627466504803,
+    "altitude": 308.27099116537073,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14106739749733,
+    "lng": 37.966290071584375,
+    "altitude": 308.27099116537073,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14107256126251,
+    "lng": 37.96630290961107,
+    "altitude": 308.27099116537073,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14107772502809,
+    "lng": 37.96631574763859,
+    "altitude": 308.27099116537073,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14108288879424,
+    "lng": 37.96632858566744,
+    "altitude": 308.27099116537073,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14108805256081,
+    "lng": 37.966341423697486,
+    "altitude": 308.27099116537073,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14109321632785,
+    "lng": 37.96635426172863,
+    "altitude": 308.27099116537073,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.141098380095286,
+    "lng": 37.96636709976097,
+    "altitude": 308.27099116537073,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14110354386311,
+    "lng": 37.96637993779411,
+    "altitude": 308.27099116537073,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14110870763153,
+    "lng": 37.9663927758286,
+    "altitude": 308.27099116537073,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14111387140033,
+    "lng": 37.96640561386429,
+    "altitude": 308.27099116537073,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14111903516954,
+    "lng": 37.96641845190085,
+    "altitude": 308.27099116537073,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.141124198939316,
+    "lng": 37.96643128993872,
+    "altitude": 308.27099116537073,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.141129362709464,
+    "lng": 37.966444127977695,
+    "altitude": 308.27099116537073,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14113452648014,
+    "lng": 37.966456966017816,
+    "altitude": 308.27099116537073,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14113969025118,
+    "lng": 37.966469804059145,
+    "altitude": 308.27099116537073,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14114485402261,
+    "lng": 37.96648264210127,
+    "altitude": 308.27099116537073,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14115001779465,
+    "lng": 37.96649548014474,
+    "altitude": 308.27099116537073,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.141155181567086,
+    "lng": 37.96650831818941,
+    "altitude": 308.27099116537073,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14116034533995,
+    "lng": 37.966521156235004,
+    "altitude": 308.27099116537073,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.141165509113286,
+    "lng": 37.96653399428189,
+    "altitude": 308.27099116537073,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14117067288704,
+    "lng": 37.9665468323298,
+    "altitude": 308.27099116537073,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14117583666134,
+    "lng": 37.96655967037891,
+    "altitude": 308.27099116537073,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.141181000436,
+    "lng": 37.96657250842922,
+    "altitude": 308.27099116537073,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14118616421105,
+    "lng": 37.966585346480336,
+    "altitude": 308.27099116537073,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14119132798673,
+    "lng": 37.9665981845328,
+    "altitude": 308.27099116537073,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14119649176276,
+    "lng": 37.96661102258646,
+    "altitude": 308.27099116537073,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14120165553925,
+    "lng": 37.9666238606411,
+    "altitude": 308.27099116537073,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.1412068193162,
+    "lng": 37.966636698696995,
+    "altitude": 308.27099116537073,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.141211983093555,
+    "lng": 37.96664953675383,
+    "altitude": 308.27099116537073,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.141217146871455,
+    "lng": 37.96666237481192,
+    "altitude": 308.27099116537073,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14122231064975,
+    "lng": 37.96667521287121,
+    "altitude": 308.27099116537073,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14122747442843,
+    "lng": 37.96668805093131,
+    "altitude": 308.27099116537073,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.141232638207704,
+    "lng": 37.96670088899277,
+    "altitude": 308.27099116537073,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14123780198736,
+    "lng": 37.96671372705543,
+    "altitude": 308.27099116537073,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14124296576749,
+    "lng": 37.9667265651191,
+    "altitude": 308.27099116537073,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14124812954803,
+    "lng": 37.96673940318401,
+    "altitude": 308.27099116537073,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14125329332897,
+    "lng": 37.96675224124978,
+    "altitude": 308.27099116537073,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14125845711051,
+    "lng": 37.96676507931686,
+    "altitude": 308.27099116537073,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14126362089241,
+    "lng": 37.966777917385144,
+    "altitude": 308.27099116537073,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.141269149653354,
+    "lng": 37.966791801541504,
+    "altitude": 308.27099116537073,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.141274044799886,
+    "lng": 37.96681420326668,
+    "altitude": 308.27099116537073,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14127199481789,
+    "lng": 37.96683950198965,
+    "altitude": 308.27099116537073,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.141266390064295,
+    "lng": 37.966862280027115,
+    "altitude": 308.27099116537073,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14125778748204,
+    "lng": 37.9668822762168,
+    "altitude": 308.27099116537073,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.141245993668264,
+    "lng": 37.96689845880435,
+    "altitude": 308.27099116537073,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.1412320072236,
+    "lng": 37.96690335632031,
+    "altitude": 308.27099116537073,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14122213965567,
+    "lng": 37.96690258935087,
+    "altitude": 308.27099116537073,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14121300060354,
+    "lng": 37.96690157555956,
+    "altitude": 308.27099116537073,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.141204033125575,
+    "lng": 37.966900576104095,
+    "altitude": 308.27099116537073,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.141195065647615,
+    "lng": 37.96689957664862,
+    "altitude": 308.27099116537073,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14118609816966,
+    "lng": 37.96689857719316,
+    "altitude": 308.27099116537073,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.141177130691695,
+    "lng": 37.9668975777377,
+    "altitude": 308.27099116537073,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14116816321373,
+    "lng": 37.966896578282224,
+    "altitude": 308.27099116537073,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14115919573575,
+    "lng": 37.966895578826765,
+    "altitude": 308.27099116537073,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14115022825776,
+    "lng": 37.96689457937129,
+    "altitude": 308.27099116537073,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.1411412607798,
+    "lng": 37.966893579915826,
+    "altitude": 308.27099116537073,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.1411322933018,
+    "lng": 37.96689258046036,
+    "altitude": 308.27099116537073,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14112332582382,
+    "lng": 37.96689158100489,
+    "altitude": 308.27099116537073,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.141114358345824,
+    "lng": 37.96689058154942,
+    "altitude": 308.27099116537073,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.141105390867814,
+    "lng": 37.96688958209395,
+    "altitude": 308.27099116537073,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14109642338982,
+    "lng": 37.96688858263848,
+    "altitude": 308.27099116537073,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14108745591181,
+    "lng": 37.96688758318301,
+    "altitude": 308.27099116537073,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.141078488433806,
+    "lng": 37.96688658372753,
+    "altitude": 308.27099116537073,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.141069520955796,
+    "lng": 37.96688558427206,
+    "altitude": 308.27099116537073,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.141060553477764,
+    "lng": 37.96688458481658,
+    "altitude": 308.27099116537073,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.141051585999755,
+    "lng": 37.96688358536112,
+    "altitude": 308.27099116537073,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.141042618521716,
+    "lng": 37.96688258590563,
+    "altitude": 317.4644506798793,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14103365104369,
+    "lng": 37.96688158645016,
+    "altitude": 317.4644506798793,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14102468356567,
+    "lng": 37.96688058699469,
+    "altitude": 317.4644506798793,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.141015716087615,
+    "lng": 37.96687958753921,
+    "altitude": 317.4644506798793,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.141006748609584,
+    "lng": 37.96687858808374,
+    "altitude": 317.4644506798793,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.140997781131546,
+    "lng": 37.96687758862826,
+    "altitude": 317.4644506798793,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14098881365349,
+    "lng": 37.96687658917278,
+    "altitude": 317.4644506798793,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14097984617543,
+    "lng": 37.966875589717304,
+    "altitude": 317.4644506798793,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14097087869738,
+    "lng": 37.966874590261824,
+    "altitude": 317.4644506798793,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14096191121932,
+    "lng": 37.96687359080635,
+    "altitude": 317.4644506798793,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14095294374125,
+    "lng": 37.966872591350864,
+    "altitude": 317.4644506798793,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14094397626319,
+    "lng": 37.96687159189539,
+    "altitude": 317.4644506798793,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.140935008785114,
+    "lng": 37.96687059243992,
+    "altitude": 317.4644506798793,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14092604130704,
+    "lng": 37.96686959298444,
+    "altitude": 317.4644506798793,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14091707382895,
+    "lng": 37.96686859352896,
+    "altitude": 317.4644506798793,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14090810635087,
+    "lng": 37.96686759407348,
+    "altitude": 317.4644506798793,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.140899138872804,
+    "lng": 37.966866594618,
+    "altitude": 317.4644506798793,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.140890171394695,
+    "lng": 37.966865595162524,
+    "altitude": 317.4644506798793,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14088120391661,
+    "lng": 37.96686459570703,
+    "altitude": 317.4644506798793,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14087223643852,
+    "lng": 37.96686359625156,
+    "altitude": 317.4644506798793,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.1408632689604,
+    "lng": 37.96686259679607,
+    "altitude": 317.4644506798793,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.140854301497654,
+    "lng": 37.966861597235685,
+    "altitude": 317.4644506798793,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14084533396933,
+    "lng": 37.96686059763912,
+    "altitude": 317.4644506798793,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14083644951855,
+    "lng": 37.96685960730122,
+    "altitude": 317.4644506798793,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.140826881631575,
+    "lng": 37.96685854079115,
+    "altitude": 317.4644506798793,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14081663030845,
+    "lng": 37.96685739810911,
+    "altitude": 317.4644506798793,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.140805695533714,
+    "lng": 37.96685617936024,
+    "altitude": 317.4644506798793,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14079407738839,
+    "lng": 37.96685488447594,
+    "altitude": 317.4644506798793,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.140781692729334,
+    "lng": 37.966853504161705,
+    "altitude": 317.4644506798793,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14076930807023,
+    "lng": 37.96685212384828,
+    "altitude": 317.4644506798793,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.140756923411075,
+    "lng": 37.96685074353565,
+    "altitude": 317.4644506798793,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.140744538751896,
+    "lng": 37.96684936322383,
+    "altitude": 317.4644506798793,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14073215409268,
+    "lng": 37.96684798291282,
+    "altitude": 317.4644506798793,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14071976943344,
+    "lng": 37.966846602602615,
+    "altitude": 317.4644506798793,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14070738477415,
+    "lng": 37.96684522229322,
+    "altitude": 317.4644506798793,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14069500011482,
+    "lng": 37.96684384198463,
+    "altitude": 317.4644506798793,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14068261545546,
+    "lng": 37.96684246167685,
+    "altitude": 317.4644506798793,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.140670230796054,
+    "lng": 37.966841081369864,
+    "altitude": 317.4644506798793,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14065816147765,
+    "lng": 37.96683973620936,
+    "altitude": 317.4644506798793,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.140646819899985,
+    "lng": 37.96683847215837,
+    "altitude": 317.4644506798793,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.140636206063064,
+    "lng": 37.96683728921676,
+    "altitude": 317.4644506798793,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14062631996691,
+    "lng": 37.96683618738442,
+    "altitude": 317.4644506798793,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.140617161611516,
+    "lng": 37.966835166661234,
+    "altitude": 317.4644506798793,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.1406084156559,
+    "lng": 37.96683419190151,
+    "altitude": 317.4644506798793,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14059966970023,
+    "lng": 37.966833217142195,
+    "altitude": 317.4644506798793,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14059092374456,
+    "lng": 37.96683224238328,
+    "altitude": 317.4644506798793,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14058217778887,
+    "lng": 37.96683126762476,
+    "altitude": 317.4644506798793,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.140573431833154,
+    "lng": 37.96683029286666,
+    "altitude": 317.4644506798793,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14056468587743,
+    "lng": 37.96682931810895,
+    "altitude": 317.4644506798793,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14055593992167,
+    "lng": 37.966828343351644,
+    "altitude": 317.4644506798793,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.1405471939659,
+    "lng": 37.96682736859474,
+    "altitude": 317.4644506798793,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14053844801011,
+    "lng": 37.96682639383824,
+    "altitude": 317.4644506798793,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.140529702054316,
+    "lng": 37.966825419082134,
+    "altitude": 317.4644506798793,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14052095609846,
+    "lng": 37.96682444432644,
+    "altitude": 317.4644506798793,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14051221014263,
+    "lng": 37.966823469571146,
+    "altitude": 317.4644506798793,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.140503464186764,
+    "lng": 37.966822494816256,
+    "altitude": 317.4644506798793,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.140494718230876,
+    "lng": 37.96682152006177,
+    "altitude": 317.4644506798793,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.140485972275,
+    "lng": 37.96682054530768,
+    "altitude": 317.4644506798793,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14047722631908,
+    "lng": 37.966819570553994,
+    "altitude": 317.4644506798793,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14046848036314,
+    "lng": 37.96681859580071,
+    "altitude": 317.4644506798793,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14045973440718,
+    "lng": 37.96681762104784,
+    "altitude": 317.4644506798793,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14045098845122,
+    "lng": 37.96681664629536,
+    "altitude": 317.4644506798793,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.140442242495226,
+    "lng": 37.96681567154328,
+    "altitude": 317.4644506798793,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.140433496539224,
+    "lng": 37.96681469679161,
+    "altitude": 317.4644506798793,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14042475058319,
+    "lng": 37.96681372204034,
+    "altitude": 317.4644506798793,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14041600462714,
+    "lng": 37.966812747289474,
+    "altitude": 317.4644506798793,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14040725867108,
+    "lng": 37.966811772539,
+    "altitude": 317.4644506798793,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14039851271499,
+    "lng": 37.966810797788945,
+    "altitude": 317.4644506798793,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.1403897667589,
+    "lng": 37.96680982303928,
+    "altitude": 317.4644506798793,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14038102080277,
+    "lng": 37.96680884829002,
+    "altitude": 317.4644506798793,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14037227484664,
+    "lng": 37.96680787354117,
+    "altitude": 317.4644506798793,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14036352889048,
+    "lng": 37.96680689879271,
+    "altitude": 317.4644506798793,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.1403547829343,
+    "lng": 37.966805924044664,
+    "altitude": 317.4644506798793,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14034603697812,
+    "lng": 37.96680494929702,
+    "altitude": 317.4644506798793,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14033729102189,
+    "lng": 37.96680397454978,
+    "altitude": 317.4644506798793,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14032854506567,
+    "lng": 37.96680299980293,
+    "altitude": 317.4644506798793,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.140319799109406,
+    "lng": 37.96680202505649,
+    "altitude": 317.4644506798793,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14031105315314,
+    "lng": 37.96680105031045,
+    "altitude": 317.4644506798793,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14030230719686,
+    "lng": 37.96680007556481,
+    "altitude": 317.4644506798793,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14029356124056,
+    "lng": 37.966799100819586,
+    "altitude": 317.4644506798793,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14028481528425,
+    "lng": 37.96679812607475,
+    "altitude": 317.4644506798793,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.140276069327896,
+    "lng": 37.96679715133032,
+    "altitude": 317.4644506798793,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14026732337153,
+    "lng": 37.96679617658629,
+    "altitude": 317.4644506798793,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14025857741516,
+    "lng": 37.966795201842665,
+    "altitude": 317.4644506798793,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14024974630785,
+    "lng": 37.96679398722916,
+    "altitude": 317.4644506798793,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14024107866484,
+    "lng": 37.96679163297159,
+    "altitude": 324.35751198752246,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14023287889996,
+    "lng": 37.96678725467677,
+    "altitude": 324.35751198752246,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14022566654363,
+    "lng": 37.96678040123213,
+    "altitude": 324.35751198752246,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14021961754659,
+    "lng": 37.96677011573143,
+    "altitude": 324.35751198752246,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14021446095887,
+    "lng": 37.96675440951852,
+    "altitude": 324.35751198752246,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.1402104051495,
+    "lng": 37.96673702322353,
+    "altitude": 324.35751198752246,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14020714570449,
+    "lng": 37.966718841239384,
+    "altitude": 324.35751198752246,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14020416309303,
+    "lng": 37.96670031467967,
+    "altitude": 324.35751198752246,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14020128136457,
+    "lng": 37.966682400451106,
+    "altitude": 324.35751198752246,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14019885662109,
+    "lng": 37.96666732707855,
+    "altitude": 324.35751198752246,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.140196431875744,
+    "lng": 37.966652253707835,
+    "altitude": 324.35751198752246,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14019400712855,
+    "lng": 37.966637180338964,
+    "altitude": 324.35751198752246,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.140191582379494,
+    "lng": 37.966622106971954,
+    "altitude": 324.35751198752246,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14018915762858,
+    "lng": 37.966607033606785,
+    "altitude": 324.35751198752246,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.140186732875804,
+    "lng": 37.96659196024347,
+    "altitude": 324.35751198752246,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14018430812118,
+    "lng": 37.966576886882,
+    "altitude": 324.35751198752246,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.1401818833647,
+    "lng": 37.966561813522375,
+    "altitude": 324.35751198752246,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14017945860635,
+    "lng": 37.96654674016461,
+    "altitude": 324.35751198752246,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14017703384614,
+    "lng": 37.96653166680869,
+    "altitude": 324.35751198752246,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14017460908408,
+    "lng": 37.96651659345462,
+    "altitude": 324.35751198752246,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.140172184320164,
+    "lng": 37.966501520102405,
+    "altitude": 324.35751198752246,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.1401697595544,
+    "lng": 37.966486446752036,
+    "altitude": 324.35751198752246,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14016733478675,
+    "lng": 37.966471373403515,
+    "altitude": 324.35751198752246,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14016491001726,
+    "lng": 37.966456300056834,
+    "altitude": 324.35751198752246,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.140162485245924,
+    "lng": 37.966441226712014,
+    "altitude": 324.35751198752246,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.140160060472724,
+    "lng": 37.966426153369035,
+    "altitude": 324.35751198752246,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14015763569767,
+    "lng": 37.96641108002791,
+    "altitude": 324.35751198752246,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.140155210920724,
+    "lng": 37.96639600668864,
+    "altitude": 324.35751198752246,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.140152786141954,
+    "lng": 37.96638093335121,
+    "altitude": 324.35751198752246,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.140150361361314,
+    "lng": 37.96636586001564,
+    "altitude": 324.35751198752246,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.140147936578835,
+    "lng": 37.96635078668191,
+    "altitude": 324.35751198752246,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.140145511794486,
+    "lng": 37.96633571335003,
+    "altitude": 324.35751198752246,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.140143087008276,
+    "lng": 37.96632064002,
+    "altitude": 324.35751198752246,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14014066222022,
+    "lng": 37.966305566691815,
+    "altitude": 324.35751198752246,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.140138237430286,
+    "lng": 37.96629049336549,
+    "altitude": 324.35751198752246,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.140135812638505,
+    "lng": 37.96627542004101,
+    "altitude": 324.35751198752246,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14013338784486,
+    "lng": 37.96626034671838,
+    "altitude": 324.35751198752246,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14013096304939,
+    "lng": 37.96624527339759,
+    "altitude": 324.35751198752246,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14012853825202,
+    "lng": 37.96623020007866,
+    "altitude": 319.8969576210607,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.140126113452816,
+    "lng": 37.96621512676158,
+    "altitude": 319.8969576210607,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14012368865175,
+    "lng": 37.96620005344634,
+    "altitude": 319.8969576210607,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14012126384882,
+    "lng": 37.96618498013295,
+    "altitude": 319.8969576210607,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.140118839044035,
+    "lng": 37.96616990682142,
+    "altitude": 319.8969576210607,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14011641423739,
+    "lng": 37.96615483351173,
+    "altitude": 319.8969576210607,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.140113989428905,
+    "lng": 37.9661397602039,
+    "altitude": 319.8969576210607,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.140111564618536,
+    "lng": 37.966124686897906,
+    "altitude": 319.8969576210607,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.140109139806334,
+    "lng": 37.96610961359377,
+    "altitude": 319.8969576210607,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14010671499225,
+    "lng": 37.966094540291486,
+    "altitude": 319.8969576210607,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14010429017631,
+    "lng": 37.96607946699105,
+    "altitude": 319.8969576210607,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14010186535854,
+    "lng": 37.96606439369245,
+    "altitude": 319.8969576210607,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14009944053891,
+    "lng": 37.96604932039571,
+    "altitude": 319.8969576210607,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.140097015717416,
+    "lng": 37.96603424710082,
+    "altitude": 319.8969576210607,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14009459089405,
+    "lng": 37.96601917380778,
+    "altitude": 319.8969576210607,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.140092166068825,
+    "lng": 37.96600410051659,
+    "altitude": 319.8969576210607,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14008974124175,
+    "lng": 37.965989027227245,
+    "altitude": 319.8969576210607,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.140087316412824,
+    "lng": 37.96597395393975,
+    "altitude": 319.8969576210607,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14008489158205,
+    "lng": 37.96595888065411,
+    "altitude": 319.8969576210607,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.1400824667494,
+    "lng": 37.96594380737031,
+    "altitude": 319.8969576210607,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.140080041914906,
+    "lng": 37.965928734088365,
+    "altitude": 319.8969576210607,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.140077617078525,
+    "lng": 37.96591366080826,
+    "altitude": 319.8969576210607,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.140075192240296,
+    "lng": 37.96589858753002,
+    "altitude": 319.8969576210607,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14007276740023,
+    "lng": 37.96588351425362,
+    "altitude": 319.8969576210607,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.1400703425583,
+    "lng": 37.965868440979065,
+    "altitude": 319.8969576210607,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14006791771452,
+    "lng": 37.96585336770637,
+    "altitude": 319.8969576210607,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.140065492868864,
+    "lng": 37.96583829443552,
+    "altitude": 319.8969576210607,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.140063068021355,
+    "lng": 37.96582322116652,
+    "altitude": 319.8969576210607,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14006064317199,
+    "lng": 37.965808147899374,
+    "altitude": 319.8969576210607,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14005821832077,
+    "lng": 37.96579307463407,
+    "altitude": 319.8969576210607,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14005579346769,
+    "lng": 37.965778001370616,
+    "altitude": 319.8969576210607,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14005336861275,
+    "lng": 37.965762928109015,
+    "altitude": 319.8969576210607,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14005094375597,
+    "lng": 37.96574785484926,
+    "altitude": 319.8969576210607,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.1400485188973,
+    "lng": 37.965732781591356,
+    "altitude": 319.8969576210607,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14004609403681,
+    "lng": 37.9657177083353,
+    "altitude": 319.8969576210607,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14004366917444,
+    "lng": 37.965702635081094,
+    "altitude": 319.8969576210607,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14004124431021,
+    "lng": 37.96568756182874,
+    "altitude": 319.8969576210607,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.140038819444136,
+    "lng": 37.965672488578235,
+    "altitude": 319.8969576210607,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.14003760701039,
+    "lng": 37.96566495195368,
+    "altitude": 319.8969576210607,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  },
+  {
+    "lat": 55.140036394576185,
+    "lng": 37.96565741532958,
+    "altitude": 319.8969576210607,
+    "flightAltitude": "",
+    "groundAltitude": ""
+  }
+]
