@@ -1,5 +1,5 @@
 """
-main.py – формирует offset‑маршрут дрона вокруг запрещённых полигонов,
+mission_handler.py – формирует offset‑маршрут дрона вокруг запрещённых полигонов,
 с последовательностью точек, соответствующей порядку исходного маршрута,
 с обработкой boundary‑участков по предложенной логике, очисткой от лишних точек,
 удалением повторных проходов одного участка с учётом направления движения,
@@ -49,6 +49,7 @@ main.py – формирует offset‑маршрут дрона вокруг �
 
 7.*Финальное преобразование и сохранение:
    - Итоговый маршрут, представленный как список объектов `Point` в системе UTM, преобразуется в WGS84 (список кортежей (lat, lng)).
+   - Функция находит значение altitude из исходного маршрута для точки (lat, lng), выбирая точку, ближайшую к заданным координатам и выставляет ее значение для новой точки
    - Результат сохраняется в виде HTML‑карты (mission_map.html) с визуализацией маршрута (с использованием библиотеки Folium и плагина TimestampedGeoJson) и JSON-файла (offset_route.json) для дальнейшего использования.
 """
 
@@ -74,7 +75,7 @@ from folium.plugins import TimestampedGeoJson
 # -------------------------
 # Константы и трансформеры
 # -------------------------
-OFFSET = 3.0       # смещение (метров) наружу от полигона
+# OFFSET = 3.0       # смещение (метров) наружу от полигона
 STEP = 1.0         # шаг дискретизации (в метрах)
 # TOLERANCE_M = 1.0  # порог для классификации safe/boundary (в метрах)
 TOLERANCE_DOWN = 0.9  # Нижний порог (в метрах) для safe точек
@@ -340,7 +341,7 @@ def shift_point(point: Point, idx: int, points: List[Point], poly: Polygon,
 # -------------------------
 class MissionManager:
     def __init__(self, drone: Dict[str, Any], route_pts: List[Dict[str, float]],
-                 polygons_geojson: Dict[str, Any]):
+                 polygons_geojson: Dict[str, Any], offset: float = 3.0) -> None:
         """
         Инициализирует MissionManager с данными миссии.
 
@@ -352,6 +353,8 @@ class MissionManager:
         self.drone = drone
         self.route_pts = route_pts
         self.polygons_geojson = polygons_geojson
+
+        self.offset = offset
 
         # Преобразуем полигоны: WGS84 и их UTM-версию
         self.polygons_wgs: List[Polygon] = [shape(f["geometry"]) for f in polygons_geojson["features"]]
@@ -380,6 +383,31 @@ class MissionManager:
         if not required.issubset(data):
             raise ValueError(f"Некорректный ответ сервера: {data}")
         return cls(data["droneData"], data["routePoints"], data["savedPolygons"])
+
+    @classmethod
+    def adjust_route(
+            cls,
+            offset: float,
+            mission_url: str = "http://localhost:5005/get-mission",
+            out_html: pathlib.Path | str = None,  # <-- по‑умолчанию None
+    ) -> pathlib.Path:
+        """
+        Забирает миссию, считает маршрут с заданным offset,
+        сохраняет карту и возвращает путь к HTML‑файлу.
+        """
+        # если не передали out_html, кладём карту в ту же папку, где mission_handler.py
+        base = pathlib.Path(__file__).parent
+        target = pathlib.Path(out_html) if out_html else (base / "mission_map.html")
+
+        # 1) Загружаем миссию
+        manager = cls.from_server(mission_url)
+        manager.offset = offset
+
+        # 2) Считаем и сохраняем карту именно в target
+        manager.run(target)
+
+        # 3) Отдаём абсолютный путь
+        return target.resolve()
 
     def run(self, out_html: pathlib.Path | str = "mission_map.html") -> None:
         """
@@ -450,6 +478,10 @@ class MissionManager:
         labels = []
         self.disc_points = []
         for i, pt in enumerate(disc_pts_m):
+            # пропускаем пустые точки
+            if pt is None or pt.is_empty:
+                continue
+
             pt_wgs = utm_to_wgs(pt.x, pt.y)
             d = pt.distance(original_route_m)  # Расстояние в UTM (в метрах)
             if d < TOLERANCE_DOWN:
@@ -503,7 +535,7 @@ class MissionManager:
                 x, y = wgs_to_utm(lng, lat)
                 seg_utm.append(Point(x, y))
             poly_utm = self.polygons_utm[0]
-            base_offset = OFFSET
+            base_offset = self.offset
             poly_offset = poly_utm.buffer(base_offset, resolution=16, join_style=2, cap_style=2)
             shifted = []
             n = len(seg_utm)
@@ -589,9 +621,9 @@ class MissionManager:
         if norm == 0:
             return Point(safe_x, safe_y)
         unit = v / norm
-        candidate = Point(proj.x + OFFSET * unit[0], proj.y + OFFSET * unit[1])
+        candidate = Point(proj.x + self.offset * unit[0], proj.y + self.offset * unit[1])
         if poly.contains(candidate):
-            candidate = Point(proj.x - OFFSET * unit[0], proj.y - OFFSET * unit[1])
+            candidate = Point(proj.x - self.offset * unit[0], proj.y - self.offset * unit[1])
         return candidate
 
     # -------------------------
@@ -771,53 +803,91 @@ class MissionManager:
                 indent=2
             )
         print(f"[INFO] Offset route saved to {json_path}")
-        try:
-            webbrowser.open(out_html.as_uri())
-        except ValueError:
-            webbrowser.open(f"file://{out_html}")
+        # Для открытия HTML-карты в браузере можно использовать:
+        # try:
+        #     webbrowser.open(out_html.as_uri())
+        # except ValueError:
+        #     webbrowser.open(f"file://{out_html}")
 
     def _save_map(self, out_html: pathlib.Path, route: List[Tuple[float, float]]) -> None:
+         """
+        Формирует и сохраняет HTML‑карту маршрута с использованием Folium:
+        - Запрещённые полигоны с заливкой.
+        - Исходный маршрут (точки + полилиния).
+        - Пунктирную линию от дрона до первой точки.
+        - Маркер дрона.
+        - Анимацию скорректированного маршрута.
         """
-        Формирует и сохраняет HTML-карту маршрута с использованием Folium, включая полигоны,
-        исходный маршрут, маркер дрона и слой TimestampedGeoJson для анимации маршрута.
+         # 1) Базовая карта, центрированная на дроне
+         m = folium.Map(location=[self.drone["lat"], self.drone["lng"]], zoom_start=16)
 
-        Args:
-            out_html: Путь для сохранения HTML-файла.
-            route: Итоговый маршрут в формате списка (lat, lng).
-        """
-        m = folium.Map(location=[self.drone["lat"], self.drone["lng"]], zoom_start=16)
-        folium.GeoJson(
-            self.polygons_geojson,
-            style_function=lambda _: {"fillColor": "gray", "color": "black", "weight": 2, "fillOpacity": 0.3}
-        ).add_to(m)
-        if self.route_pts:
-            folium.PolyLine([(pt["lat"], pt["lng"]) for pt in self.route_pts],
-                            color="blue", weight=2, tooltip="Original").add_to(m)
-        folium.Marker([self.drone["lat"], self.drone["lng"]],
-                      popup="Drone", icon=folium.Icon(color="black")).add_to(m)
-        features = []
-        start_time = datetime.utcnow()
-        time_step = timedelta(seconds=2)
-        current_time = start_time
-        for i, (lat, lng) in enumerate(route):
-            features.append({
-                "type": "Feature",
-                "geometry": {"type": "Point", "coordinates": [lng, lat]},
-                "properties": {
-                    "time": current_time.isoformat(),
-                    "style": {"color": "green", "fillColor": "green", "radius": 4},
-                    "icon": "circle",
-                    "popup": f"Point #{i + 1}"
-                }
-            })
-            current_time += time_step
-        if features:
-            TimestampedGeoJson(
-                {"type": "FeatureCollection", "features": features},
-                transition_time=200, period="PT1S", add_last_point=True, loop=False, auto_play=False
-            ).add_to(m)
-        m.save(out_html)
-        print(f"[INFO] Map saved to {out_html}")
+         # 2) Запрещённые полигоны с заливкой
+         for feature in self.polygons_geojson.get("features", []):
+             geom = feature.get("geometry")
+             if geom and geom.get("type") == "Polygon":
+                 ring = geom["coordinates"][0]
+                 coords = [[pt[1], pt[0]] for pt in ring]  # [lat, lng]
+                 folium.Polygon(
+                     locations=coords,
+                     color="blue",
+                     fill=True,
+                     fill_opacity=0.3
+                 ).add_to(m)
+
+         # 3) Исходный маршрут: точки + полилиния
+         if self.route_pts:
+             pts = [(pt["lat"], pt["lng"]) for pt in self.route_pts]
+             # точки
+             for lat_pt, lng_pt in pts:
+                 folium.CircleMarker(
+                     [lat_pt, lng_pt],
+                     radius=3,
+                     color="orange",
+                     fill=True
+                 ).add_to(m)
+             # полилиния
+             folium.PolyLine(pts, color="orange", weight=2).add_to(m)
+             # пунктирная линия от дрона до первой точки
+             folium.PolyLine(
+                 [[self.drone["lat"], self.drone["lng"]], pts[0]],
+                 color="orange", weight=2, dash_array="5,10"
+             ).add_to(m)
+
+         # 4) Маркер дрона
+         folium.Marker(
+             [self.drone["lat"], self.drone["lng"]],
+             popup="Drone",
+             icon=folium.Icon(color="black")
+         ).add_to(m)
+
+         # 5) Анимация скорректированного маршрута
+         features = []
+         start = datetime.utcnow()
+         step = timedelta(seconds=2)
+         current = start
+         for i, (lat, lng) in enumerate(route):
+             features.append({
+                 "type": "Feature",
+                 "geometry": {"type": "Point", "coordinates": [lng, lat]},
+                 "properties": {
+                     "time": current.isoformat(),
+                     "style": {"color": "green", "fillColor": "green", "radius": 4},
+                     "icon": "circle",
+                     "popup": f"Point #{i + 1}"
+                 }
+             })
+             current += step
+
+         if features:
+             TimestampedGeoJson(
+                 {"type": "FeatureCollection", "features": features},
+                 transition_time=200, period="PT1S",
+                 add_last_point=True, loop=False, auto_play=False
+             ).add_to(m)
+
+         # 6) Сохраняем карту
+         m.save(out_html)
+         print(f"[INFO] Map saved to {out_html}")
 
 
 # -------------------------
