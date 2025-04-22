@@ -165,29 +165,39 @@ def process_route():
        и возвращает JSON { success: True, mapUrl: "<URL карты>" }
     """
     data = request.get_json(force=True) or {}
-    # 1) Приводим к числу
     try:
         offset = float(data.get("offset", 3.0))
-    except:
+    except ValueError:
         return jsonify(success=False, error="Bad offset"), 400
 
-    # 2) вызываем отдельный микросервис
+    # 1. вызываем микросервис, который пересчитывает маршрут
     try:
         resp = requests.post(f"{MH_URL}/compute-route",
-                         json={"offset": offset},
-                         timeout=10)
+                             json={"offset": offset},
+                             timeout=20)
         resp.raise_for_status()
         jr = resp.json()
+        if not jr.get("success"):
+            raise RuntimeError(jr.get("error", "unknown error from mission_handler"))
     except Exception as e:
-        return jsonify(success=False, error=str(e)), 500
+        return jsonify(success=False, error=str(e)), 502
 
-    if not jr.get("success"):
-        return jsonify(success=False, error=j.get("error", "unknown")), 500
+    # 2. забираем сгенерированный offset_route.json
+    try:
+        r_json = requests.get(f"{MH_URL}/offset_route.json", timeout=5)
+        r_json.raise_for_status()
+        route_points = r_json.json()  # ← список точек
+    except Exception as e:
+        # если не получилось – вернём пустой список, но не ломаем работу
+        route_points = []
+        app.logger.error("Cannot fetch offset_route.json: %s", e)
 
-    # 3) вернём URL на карту, которую рисует mission_handler
+    # 3. ссылка на HTML‑карту (проксируется через /mission_map_final)
     map_url = url_for("mission_map_file", _external=True) + f"?ts={int(time.time())}"
-    return jsonify(success=True, mapUrl=map_url)
 
+    return jsonify(success=True,
+                   mapUrl=map_url,
+                   routePoints=route_points)
 
 
 @app.route("/mission_map_final")
