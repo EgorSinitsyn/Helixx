@@ -59,7 +59,6 @@ import json
 import math
 import pathlib
 import time
-import webbrowser
 from datetime import datetime, timedelta
 from typing import List, Tuple, Dict, Any
 
