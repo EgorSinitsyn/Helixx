@@ -378,7 +378,11 @@ class MissionManager:
             MissionManager: Новый экземпляр с загруженными данными.
         """
         print("[INFO] Fetching mission data …")
-        data = requests.get(url, timeout=5).json()
+        data = requests.get(
+            url,
+            timeout=5,
+            proxies={"http": None, "https": None}
+        ).json()
         required = {"droneData", "routePoints", "savedPolygons"}
         if not required.issubset(data):
             raise ValueError(f"Некорректный ответ сервера: {data}")
