@@ -58,6 +58,7 @@ const App = () => {
   // Для построения маршрута
   const [routePoints, setRoutePoints] = useState([]);
   const [selectedPoint, setSelectedPoint] = useState([]);
+  const [userRoutePoints, setUserRoutePoints] = useState([]); // копия точек, введенных пользователем
   const [isMissionBuilding, setIsMissionBuilding] = useState(false);
   const [confirmedRoute, setConfirmedRoute] = useState([]);       // для подтверждённого маршрута
   const [currentRouteIndex, setCurrentRouteIndex] = useState(0); // для отслеживания направления (heading) к текущей точки маршрута
@@ -511,7 +512,10 @@ const handleConfirmRoute = useCallback(async () => {
   // 1) Подтверждаем маршрут в локальном состоянии
   setConfirmedRoute([...routePoints]);
 
-  // 2) Перед отправкой данных на сервер можно подготовить то, что мы хотим отправить
+  // 2) Снимок текущего (пользовательского) маршрута
+   setUserRoutePoints(routePoints.map(p => ({ ...p })));
+
+  // 3) Перед отправкой данных на сервер можно подготовить то, что мы хотим отправить
   // Допустим, мы хотим отправить:
   //   - dronePosition => droneData
   //   - routePoints
@@ -530,7 +534,7 @@ const handleConfirmRoute = useCallback(async () => {
   };
 
   try {
-    // 3) Вызываем функцию отправки на бэкенд
+    // 4) Вызываем функцию отправки на бэкенд
     const response = await sendMissionDataToServer(
       droneData,       // droneData
       routePoints,     // routePoints
@@ -549,7 +553,7 @@ const handleConfirmRoute = useCallback(async () => {
     console.error('[handleConfirmRoute] Ошибка при отправке данных:', error);
   }
 
-  //3) Открываем модальное окно с картой
+  //5) Открываем модальное окно с картой
   setIsConfirmModalOpen(true);
 
 }, [routePoints, dronePosition, plantationPoints]);
@@ -720,14 +724,18 @@ const handleConfirmRoute = useCallback(async () => {
       {/* Окно с корректировкой миссии */}
       {isConfirmModalOpen && (
           <ConfirmRouteModal
-            isOpen={isConfirmModalOpen}
-            onClose={() => setIsConfirmModalOpen(false)}
-            initialMapUrl={initialMapUrl}
-            onRouteProcessed={(newMapUrl) => {
-              console.log("Новый URL карты:", newMapUrl);
-              // Если нужно, можно обновить состояние и/или выполнить другие действия
-            }}
-          />
+              isOpen={isConfirmModalOpen}
+              onClose={() => setIsConfirmModalOpen(false)}
+              initialMapUrl={initialMapUrl}
+              routePoints={routePoints}          // ← исходные точки
+              userRoutePoints={userRoutePoints}
+              onRouteProcessed={(points) => {
+                if (Array.isArray(points) && points.length) {
+                  setRoutePoints(points);               // меняем текущий маршрут
+                  setConfirmedRoute(points);            // чтобы дрон летел по новым
+                }
+              }}
+            />
         )}
 
       {/* Отображение PlantationPlanner, если включён режим расстановки насаждений */}

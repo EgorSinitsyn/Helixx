@@ -1,71 +1,88 @@
-// ConfirmRouteModal.js
-import React, { useState } from 'react';
+// src/components/AdjustedRouteModal.js
+// Обновлённая версия: при нажатии «Изначальный маршрут» передаётся userRoutePoints
+// (снимок пользовательского маршрута) наверх, чтобы App заменил routePoints.
+
+import React, { useState, useEffect } from 'react';
 import Modal from 'react-modal';
 
 Modal.setAppElement('#root');
 
+/**
+ * Props
+ *  - isOpen            : boolean
+ *  - onClose           : () => void
+ *  - initialMapUrl     : string – URL исходной Folium‑карты
+ *  - routePoints       : array  – актуальный маршрут (может быть скорректированным)
+ *  - userRoutePoints   : array  – оригинальный маршрут (снимок)
+ *  - onRouteProcessed  : fn(points) – отдаём выбранный массив точек родителю
+ */
+const AdjustedRouteModal = ({
+  isOpen,
+  onClose,
+  initialMapUrl,
+  routePoints = [],
+  userRoutePoints = [],
+  onRouteProcessed = () => {},
+}) => {
+  const [offset, setOffset] = useState(3);              // расстояние до полигона, м
+  const [mapUrl, setMapUrl] = useState(initialMapUrl);  // URL, отображаемый в <iframe>
 
-const ConfirmRouteModal = ({ isOpen, onClose, initialMapUrl, onRouteProcessed }) => {
-  const [offset, setOffset] = useState(3); // значение по умолчанию
-  const [mapUrl, setMapUrl] = useState(initialMapUrl);
+  const bustCache = (url) => `${url}?ts=${Date.now()}`;
 
-  const cacheBusted = url => `${url}?ts=${Date.now()}`
+  // Когда окно открывается — показываем оригинальную карту и шлём userRoutePoints
+  useEffect(() => {
+    if (isOpen) {
+      setMapUrl(bustCache(initialMapUrl));
+      onRouteProcessed(userRoutePoints);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen]);
 
-  // Обработчик для кнопки "Изначальный маршрут"
+  // Показать исходный маршрут
   const handleOriginalRoute = () => {
-    setMapUrl(cacheBusted(initialMapUrl))
+    setMapUrl(bustCache(initialMapUrl));
+    onRouteProcessed(userRoutePoints);      // ← меняем routePoints в App на пользовательский снимок
   };
 
-  // Обработчик для кнопки "Скорректированный маршрут"
+  // Показать скорректированный маршрут
   const handleCorrectedRoute = async () => {
     try {
-      // Пример отправки запроса на сервер с параметром offset.
-      // Функция sendCorrectedRouteRequest должна быть реализована отдельно и отправлять запрос на сервер.
-      const response = await sendCorrectedRouteRequest({ offset });
-      if (response.success) {
-        // Обновляем URL карты. Можно добавить cache-buster, чтобы iframe точно перезагрузился.
-        setMapUrl(response.mapUrl + '?t=' + new Date().getTime());
-        // Можно также уведомить родительский компонент об успешном изменении маршрута
-        onRouteProcessed && onRouteProcessed(response.mapUrl);
+      const res = await fetch('http://localhost:5005/process-route', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ offset }),
+      });
+      const data = await res.json();
+      if (data.success && Array.isArray(data.routePoints)) {
+        setMapUrl(bustCache(data.mapUrl));
+        onRouteProcessed(data.routePoints);  // ← отдаём скорректированный список точек
       } else {
+        console.error('[AdjustedRouteModal] bad response', data);
         alert('Ошибка обработки маршрута на сервере');
       }
-    } catch (error) {
-      console.error('Ошибка запроса:', error);
-      alert('Ошибка запроса к серверу');
+    } catch (err) {
+      console.error('[AdjustedRouteModal] fetch failed', err);
+      alert('Сбой запроса к серверу (см. консоль)');
     }
   };
-
-  // Функция для отправки запроса на сервер (пример реализации)
-  async function sendCorrectedRouteRequest({ offset }) {
-    // Допустим, сервер доступен по адресу http://localhost:5005/process-route,
-    // и ожидает JSON с offset.
-    const res = await fetch('http://localhost:5005/process-route', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ offset })
-    });
-    return res.json();
-  }
 
   return (
     <Modal
       isOpen={isOpen}
       onRequestClose={onClose}
-      contentLabel="Подтверждение маршрута"
+      contentLabel="Корректировщик маршрута"
       style={customStyles}
     >
       <h2 style={{ textAlign: 'center' }}>Корректировщик маршрута</h2>
-      {/* iframe с картой folium */}
+
       <iframe
         src={mapUrl}
         width="100%"
         height="400px"
         style={{ border: '1px solid #ccc' }}
         title="Карта маршрута"
-      ></iframe>
+      />
+
       <div style={{ marginTop: '20px', textAlign: 'center' }}>
         <label style={{ marginRight: '10px' }}>
           Дистанция до границ полигонов:
@@ -77,19 +94,18 @@ const ConfirmRouteModal = ({ isOpen, onClose, initialMapUrl, onRouteProcessed })
           />
         </label>
       </div>
+
       <div style={{ marginTop: '20px', textAlign: 'center' }}>
         <button onClick={handleOriginalRoute} style={{ marginRight: '10px' }}>
           Изначальный маршрут
         </button>
-        <button onClick={handleCorrectedRoute}>
-          Скорректированный маршрут
-        </button>
+        <button onClick={handleCorrectedRoute}>Скорректированный маршрут</button>
       </div>
     </Modal>
   );
 };
 
-// Определяем стили для модального окна и его overlay
+// ---------------- Styles ----------------
 const customStyles = {
   content: {
     top: '50%',
@@ -99,24 +115,23 @@ const customStyles = {
     transform: 'translate(-50%, -50%)',
     width: '70%',
     maxWidth: '800px',
-    backgroundColor: '#333',      // серый фон
-    color: 'white',               // белый текст
+    backgroundColor: '#333',
+    color: 'white',
     border: 'none',
-    padding: '20px'
+    padding: '20px',
   },
   overlay: {
-    backgroundColor: 'rgba(0, 0, 0, 0.6)'
-  }
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+  },
 };
 
-// Стили для элемента ввода OFFSET
 const inputStyle = {
   marginLeft: '5px',
   width: '80px',
   padding: '5px',
   backgroundColor: '#777',
   color: 'white',
-  border: '1px solid #777'
+  border: '1px solid #777',
 };
 
-export default ConfirmRouteModal;
+export default AdjustedRouteModal;
