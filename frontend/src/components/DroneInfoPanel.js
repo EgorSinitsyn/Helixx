@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import './compass_style.css';
+import './css/compass_style.css';
 
 const DroneInfoPanel = ({ latitude, longitude, altitude, flightAltitude, heading, onHide }) => {
     const [isMinimized, setIsMinimized] = useState(false);

@@ -5,7 +5,7 @@ import MapComponent from './components/MapComponent';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import Sidebar from './components/Sidebar';
 import Papa from 'papaparse';
-import './components/compass_style.css';
+import './components/css/compass_style.css';
 import DraggableModal from './components/DraggableModal.js';
 import DroneInfoPanel from './components/DroneInfoPanel.js';
 import MissionPlannerSidebar from './components/MissionPlannerSidebar.js';
