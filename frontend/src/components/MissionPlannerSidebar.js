@@ -19,38 +19,6 @@ const MissionPlannerSidebar = ({
     // **NEW** — добавляем состояние для отслеживания «подсвеченной» точки
     const [hoveredPointIndex, setHoveredPointIndex] = useState(null);
 
-    // Функция для сохранения маршрута в проект
-    const saveRouteToProject = async (routePoints) => {
-        const geoJson = {
-            type: 'FeatureCollection',
-            features: routePoints.map((point, index) => ({
-                type: 'Feature',
-                properties: { id: index + 1, altitude: Number(point.flightAltitude) },
-                geometry: {
-                    type: 'Point',
-                    coordinates: [Number(point.lng), Number(point.lat), Number(point.altitude)],
-                },
-            })),
-        };
-
-        try {
-            const response = await fetch('http://localhost:5001/save-route', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(geoJson),
-            });
-
-            if (response.ok) {
-                alert('Маршрут успешно сохранён в директорию проекта: frontend/src/route');
-            } else {
-                alert('Ошибка при сохранении маршрута');
-            }
-        } catch (error) {
-            console.error('Ошибка при запросе к серверу:', error);
-            alert('Не удалось сохранить маршрут');
-        }
-    };
-
     // Функция для скачивания маршрута
     const exportRouteToGeoJSON = (routePoints) => {
         const geoJson = {
@@ -125,7 +93,6 @@ const MissionPlannerSidebar = ({
                 </div>
 
                 <div style={styles.buttonRow}>
-                    <button onClick={() => saveRouteToProject(routePoints)} style={styles.saveRouteButton}>Сохранить маршрут</button>
                     <button onClick={() => exportRouteToGeoJSON(routePoints)} style={styles.downloadButton}>
                         Скачать маршрут
                     </button>
@@ -231,17 +198,8 @@ const styles = {
         border: 'none',
         cursor: 'pointer',
     },
-    saveRouteButton: {
-        width: '45%',
-        padding: '8px',
-        fontSize: '16px',
-        backgroundColor: '#4CAF50',
-        color: 'white',
-        border: 'none',
-        cursor: 'pointer',
-    },
     downloadButton: {
-        width: '45%',
+        width: '100%',
         padding: '8px',
         fontSize: '16px',
         backgroundColor: '#4CAF50',
