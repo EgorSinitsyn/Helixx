@@ -1,0 +1,49 @@
+version: '3.8'
+
+
+networks:
+  mission-net:
+    driver: bridge
+
+
+services:
+
+  mission_handler:
+    build:
+      context: ./backend/mission_handler
+      dockerfile: Dockerfile
+    container_name: mission_handler
+    env_file:
+        - ./backend/mission_handler/.env
+    ports:
+      - "5006:5006"
+    networks:
+        - mission-net
+
+  mission_mediator:
+    build:
+      context: ./backend/mission_mediator
+      dockerfile: Dockerfile
+    container_name: mission_mediator
+    env_file:
+        - ./backend/mission_mediator/.env
+    ports:
+      - "5005:5005"
+    depends_on:
+      - mission_handler
+    networks:
+        - mission-net
+
+  react_frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: react_frontend
+    env_file:
+      - ./frontend/.env
+    ports:
+      - "3000:3000"
+    depends_on:
+      - mission_mediator
+    networks:
+      - mission-net
