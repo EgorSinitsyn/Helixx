@@ -18,7 +18,8 @@ export async function sendMissionDataToServer(droneData, routePoints, savedPolyg
 
   try {
     // Отправляем запрос на Flask-сервер
-    const response = await fetch('http://localhost:5005/get-mission', {
+    const response = await fetch(
+        `${process.env.REACT_APP_MEDIATOR_API}/get-mission`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),

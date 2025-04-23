@@ -55,9 +55,11 @@ mission_handler.py – формирует offset‑маршрут дрона в�
 
 
 from __future__ import annotations
+import os
 import json
 import math
 import pathlib
+from dotenv import load_dotenv
 import time
 from datetime import datetime, timedelta
 from typing import List, Tuple, Dict, Any
@@ -74,11 +76,15 @@ from folium.plugins import TimestampedGeoJson
 # -------------------------
 # Константы и трансформеры
 # -------------------------
-# OFFSET = 3.0       # смещение (метров) наружу от полигона
 STEP = 1.0         # шаг дискретизации (в метрах)
-# TOLERANCE_M = 1.0  # порог для классификации safe/boundary (в метрах)
 TOLERANCE_DOWN = 0.9  # Нижний порог (в метрах) для safe точек
 TOLERANCE_UP = 1.1  # Верхний порог (в метрах) для boundary точек
+
+# подгружаем .env
+load_dotenv()
+
+# базовый адрес сервиса «mission_mediator» (для получения /get-mission)
+MEDIATOR_URL = os.getenv("MEDIATOR_URL", "http://localhost:5005")
 
 # Трансформеры для преобразования координат (WGS84 ↔ UTM)
 TRANS_TO_M = Transformer.from_crs("epsg:4326", "epsg:32637", always_xy=True)   # WGS84 → UTM
@@ -366,7 +372,10 @@ class MissionManager:
         self.final_route: List[Point] = []
 
     @classmethod
-    def from_server(cls, url: str = "http://localhost:5005/get-mission") -> "MissionManager":
+    def from_server(cls,
+                    # url: str = "http://localhost:5005/get-mission",
+                    url: str | None = None
+                    ) -> "MissionManager":
         """
         Фабричный метод для создания экземпляра MissionManager путём загрузки данных миссии с сервера.
 
@@ -377,11 +386,12 @@ class MissionManager:
             MissionManager: Новый экземпляр с загруженными данными.
         """
         print("[INFO] Fetching mission data …")
-        data = requests.get(
-            url,
-            timeout=5,
-            proxies={"http": None, "https": None}
-        ).json()
+
+        # если URL не передан, берём из env и добавляем путь
+        endpoint = url or f"{MEDIATOR_URL}/get-mission"
+
+        data = requests.get(endpoint, timeout=5, proxies={"http": None, "https": None}).json()
+
         required = {"droneData", "routePoints", "savedPolygons"}
         if not required.issubset(data):
             raise ValueError(f"Некорректный ответ сервера: {data}")
@@ -391,8 +401,9 @@ class MissionManager:
     def adjust_route(
             cls,
             offset: float,
-            mission_url: str = "http://localhost:5005/get-mission",
-            out_html: pathlib.Path | str = None,  # <-- по‑умолчанию None
+            # mission_url: str = "http://localhost:5005/get-mission",
+            mission_url: str | None = None,
+            out_html: pathlib.Path | str = None,
     ) -> pathlib.Path:
         """
         Забирает миссию, считает маршрут с заданным offset,
@@ -403,7 +414,9 @@ class MissionManager:
         target = pathlib.Path(out_html) if out_html else (base / "mission_map.html")
 
         # 1) Загружаем миссию
-        manager = cls.from_server(mission_url)
+        # manager = cls.from_server(mission_url)
+        endpoint = mission_url or f"{MEDIATOR_URL}/get-mission"
+        manager = cls.from_server(endpoint)
         manager.offset = offset
 
         # 2) Считаем и сохраняем карту именно в target

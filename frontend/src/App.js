@@ -90,8 +90,8 @@ const App = () => {
 
   // -- Модальное окно для корректировки маршрута
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
-  const initialMapUrl = "http://localhost:5005/mission_map"; // URL для изначальной карты
-  const finalMapUrl = "http://localhost:5005/mission_map_final"; // URL для финальной карты
+  const initialMapUrl = `${process.env.REACT_APP_MEDIATOR_API}/mission_map`; // URL для изначальной карты
+  const finalMapUrl = `${process.env.REACT_APP_MEDIATOR_API}/mission_map_final`; // URL для финальной карты
 
 
   // Обновление высоты дрона

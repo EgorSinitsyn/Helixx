@@ -47,11 +47,13 @@ const AdjustedRouteModal = ({
   // Показать скорректированный маршрут
   const handleCorrectedRoute = async () => {
     try {
-      const res = await fetch('http://localhost:5005/process-route', {
+      const res = await fetch(
+          `${process.env.REACT_APP_MEDIATOR_API}/process-route`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ offset }),
-      });
+      }
+      );
       const data = await res.json();
       if (data.success && Array.isArray(data.routePoints)) {
         setMapUrl(bustCache(data.mapUrl));
