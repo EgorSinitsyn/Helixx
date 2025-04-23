@@ -13,9 +13,9 @@ import greenCircle from '../assets/green_circle.png';
 import TargetIcon from '../assets/target_icon.png';
 
 import { initTree3DLayers, updateTree3DLayers, removeTree3DLayers } from '../components/trees3D.js';
-import '../components/drone_style.css';
-import '../components/geomarker_style.css';
-import '../components/custom_gl_draw.css';
+import './css/drone_style.css';
+import './css/geomarker_style.css';
+import './css/custom_gl_draw.css';
 import '@mapbox/mapbox-gl-draw/dist/mapbox-gl-draw.css';
 
 

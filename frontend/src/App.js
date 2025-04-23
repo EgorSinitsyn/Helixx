@@ -5,13 +5,14 @@ import MapComponent from './components/MapComponent';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import Sidebar from './components/Sidebar';
 import Papa from 'papaparse';
-import './components/compass_style.css';
+import './components/css/compass_style.css';
 import DraggableModal from './components/DraggableModal.js';
 import DroneInfoPanel from './components/DroneInfoPanel.js';
 import MissionPlannerSidebar from './components/MissionPlannerSidebar.js';
 import PlantationPlanner from './components/PlantationPlanner';
 import { loadRoute, moveDroneToRoutePoints } from './components/DroneRouteManager.js';
 import { sendMissionDataToServer } from './components/route_transfer.js';
+import ConfirmRouteModal from './components/AdjustedRouteModal';
 
 const CALIBRATION_LATITUDE = 55.139592;
 const CALIBRATION_LONGITUDE = 37.962471;
@@ -57,6 +58,7 @@ const App = () => {
   // Для построения маршрута
   const [routePoints, setRoutePoints] = useState([]);
   const [selectedPoint, setSelectedPoint] = useState([]);
+  const [userRoutePoints, setUserRoutePoints] = useState([]); // копия точек, введенных пользователем
   const [isMissionBuilding, setIsMissionBuilding] = useState(false);
   const [confirmedRoute, setConfirmedRoute] = useState([]);       // для подтверждённого маршрута
   const [currentRouteIndex, setCurrentRouteIndex] = useState(0); // для отслеживания направления (heading) к текущей точки маршрута
@@ -85,6 +87,11 @@ const App = () => {
     console.log('Закрытие окна разметки рядов');
     setIsRowMarkingActive(false);
   }, []);
+
+  // -- Модальное окно для корректировки маршрута
+  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+  const initialMapUrl = "http://localhost:5005/mission_map"; // URL для изначальной карты
+  const finalMapUrl = "http://localhost:5005/mission_map_final"; // URL для финальной карты
 
 
   // Обновление высоты дрона
@@ -505,7 +512,10 @@ const handleConfirmRoute = useCallback(async () => {
   // 1) Подтверждаем маршрут в локальном состоянии
   setConfirmedRoute([...routePoints]);
 
-  // 2) Перед отправкой данных на сервер можно подготовить то, что мы хотим отправить
+  // 2) Снимок текущего (пользовательского) маршрута
+   setUserRoutePoints(routePoints.map(p => ({ ...p })));
+
+  // 3) Перед отправкой данных на сервер можно подготовить то, что мы хотим отправить
   // Допустим, мы хотим отправить:
   //   - dronePosition => droneData
   //   - routePoints
@@ -524,7 +534,7 @@ const handleConfirmRoute = useCallback(async () => {
   };
 
   try {
-    // 3) Вызываем функцию отправки на бэкенд
+    // 4) Вызываем функцию отправки на бэкенд
     const response = await sendMissionDataToServer(
       droneData,       // droneData
       routePoints,     // routePoints
@@ -542,6 +552,10 @@ const handleConfirmRoute = useCallback(async () => {
   } catch (error) {
     console.error('[handleConfirmRoute] Ошибка при отправке данных:', error);
   }
+
+  //5) Открываем модальное окно с картой
+  setIsConfirmModalOpen(true);
+
 }, [routePoints, dronePosition, plantationPoints]);
 
   return (
@@ -706,6 +720,23 @@ const handleConfirmRoute = useCallback(async () => {
         </div>
         <button onClick={handleConfirmDronePosition} style={styles.confirmButton}>Подтвердить местоположение</button>
       </DraggableModal>
+
+      {/* Окно с корректировкой миссии */}
+      {isConfirmModalOpen && (
+          <ConfirmRouteModal
+              isOpen={isConfirmModalOpen}
+              onClose={() => setIsConfirmModalOpen(false)}
+              initialMapUrl={initialMapUrl}
+              routePoints={routePoints}          // ← исходные точки
+              userRoutePoints={userRoutePoints}
+              onRouteProcessed={(points) => {
+                if (Array.isArray(points) && points.length) {
+                  setRoutePoints(points);               // меняем текущий маршрут
+                  setConfirmedRoute(points);            // чтобы дрон летел по новым
+                }
+              }}
+            />
+        )}
 
       {/* Отображение PlantationPlanner, если включён режим расстановки насаждений */}
       {isTreePlacingActive && (
