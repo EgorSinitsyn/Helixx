@@ -1,4 +1,4 @@
-// trees3D.js
+// src/components/trees3D.js
 
 import { MapboxOverlay } from '@deck.gl/mapbox';
 import { SimpleMeshLayer } from '@deck.gl/mesh-layers';
@@ -71,7 +71,7 @@ function createTrunkLayer(treeData, map) {
         opacity: 1,
         parameters: {
             depthTest: true, // Включаем тест глубины
-            depthFunc:  0x0201 // || GL.LESS  // Убедимся, что объекты рендерятся поверх terrain
+            depthFunc:  0x0201 // || GL.LESS // Убедимся, что объекты рендерятся поверх terrain
         }
     });
 }
@@ -195,6 +195,7 @@ export function generateTreePointsFromRow(rowPoints, { treeHeight, crownSize, st
 }
 
 /**
+ * !!! НУЖНО ДОРАБОТАТЬ !!!
  * Устанавливает динамическое отображение 3D‑слоя в зависимости от зума.
  * При зуме ниже threshold (например, 12) 3D‑слой удаляется, а при зуме выше —
  * создаётся, если его ещё нет.
