@@ -1,4 +1,4 @@
-// App.js
+// scr/App.js
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import MapComponent from './components/MapComponent';
@@ -437,23 +437,24 @@ const App = () => {
 
   const handleAltitudeChange = useCallback((value, is3D) => {
     const numericValue = Number(value);
+
     setSelectedPoint(prev => {
       if (is3D) {
-        // В 3D‑режиме обновляем надземную высоту и вычисляем абсолютную высоту
+        // В 3D-режиме рассчитываем абсолютную высоту как
+        // calibratedAltitude (dronePosition.altitude) + введённая надземная высота
         return {
           ...prev,
           flightAltitude: numericValue,
-          altitude: Number(prev.groundAltitude) + numericValue
-        };
-      } else {
-        return {
-          ...prev,
-          // В 2D‑режиме обновляем только абсолютную высоту
-          altitude: numericValue
+          altitude: Number(dronePosition.altitude) + numericValue
         };
       }
+      // В 2D-режиме просто обновляем абсолютную высоту
+      return {
+        ...prev,
+        altitude: numericValue
+      };
     });
-  }, []);
+  }, [dronePosition.altitude]);
 
   const handleSavePoint = useCallback(() => {
     if (selectedPoint.lat && selectedPoint.lng && selectedPoint.altitude) {
