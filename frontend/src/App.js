@@ -513,50 +513,57 @@ const handleConfirmRoute = useCallback(async () => {
   setConfirmedRoute([...routePoints]);
 
   // 2) Снимок текущего (пользовательского) маршрута
-   setUserRoutePoints(routePoints.map(p => ({ ...p })));
+  setUserRoutePoints(routePoints.map(p => ({ ...p })));
 
-  // 3) Перед отправкой данных на сервер можно подготовить то, что мы хотим отправить
-  // Допустим, мы хотим отправить:
-  //   - dronePosition => droneData
-  //   - routePoints
-  //   - plantationPoints как savedPolygons (или пустой объект, если не нужно)
+  // 3) Готовим данные для отправки
   const droneData = {
     lat: dronePosition.lat,
     lng: dronePosition.lng,
     altitude: dronePosition.altitude,
   };
 
-  // Если вы хотите передавать свои «полилинии» вместо «полигонов», или вообще не передавать,
-  // можно передать пустой объект/массив. Для примера возьмём plantationPoints.
   const polygonsToSend = savedPolygons || {
     type: 'FeatureCollection',
-    features: []
+    features: [],
   };
 
+  // 4) Валидация: если что-то пустое – выходим без отправки и без модалки
+  const isDroneDataEmpty =
+    droneData.lat == null ||
+    droneData.lng == null ||
+    droneData.altitude == null;
+  const isRouteEmpty = !Array.isArray(routePoints) || routePoints.length === 0;
+  const isPolygonsEmpty =
+    !polygonsToSend.features ||
+    !Array.isArray(polygonsToSend.features) ||
+    polygonsToSend.features.length === 0;
+
+  if (isDroneDataEmpty || isRouteEmpty || isPolygonsEmpty) {
+    // alert('Невозможно подтвердить маршрут: не хватает данных для отправки.');
+    return;
+  }
+
   try {
-    // 4) Вызываем функцию отправки на бэкенд
+    // 5) Отправляем на бэкенд
     const response = await sendMissionDataToServer(
-      droneData,       // droneData
-      routePoints,     // routePoints
-      savedPolygons    // savedPolygons или другое, что хотите отправить
+      droneData,
+      routePoints,
+      polygonsToSend
     );
+    // console.log('[handleConfirmRoute] Ответ от сервера:', response);
 
-    console.log('[handleConfirmRoute] Ответ от сервера:', response);
-
-    // При необходимости, если сервер вернул обновлённые данные (updatedRoutePoints),
-    // вы можете обновить их в стейте:
+    // 6) Если сервер вернул скорректированный маршрут — обновляем
     if (response.updatedRoutePoints) {
       setRoutePoints(response.updatedRoutePoints);
     }
 
+    // 7) Открываем модалку только после успешного ответа
+    setIsConfirmModalOpen(true);
   } catch (error) {
-    console.error('[handleConfirmRoute] Ошибка при отправке данных:', error);
+    // console.error('[handleConfirmRoute] Ошибка при отправке данных:', error);
+    // alert('Ошибка при подтверждении маршрута. Попробуйте ещё раз.');
   }
-
-  //5) Открываем модальное окно с картой
-  setIsConfirmModalOpen(true);
-
-}, [routePoints, dronePosition, plantationPoints]);
+}, [routePoints, dronePosition, savedPolygons, sendMissionDataToServer]);
 
   return (
     <div>
