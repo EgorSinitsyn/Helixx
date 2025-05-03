@@ -1,4 +1,5 @@
 from flask import Flask, request, jsonify, send_file, abort
+from flask_cors import CORS
 import pathlib
 import os
 import traceback
@@ -6,6 +7,7 @@ import traceback
 from mission_handler import MissionManager  # ваш класс из mission_handler.py
 
 app = Flask(__name__)
+CORS(app)
 app.config['STATIC_FOLDER'] = pathlib.Path(__file__).parent
 
 # Берём из .env:
