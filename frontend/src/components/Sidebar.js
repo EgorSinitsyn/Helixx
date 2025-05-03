@@ -1,4 +1,5 @@
 // src/components/Sidebar.js
+
 import React from 'react';
 import treesImg from '../assets/trees.png';
 

@@ -1,6 +1,4 @@
 // src/components/AdjustedRouteModal.js
-// Обновлённая версия: при нажатии «Изначальный маршрут» передаётся userRoutePoints
-// (снимок пользовательского маршрута) наверх, чтобы App заменил routePoints.
 
 import React, { useState, useEffect } from 'react';
 import Modal from 'react-modal';
@@ -16,6 +14,7 @@ Modal.setAppElement('#root');
  *  - userRoutePoints   : array  – оригинальный маршрут (снимок)
  *  - onRouteProcessed  : fn(points) – отдаём выбранный массив точек родителю
  */
+
 const AdjustedRouteModal = ({
   isOpen,
   onClose,

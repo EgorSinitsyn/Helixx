@@ -161,7 +161,7 @@ def mission_map():
 def process_route():
     """
     POST { offset: число }
-    -> запускает adjust_route, перезаписывает mission_map.html
+    -> запускает /сompute-route из другого микросевиса
        и возвращает JSON { success: True, mapUrl: "<URL карты>" }
     """
     data = request.get_json(force=True) or {}

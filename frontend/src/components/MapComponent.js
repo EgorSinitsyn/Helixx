@@ -1,4 +1,4 @@
-// MapComponent.js
+// src/components/MapComponent.js
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import mapboxgl from 'mapbox-gl';

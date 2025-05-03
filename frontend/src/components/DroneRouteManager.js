@@ -1,182 +1,238 @@
+// src/components/DroneInfoPanel.js
+
 import throttle from 'lodash/throttle';
 
-// Загрузка маршрута (без изменений)
-export const loadRoute = async () => {
-    try {
-        const routeGeoJson = await import('../route/route.geojson');
-        if (!routeGeoJson.features || !Array.isArray(routeGeoJson.features)) {
-            throw new Error('Неверная структура файла GeoJSON');
-        }
-        return routeGeoJson.features.map((feature) => {
-            const [lng, lat, altitude] = feature.geometry.coordinates;
-            return {
-                lat,
-                lng,
-                altitude: parseFloat(altitude),
-            };
-        });
-    } catch (error) {
-        console.error('Ошибка при загрузке маршрута:', error);
-        throw error;
+/**
+ * loadRoute — загружает маршрут из GeoJSON файла
+ * @async
+ * @returns {Promise<Array<{lat: number, lng: number, altitude: number}>>}
+ * @throws {Error} при некорректной структуре GeoJSON
+ */
+
+export async function loadRoute() {
+  try {
+    const routeGeoJson = await import('../route/route.geojson');
+    const features = routeGeoJson.features;
+    if (!features || !Array.isArray(features)) {
+      throw new Error('Неверная структура файла GeoJSON');
     }
-};
+
+    return features.map(feature => {
+      const [lng, lat, alt] = feature.geometry.coordinates;
+      return {
+        lat,
+        lng,
+        altitude: parseFloat(alt)
+      };
+    });
+  } catch (err) {
+    console.error('Ошибка при загрузке маршрута:', err);
+    throw err;
+  }
+}
 
 /**
- * Перемещение дрона по точкам с объединённой анимацией полёта и поворота
+ * moveDroneToRoutePoints — выполняет анимацию полёта по массиву точек
+ * с плавным поворотом дрона к следующей точке.
+ * @param {{lat: number, lng: number, altitude?: number, heading?: number}} dronePosition — стартовые данные дрона
+ * @param {Function} setDronePosition — обновление позиции дрона в UI
+ * @param {Array<{lat: number, lng: number, altitude: number}>} routePoints — точки маршрута
+ * @param {Function} setIsMoving — флаг состояния движения
+ * @param {Function} [getGroundElevation] — получить высоту рельефа
+ * @param {Function} [getExternalFlightAltitude] — получить надземную высоту дрона
+ * @param {Function} [updateRouteIndex] — колбэк для обновления текущего индекса
  */
-export const moveDroneToRoutePoints = (
-    dronePosition,
-    setDronePosition,
-    routePoints,
-    setIsMoving,
-    getGroundElevation,
-    getExternalFlightAltitude,
-    updateRouteIndex
-) => {
-    if (!routePoints || routePoints.length === 0) {
-        alert('Маршрут пуст!');
-        return;
+export function moveDroneToRoutePoints(
+  dronePosition,
+  setDronePosition,
+  routePoints,
+  setIsMoving,
+  getGroundElevation,
+  getExternalFlightAltitude,
+  updateRouteIndex
+) {
+  // Проверка наличия точек
+  if (!Array.isArray(routePoints) || routePoints.length === 0) {
+    alert('Маршрут пуст!');
+    return;
+  }
+
+  let currentIndex = 0;
+  setIsMoving(true);
+
+  // Ограничение частоты обновления состояния дрона
+  const throttledSetPos = throttle(setDronePosition, 30);
+
+  // Начинаем последовательное перемещение
+  goToPoint(currentIndex, dronePosition);
+
+  /**
+   * goToPoint — переходит к точке с индексом idx и запускает анимацию
+   * @param {number} idx — индекс целевой точки
+   * @param {{lat: number, lng: number, altitude?: number, heading?: number}} current — текущие данные дрона
+   */
+  function goToPoint(idx, current) {
+    if (idx >= routePoints.length) {
+      alert('Маршрут завершён!');
+      setIsMoving(false);
+      return;
     }
 
-    let index = 0;
-    setIsMoving(true);
+    const target = routePoints[idx];
+    const nextPoint = routePoints[idx + 1] || target;
 
-    // Оптимизация обновлений
-    const throttledSet = throttle(setDronePosition, 30);
+    const startState = {
+      lat: parseFloat(current.lat),
+      lng: parseFloat(current.lng),
+      alt: parseFloat(current.altitude) || 0,
+      heading: normalizeAngle(current.heading || 0)
+    };
 
-    moveToPoint(index, dronePosition);
+    const endState = {
+      lat: parseFloat(target.lat),
+      lng: parseFloat(target.lng),
+      alt: parseFloat(target.altitude) || 0
+    };
 
-    function moveToPoint(idx, current) {
-        if (idx >= routePoints.length) {
-            alert('Маршрут завершён!');
-            setIsMoving(false);
-            return;
+    animateSegmentWithRotation(
+      startState,
+      endState,
+      { lat: parseFloat(nextPoint.lat), lng: parseFloat(nextPoint.lng) },
+      newHeading => {
+        // Обновление индекса для UI
+        if (typeof updateRouteIndex === 'function') {
+          updateRouteIndex(idx);
         }
-
-        const target = routePoints[idx];
-        const next = routePoints[idx + 1] || target;
-
-        const startState = {
-            lat: parseFloat(current.lat),
-            lng: parseFloat(current.lng),
-            alt: parseFloat(current.altitude) || 0,
-            heading: normalizeAngle(current.heading || 0),
-        };
-        const endState = {
-            lat: parseFloat(target.lat),
-            lng: parseFloat(target.lng),
-            alt: parseFloat(target.altitude) || 0,
-        };
-        const nextCoords = { lat: parseFloat(next.lat), lng: parseFloat(next.lng) };
-
-        animateSegmentWithRotation(startState, endState, nextCoords, (newHeading) => {
-            if (typeof updateRouteIndex === 'function') updateRouteIndex(idx);
-
-            // Переходим к следующей точке
-            moveToPoint(idx + 1, {
-                lat: endState.lat,
-                lng: endState.lng,
-                altitude: endState.alt,
-                heading: newHeading,
-            });
+        // Переходим к следующей точке
+        goToPoint(idx + 1, {
+          lat: endState.lat,
+          lng: endState.lng,
+          altitude: endState.alt,
+          heading: newHeading
         });
-    }
+      }
+    );
+  }
+
+  /**
+   * animateSegmentWithRotation — анимирует движение и поворот дрона
+   * @param {{lat: number, lng: number, alt: number, heading: number}} start — стартовое состояние
+   * @param {{lat: number, lng: number, alt: number}} end — целевое состояние
+   * @param {{lat: number, lng: number}} next — следующая точка для расчёта поворота
+   * @param {Function} onComplete — колбэк по завершении анимации
+   */
+  function animateSegmentWithRotation(start, end, next, onComplete) {
+    const speedH = 5; // м/с горизонтально
+    const speedV = 5; // м/с вертикально
+
+    const distance = calculateDistance(start, end);
+    const durationH = (distance / speedH) * 1000;
+    const durationV = (Math.abs(end.alt - start.alt) / speedV) * 1000;
+    const totalTime = Math.max(durationH, durationV);
+
+    // Вычисление итогового угла к следующей точке
+    const targetHeading = normalizeAngle(
+      calculateHeading({ lat: end.lat, lng: end.lng }, next)
+    );
+
+    let delta = targetHeading - start.heading;
+    if (delta > 180) delta -= 360;
+    if (delta < -180) delta += 360;
+
+    let startTs = null;
 
     /**
-     * Анимация полёта и поворота в одном цикле
+     * step — шаг анимации, вызывается requestAnimationFrame
+     * @param {DOMHighResTimeStamp} ts
      */
-    function animateSegmentWithRotation(start, end, next, onComplete) {
-        const speedH = 5; // м/с
-        const speedV = 5; // м/с
+    function step(ts) {
+      if (startTs === null) startTs = ts;
+      const progress = Math.min((ts - startTs) / totalTime, 1);
 
-        const distance = calculateDistance(start, end);
-        const durH = (distance / speedH) * 1000;
-        const durV = (Math.abs(end.alt - start.alt) / speedV) * 1000;
-        const totalDuration = Math.max(durH, durV);
+      const currLat = start.lat + (end.lat - start.lat) * progress;
+      const currLng = start.lng + (end.lng - start.lng) * progress;
+      const currAlt = start.alt + (end.alt - start.alt) * progress;
 
-        const finalHeading = normalizeAngle(
-            calculateHeading({ lat: end.lat, lng: end.lng }, next)
-        );
-        let rotation = finalHeading - start.heading;
-        if (rotation > 180) rotation -= 360;
-        if (rotation < -180) rotation += 360;
+      const currHeading = normalizeAngle(start.heading + delta * progress);
 
-        let startTime = null;
+      throttledSetPos(prev => ({
+        ...prev,
+        lat: currLat,
+        lng: currLng,
+        altitude: currAlt,
+        heading: currHeading
+      }));
 
-        function step(timestamp) {
-            if (!startTime) startTime = timestamp;
-            const t = Math.min((timestamp - startTime) / totalDuration, 1);
+      // Проверка столкновения
+      const externalAlt = getExternalFlightAltitude ? getExternalFlightAltitude() : null;
+      if (externalAlt !== null && externalAlt < -0.2) {
+        alert('Столкновение с землей!');
+        setIsMoving(false);
+        return;
+      }
 
-            const currLat = start.lat + (end.lat - start.lat) * t;
-            const currLng = start.lng + (end.lng - start.lng) * t;
-            const currAlt = start.alt + (end.alt - start.alt) * t;
-
-            const currHeading = normalizeAngle(start.heading + rotation * t);
-
-            throttledSet((prev) => ({
-                ...prev,
-                lat: currLat,
-                lng: currLng,
-                altitude: currAlt,
-                heading: currHeading,
-            }));
-
-            // Проверка столкновений
-            const fAlt = getExternalFlightAltitude ? getExternalFlightAltitude() : null;
-            if (fAlt !== null && fAlt < -0.2) {
-                alert('Столкновение с землей!');
-                setIsMoving(false);
-                return;
-            }
-
-            if (t < 1) {
-                requestAnimationFrame(step);
-            } else {
-                // Финальный сброс
-                throttledSet((prev) => ({
-                    ...prev,
-                    lat: end.lat,
-                    lng: end.lng,
-                    altitude: end.alt,
-                    heading: finalHeading,
-                }));
-                if (typeof onComplete === 'function') onComplete(finalHeading);
-            }
-        }
-
+      if (progress < 1) {
         requestAnimationFrame(step);
+      } else {
+        // Финальный кадр
+        throttledSetPos(prev => ({
+          ...prev,
+          lat: end.lat,
+          lng: end.lng,
+          altitude: end.alt,
+          heading: targetHeading
+        }));
+        if (typeof onComplete === 'function') onComplete(targetHeading);
+      }
     }
-};
+
+    requestAnimationFrame(step);
+  }
+}
 
 // --------------------------------------------------------------------------
 // ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
 
-/** Расстояние между двумя точками (м) — Haversine */
+/**
+ * calculateDistance — возвращает расстояние между двумя координатами (м)
+ * @param {{lat: number, lng: number}} start
+ * @param {{lat: number, lng: number}} end
+ * @returns {number}
+ */
 function calculateDistance(start, end) {
-    const R = 6371000;
-    const lat1 = (start.lat * Math.PI) / 180;
-    const lat2 = (end.lat * Math.PI) / 180;
-    const dLat = ((end.lat - start.lat) * Math.PI) / 180;
-    const dLng = ((end.lng - start.lng) * Math.PI) / 180;
+  const R = 6371000;
+  const φ1 = (start.lat * Math.PI) / 180;
+  const φ2 = (end.lat * Math.PI) / 180;
+  const Δφ = ((end.lat - start.lat) * Math.PI) / 180;
+  const Δλ = ((end.lng - start.lng) * Math.PI) / 180;
 
-    const a =
-        Math.sin(dLat / 2) ** 2 +
-        Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return R * c;
+  const a =
+    Math.sin(Δφ / 2) ** 2 +
+    Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) ** 2;
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
 }
 
-/** Угол (heading) между точками (0..360) */
+/**
+ * calculateHeading — вычисляет угол между двумя точками (0..360°)
+ * @param {{lat: number, lng: number}} start
+ * @param {{lat: number, lng: number}} end
+ * @returns {number}
+ */
 function calculateHeading(start, end) {
-    const dLng = end.lng - start.lng;
-    const dLat = end.lat - start.lat;
-    let heading = (Math.atan2(dLng, dLat) * 180) / Math.PI;
-    return normalizeAngle(heading);
+  const dLng = end.lng - start.lng;
+  const dLat = end.lat - start.lat;
+  const angle = (Math.atan2(dLng, dLat) * 180) / Math.PI;
+  return normalizeAngle(angle);
 }
 
-/** Нормализация угла в [0..360) */
+/**
+ * normalizeAngle — нормализует угол в диапазон [0, 360)
+ * @param {number} angle
+ * @returns {number}
+ */
 function normalizeAngle(angle) {
-    let result = angle % 360;
-    if (result < 0) result += 360;
-    return result;
+  let result = angle % 360;
+  if (result < 0) result += 360;
+  return result;
 }

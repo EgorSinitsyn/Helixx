@@ -1,4 +1,4 @@
-// src/services/route_transfer.js
+// src/components/route_transfer.js
 
 /**
  * Отправляет данные о миссии (дрона, маршрута, полигонов) на Python-сервер.
@@ -8,6 +8,7 @@
  * @param {Object} savedPolygons - Данные полигонов (GeoJSON или любой другой формат)
  * @returns {Promise<Object>} - Возвращает Promise с ответом сервера (JSON)
  */
+
 export async function sendMissionDataToServer(droneData, routePoints, savedPolygons) {
   // Формируем объект с нужными полями
   const payload = {
@@ -17,6 +18,7 @@ export async function sendMissionDataToServer(droneData, routePoints, savedPolyg
   };
 
   try {
+
     // Отправляем запрос на Flask-сервер
     const response = await fetch(
         `${process.env.REACT_APP_MEDIATOR_API}/get-mission`, {
