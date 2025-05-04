@@ -21,6 +21,12 @@ data:
   HOST: "0.0.0.0"
   PORT: "5006"
   MEDIATOR_URL: "http://mission-mediator:5005"     # service name внутри namespace
+  # --- для логов Jaeger ---
+  OTEL_SERVICE_NAME: "mission-handler"
+  OTEL_EXPORTER_JAEGER_ENDPOINT: "http://jaeger-collector.observability:14268/api/traces"
+  OTEL_TRACES_SAMPLER: "parentbased_traceidratio"      # (опц.) 100 % сэмплирование
+  OTEL_TRACES_SAMPLER_ARG: "1.0"
+
 ---
 # mission-mediator env
 apiVersion: v1
@@ -32,6 +38,12 @@ data:
   HOST: "0.0.0.0"
   PORT: "5005"
   MH_URL: "http://mission-handler:5006"
+  # --- для логов Jaeger ---
+  OTEL_SERVICE_NAME: "mission-mediator"
+  OTEL_EXPORTER_JAEGER_ENDPOINT: "http://jaeger-collector.observability:14268/api/traces"
+  OTEL_TRACES_SAMPLER: "parentbased_traceidratio"
+  OTEL_TRACES_SAMPLER_ARG: "1.0"
+
 ---
 # React env
 apiVersion: v1
