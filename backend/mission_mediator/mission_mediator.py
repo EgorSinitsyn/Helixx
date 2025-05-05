@@ -3,16 +3,16 @@ from flask_cors import CORS
 import folium
 import time
 import os
-import pathlib
 import traceback
 import requests
 
 
+# Создаём Flask-приложение и настраиваем CORS
 app = Flask(__name__, static_folder="mission_handler")
 CORS(app)
 
-# перед реализацией process_route вверху файла:
-MH_URL = os.getenv("MISSION_HANDLER_URL", "http://localhost:5006")
+# URL микросервиса (mission_handler) в Docker-сети
+MH_URL = os.getenv("MH_URL", "http://localhost:5006")
 
 # Изначально храним миссию в нормализованной форме
 last_mission_data = {
@@ -70,7 +70,7 @@ def mission_endpoint():
             # Если не удалось разобрать JSON, возвращаем ошибку 500
             return jsonify({
                 "status": "error",
-                "message": f"Ошибка при обработке POST-запроса: {str(e)}"
+                "message":  str(e)
             }), 500
 
     # GET – гарантируем, что структура всегда корректная
@@ -161,7 +161,7 @@ def mission_map():
 def process_route():
     """
     POST { offset: число }
-    -> запускает adjust_route, перезаписывает mission_map.html
+    -> запускает /сompute-route из другого микросевиса
        и возвращает JSON { success: True, mapUrl: "<URL карты>" }
     """
     data = request.get_json(force=True) or {}
@@ -217,4 +217,6 @@ def mission_map_file():
 
 
 if __name__ == "__main__":
+    host = os.getenv("HOST", "0.0.0.0")
+    port = int(os.getenv("PORT", 5005))
     app.run(host="0.0.0.0", port=5005, debug=True)

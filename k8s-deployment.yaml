@@ -1,0 +1,195 @@
+#############################################
+# Namespace
+#############################################
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: mission-planner
+---
+
+#############################################
+# ConfigMaps
+#############################################
+
+# mission-handler env
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mission-handler-env
+  namespace: mission-planner
+data:
+  HOST: "0.0.0.0"
+  PORT: "5006"
+  MEDIATOR_URL: "http://mission-mediator:5005"     # service name внутри namespace
+  # --- для логов Jaeger ---
+  OTEL_SERVICE_NAME: "mission-handler"
+  OTEL_EXPORTER_JAEGER_ENDPOINT: "http://jaeger-collector.observability:14268/api/traces"
+  OTEL_TRACES_SAMPLER: "parentbased_traceidratio"      # (опц.) 100 % сэмплирование
+  OTEL_TRACES_SAMPLER_ARG: "1.0"
+
+---
+# mission-mediator env
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mission-mediator-env
+  namespace: mission-planner
+data:
+  HOST: "0.0.0.0"
+  PORT: "5005"
+  MH_URL: "http://mission-handler:5006"
+  # --- для логов Jaeger ---
+  OTEL_SERVICE_NAME: "mission-mediator"
+  OTEL_EXPORTER_JAEGER_ENDPOINT: "http://jaeger-collector.observability:14268/api/traces"
+  OTEL_TRACES_SAMPLER: "parentbased_traceidratio"
+  OTEL_TRACES_SAMPLER_ARG: "1.0"
+
+---
+# React env
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: react-env
+  namespace: mission-planner
+data:
+  # API теперь доступен извне на IP Minikube и порту 30005
+  # во фронте пишем во время сборки полный URL
+  REACT_APP_MEDIATOR_API: "http://__MEDIATOR_LB_IP__:30005"
+#  REACT_APP_OTEL_EXPORTER_URL: "http://jaeger-collector.observability:4318/v1/traces"
+  REACT_APP_OTEL_EXPORTER_URL: "http://localhost:4318/v1/traces"
+---
+
+#############################################
+# Deployments
+#############################################
+
+# mission-handler
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mission-handler
+  namespace: mission-planner
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mission-handler
+  template:
+    metadata:
+      labels:
+        app: mission-handler
+    spec:
+      containers:
+        - name: mission-handler
+          image: mission-handler:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 5006
+          envFrom:
+            - configMapRef:
+                name: mission-handler-env
+---
+# mission-mediator
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mission-mediator
+  namespace: mission-planner
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mission-mediator
+  template:
+    metadata:
+      labels:
+        app: mission-mediator
+    spec:
+      containers:
+        - name: mission-mediator
+          image: mission-mediator:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 5005
+          envFrom:
+            - configMapRef:
+                name: mission-mediator-env
+---
+# react-frontend
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: react-frontend
+  namespace: mission-planner
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: react-frontend
+  template:
+    metadata:
+      labels:
+        app: react-frontend
+    spec:
+      containers:
+        - name: react-frontend
+          image: react-frontend:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 3000
+          envFrom:
+            - configMapRef:
+                name: react-env
+---
+
+#############################################
+# Services
+#############################################
+
+# mission-handler, внутри кластера
+apiVersion: v1
+kind: Service
+metadata:
+  name: mission-handler
+  namespace: mission-planner
+spec:
+  type: ClusterIP
+  selector:
+    app: mission-handler
+  ports:
+    - port: 5006
+      targetPort: 5006
+      protocol: TCP
+---
+# mission-mediator, открыт наружу через LoadBalancer
+apiVersion: v1
+kind: Service
+metadata:
+  name: mission-mediator
+  namespace: mission-planner
+spec:
+#  type: NodePort
+  type: LoadBalancer
+  selector:
+    app: mission-mediator
+  ports:
+    - port: 5005
+      targetPort: 5005
+#      nodePort: 30005     # снаружи (фиксированный)
+      protocol: TCP
+---
+# react-frontend, наружу NodePort
+apiVersion: v1
+kind: Service
+metadata:
+  name: react-frontend
+  namespace: mission-planner
+spec:
+  type: NodePort
+  selector:
+    app: react-frontend
+  ports:
+    - port: 3000          # внутри кластера
+      targetPort: 3000
+      nodePort: 30080     # снаружи minikube
+      protocol: TCP

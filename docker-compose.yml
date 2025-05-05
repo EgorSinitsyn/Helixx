@@ -1,0 +1,71 @@
+version: "3.8"
+
+networks:
+  mission-net:
+
+services:
+
+  # ---------------- mission-handler ----------------
+  mission_handler:
+    build:
+      context: ./backend/mission_handler
+    container_name: mission_handler
+    networks: [ mission-net ]
+    ports:
+      - "5006:5006"        # наружу, если нужно
+    environment:
+      HOST: "0.0.0.0"
+      PORT: "5006"
+      MEDIATOR_URL: "http://mission_mediator:5005"
+      OTEL_SERVICE_NAME: "mission-handler"
+      OTEL_EXPORTER_JAEGER_ENDPOINT: "http://jaeger:14268/api/traces"
+
+  # ---------------- mission-mediator ----------------
+  mission_mediator:
+    build:
+      context: ./backend/mission_mediator
+    container_name: mission_mediator
+    networks: [ mission-net ]
+    depends_on: [ mission_handler ]
+    ports:
+      - "5005:5005"
+    environment:
+      HOST: "0.0.0.0"
+      PORT: "5005"
+      MH_URL: "http://mission_handler:5006"
+      OTEL_SERVICE_NAME: "mission-mediator"
+      OTEL_EXPORTER_JAEGER_ENDPOINT: "http://jaeger:14268/api/traces"
+
+  # ---------------- фронт ----------------
+  react_frontend:
+    build:
+      context: ./frontend
+    container_name: react_frontend
+    networks: [ mission-net ]
+    depends_on:
+      - mission_mediator
+      - jaeger
+    ports:
+      - "3000:3000"
+    environment:
+#      HOST: "0.0.0.0"
+#      PORT: "3000"
+      REACT_APP_MEDIATOR_API: "http://localhost:5005"
+      REACT_APP_OTEL_EXPORTER_URL: "http://localhost:4318/v1/traces"
+
+  # ---------------- Jaeger (по желанию) ------------
+  jaeger:
+    image: jaegertracing/all-in-one:1.68.0
+    command:
+      - "--collector.otlp.enabled=true"
+      - "--collector.otlp.http.host-port=:4318"
+      - "--collector.otlp.http.cors.allowed-origins=*"
+      - "--collector.otlp.http.cors.allowed-headers=Content-Type"
+    container_name: jaeger
+    networks: [ mission-net ]
+    ports:
+      - "16686:16686"  # UI
+      - "4317:4317"    # OTLP gRPC
+      - "4318:4318"    # OTLP HTTP
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"

@@ -1,4 +1,4 @@
-// trees3D.js
+// src/components/trees3D.js
 
 import { MapboxOverlay } from '@deck.gl/mapbox';
 import { SimpleMeshLayer } from '@deck.gl/mesh-layers';

@@ -1,17 +1,17 @@
 // src/components/AdjustedRouteModal.js
-// Обновлённая версия: при нажатии «Изначальный маршрут» передаётся userRoutePoints
-// (снимок пользовательского маршрута) наверх, чтобы App заменил routePoints.
 
 import React, { useState, useEffect } from 'react';
 import Modal from 'react-modal';
+import { trace, context } from '@opentelemetry/api';
 
 Modal.setAppElement('#root');
+const tracer = trace.getTracer('react-frontend');
 
 /**
- * Props
+ * Props:
  *  - isOpen            : boolean
  *  - onClose           : () => void
- *  - initialMapUrl     : string – URL исходной Folium‑карты
+ *  - initialMapUrl     : string – URL исходной Folium-карты
  *  - routePoints       : array  – актуальный маршрут (может быть скорректированным)
  *  - userRoutePoints   : array  – оригинальный маршрут (снимок)
  *  - onRouteProcessed  : fn(points) – отдаём выбранный массив точек родителю
@@ -24,45 +24,116 @@ const AdjustedRouteModal = ({
   userRoutePoints = [],
   onRouteProcessed = () => {},
 }) => {
-  const [offset, setOffset] = useState(3);              // расстояние до полигона, м
-  const [mapUrl, setMapUrl] = useState(initialMapUrl);  // URL, отображаемый в <iframe>
+  const [offset, setOffset]     = useState(3);
+  const [mapUrl, setMapUrl]     = useState(initialMapUrl);
 
   const bustCache = (url) => `${url}?ts=${Date.now()}`;
 
-  // Когда окно открывается — показываем оригинальную карту и шлём userRoutePoints
+  // 1. Трассируем открытие модального окна и показ оригинального маршрута
   useEffect(() => {
-    if (isOpen) {
+    if (!isOpen) return;
+
+    const span = tracer.startSpan('AdjustedRouteModal.open', {
+      attributes: {
+        'initialMapUrl': initialMapUrl,
+        'userPoints.count': userRoutePoints.length,
+      }
+    });
+
+    try {
       setMapUrl(bustCache(initialMapUrl));
       onRouteProcessed(userRoutePoints);
+      span.addEvent('originalRouteProcessed', {
+        points_count: userRoutePoints.length
+      });
+    } catch (err) {
+      span.recordException(err);
+      console.error('[AdjustedRouteModal] error in open handler', err);
+    } finally {
+      span.end();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
 
-  // Показать исходный маршрут
+  // 2. Показать исходный маршрут
   const handleOriginalRoute = () => {
-    setMapUrl(bustCache(initialMapUrl));
-    onRouteProcessed(userRoutePoints);      // ← меняем routePoints в App на пользовательский снимок
+    const span = tracer.startSpan('AdjustedRouteModal.showOriginalRoute', {
+      attributes: {
+        'userPoints.count': userRoutePoints.length
+      }
+    });
+    try {
+      setMapUrl(bustCache(initialMapUrl));
+      onRouteProcessed(userRoutePoints);
+      span.addEvent('originalRouteProcessed', {
+        points_count: userRoutePoints.length
+      });
+    } catch (err) {
+      span.recordException(err);
+      console.error('[AdjustedRouteModal] error in handleOriginalRoute', err);
+    } finally {
+      span.end();
+    }
   };
 
-  // Показать скорректированный маршрут
+  // 3. Показать скорректированный маршрут через сервер
   const handleCorrectedRoute = async () => {
+    const span = tracer.startSpan('AdjustedRouteModal.processRoute', {
+      attributes: { offset }
+    });
+
     try {
-      const res = await fetch('http://localhost:5005/process-route', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ offset }),
-      });
-      const data = await res.json();
-      if (data.success && Array.isArray(data.routePoints)) {
-        setMapUrl(bustCache(data.mapUrl));
-        onRouteProcessed(data.routePoints);  // ← отдаём скорректированный список точек
-      } else {
-        console.error('[AdjustedRouteModal] bad response', data);
-        alert('Ошибка обработки маршрута на сервере');
-      }
+      return await context.with(
+        trace.setSpan(context.active(), span),
+        async () => {
+          span.addEvent('requestPreparing', { offset });
+          const res = await fetch(
+            `${process.env.REACT_APP_MEDIATOR_API}/process-route`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ offset }),
+            }
+          );
+          span.addEvent('requestSent');
+
+          if (!res.ok) {
+            const err = new Error(`Server error: ${res.status}`);
+            span.recordException(err);
+            throw err;
+          }
+
+          const data = await res.json();
+          span.addEvent('responseReceived', {
+            success: data.success === true
+          });
+
+          if (data.success && Array.isArray(data.routePoints)) {
+            setMapUrl(bustCache(data.mapUrl));
+            span.addEvent('mapUrlUpdated', { mapUrl: data.mapUrl });
+
+            onRouteProcessed(data.routePoints);
+            span.addEvent('adjustedRouteProcessed', {
+              points_count: data.routePoints.length
+            });
+
+            return data;
+          } else {
+            const err = new Error(`Bad response payload`);
+            span.recordException(err);
+            console.error('[AdjustedRouteModal] bad response', data);
+            alert('Ошибка обработки маршрута на сервере');
+            throw err;
+          }
+        }
+      );
     } catch (err) {
+      span.recordException(err);
       console.error('[AdjustedRouteModal] fetch failed', err);
       alert('Сбой запроса к серверу (см. консоль)');
+      // Пробросим ошибку дальше, если нужно
+      throw err;
+    } finally {
+      span.end();
     }
   };
 
@@ -96,10 +167,15 @@ const AdjustedRouteModal = ({
       </div>
 
       <div style={{ marginTop: '20px', textAlign: 'center' }}>
-        <button onClick={handleOriginalRoute} style={{ marginRight: '10px' }}>
+        <button
+          onClick={handleOriginalRoute}
+          style={{ marginRight: '10px' }}
+        >
           Изначальный маршрут
         </button>
-        <button onClick={handleCorrectedRoute}>Скорректированный маршрут</button>
+        <button onClick={handleCorrectedRoute}>
+          Скорректированный маршрут
+        </button>
       </div>
     </Modal>
   );

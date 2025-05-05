@@ -1,0 +1,71 @@
+# observability_stack.yaml
+
+namespaceOverride: observability
+
+# ---------------- Prometheus ----------------
+prometheus:
+  prometheusSpec:
+    retention: 7d
+    storageSpec: {}
+    serviceMonitorSelector: {}
+    podMonitorSelector: {}
+    serviceMonitorSelectorNilUsesHelmValues: true
+    podMonitorSelectorNilUsesHelmValues: true
+
+# ----------- Отключаем control-plane --------
+kubeControllerManager:
+  enabled: false    # порт 10257
+kubeScheduler:
+  enabled: false    # порт 10259
+kubeEtcd:
+  enabled: false    # порты 2381/2382
+
+# ---------------- node-exporter ----------------
+# DaemonSet, собирающий метрики хоста (CPU, RAM, FS, network)
+nodeExporter:
+  enabled: true          # по-умолчанию = true, добавим явно
+  service:
+    port: 9100           # метрики доступны на этом сервис-порту
+  resources: {}          # при желании лимиты/requests
+
+# ---------------- cAdvisor ----------------
+# Метрики каждого контейнера/kubelet'а
+kubelet:
+  serviceMonitor:
+    # Включаем отдельный эндпоинт /metrics/cadvisor
+    cAdvisor: true
+    # kubelet с k8s ≥1.17 требует https и токен
+    https: true
+    # Интервал опроса (по желанию)
+    interval: 30s
+    # Можно сузить порт (если нестандартный):
+    # port: https-metrics
+
+# ---------------- Grafana ----------------
+grafana:
+  adminUser: admin
+  adminPassword: admin
+
+  service:
+    type: NodePort
+    port: 3100          # порт сервиса внутри кластера
+    targetPort: 3000    # порт контейнера Grafana
+    nodePort: 31000     # внешний NodePort
+
+  ingress:
+    enabled: false
+
+  defaultDatasourceEnabled: false
+
+  additionalDataSources:
+    - name: Prometheus
+      type: prometheus
+      url: http://prom-stack-kube-prometheus-prometheus.observability:9090
+      access: proxy
+      isDefault: false
+
+    - name: Jaeger
+      type: jaeger
+      url: http://jaeger-query.observability:16686
+      access: proxy
+      isDefault: false

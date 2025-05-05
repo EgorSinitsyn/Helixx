@@ -1,0 +1,43 @@
+# observability_jaeger.yaml
+
+allInOne:
+  enabled: true
+
+  # 1) общий headless=false
+  service:
+    headless: false
+
+  # 2) для Query-сервиса
+  query:
+    service:
+      headless: false
+
+  # 3) для Collector-сервиса (хотя он у вас уже корректно выставился)
+  collector:
+    service:
+      headless: false
+
+  extraArgs:
+    - "--collector.otlp.enabled=true"
+    - "--collector.otlp.http.host-port=:4318"
+    - "--collector.otlp.http.cors.allowed-origins=*"
+    - "--collector.otlp.http.cors.allowed-headers=Content-Type"
+
+  image:
+    repository: jaegertracing/all-in-one
+    tag: "1.68.0"
+    pullPolicy: IfNotPresent
+
+# отключаем “лишние” компоненты — всё в одном pod’е
+agent:
+  enabled: false
+collector:
+  enabled: false
+query:
+  enabled: false
+
+storage:
+  type: memory
+provisionDataStore:
+  cassandra: false
+  elasticsearch: false

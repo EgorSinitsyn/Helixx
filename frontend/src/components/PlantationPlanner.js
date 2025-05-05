@@ -1,36 +1,62 @@
+// src/components/PlantationPlanner.js
+
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import ReactDOM from 'react-dom';
 import { generateTreePointsFromRow } from './trees3D.js';
 
-// Компонент портала для модального окна (рендерит содержимое в document.body)
+/**
+ * DraggableModalPortal — портал для рендеринга модальных окон в body
+ * @param {{ children: React.ReactNode }} props
+ */
 const DraggableModalPortal = ({ children }) => {
   return ReactDOM.createPortal(children, document.body);
 };
 
-// Перетаскиваемое окно
+/**
+ * DraggableWindow — перетаскиваемое модальное окно
+ * @param {{ children: React.ReactNode, onClose: Function, style?: React.CSSProperties }} props
+ */
 const DraggableWindow = ({ children, onClose, style }) => {
   const [dragging, setDragging] = useState(false);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const [position, setPosition] = useState({ x: 100, y: 100 });
   const windowRef = useRef(null);
 
-  const handleHeaderMouseDown = (e) => {
+  /**
+   * handleHeaderMouseDown — запускает процесс перетаскивания окна
+   * @param {MouseEvent} e
+   */
+  const handleHeaderMouseDown = useCallback((e) => {
     e.stopPropagation();
     setDragging(true);
     const rect = windowRef.current.getBoundingClientRect();
     setOffset({ x: e.clientX - rect.left, y: e.clientY - rect.top });
-  };
+  }, []);
 
+  /**
+   * handleMouseMove — обрабатывает движение мыши при перетаскивании
+   * @param {MouseEvent} e
+   */
   const handleMouseMove = useCallback((e) => {
     if (dragging) {
       setPosition({ x: e.clientX - offset.x, y: e.clientY - offset.y });
     }
   }, [dragging, offset]);
 
+  /**
+   * handleMouseUp — завершает перетаскивание
+   */
   const handleMouseUp = useCallback(() => {
     setDragging(false);
   }, []);
 
+  /**
+   * Следит за глобальными событиями мыши во время перетаскивания окна:
+   * - при начале перетаскивания (dragging = true) навешивает слушатели mousemove и mouseup на window,
+   *   чтобы двигать окно и завершать перетаскивание при отпускании кнопки мыши;
+   * - при окончании перетаскивания (dragging = false) или размонтировании компонента
+   *   сразу удаляет эти слушатели, чтобы избежать утечек памяти.
+   */
   useEffect(() => {
     if (dragging) {
       window.addEventListener('mousemove', handleMouseMove);
@@ -46,163 +72,134 @@ const DraggableWindow = ({ children, onClose, style }) => {
   }, [dragging, handleMouseMove, handleMouseUp]);
 
   return (
+    <div
+      ref={windowRef}
+      style={{
+        position: 'fixed',
+        top: position.y,
+        left: position.x,
+        backgroundColor: 'gray',
+        color: 'white',
+        border: '1px solid #ccc',
+        padding: '10px',
+        zIndex: 2000,
+        ...style,
+      }}
+    >
       <div
-          ref={windowRef}
-          style={{
-            position: 'fixed',
-            top: position.y,
-            left: position.x,
-            backgroundColor: 'gray',
-            color: 'white',
-            border: '1px solid #ccc',
-            padding: '10px',
-            zIndex: 2000,
-            ...style,
-          }}
+        onMouseDown={handleHeaderMouseDown}
+        style={{
+          cursor: dragging ? 'grabbing' : 'grab',
+          padding: '5px',
+          borderBottom: '1px solid #aaa',
+          marginBottom: '10px',
+        }}
+      />
+      {children}
+      <button
+        onClick={onClose}
+        style={{
+          position: 'absolute',
+          top: '2px',
+          right: '2px',
+          background: 'transparent',
+          border: 'none',
+          cursor: 'pointer',
+          fontWeight: 'bold',
+          color: 'white',
+        }}
       >
-        {/* Заголовок окна для перетаскивания */}
-        <div
-            onMouseDown={handleHeaderMouseDown}
-            style={{
-              cursor: dragging ? 'grabbing' : 'grab',
-              padding: '5px',
-              borderBottom: '1px solid #aaa',
-              marginBottom: '10px',
-            }}
-        >
-        </div>
-        {children}
-        <button
-            onClick={onClose}
-            style={{
-              position: 'absolute',
-              top: '2px',
-              right: '2px',
-              background: 'transparent',
-              border: 'none',
-              cursor: 'pointer',
-              fontWeight: 'bold',
-              color: 'white',
-            }}
-        >
-          X
-        </button>
-      </div>
+        X
+      </button>
+    </div>
   );
 };
 
+/**
+ * PlantationPlanner — компонент планировщика насаждений
+ * @param {Object} props
+ */
 const PlantationPlanner = ({
-                             selectedPoint,
-                             onTreeHeightChange,
-                             onCrownSizeChange,
-                             onSavePoint,
-                             onCancelPoint,
-                             onCancelPlantation,
-                             onConfirmPlantation,
-                             treePoints,
-                             onRemoveTreePoint,
-                             onTreeHover,
-                             onTreeLeave,
-                             onClose,
-                             isRowModalOpen,
-                             setIsRowModalOpen,
-                             setIsRulerOn,
-                             onOpenRowModal,
-                             onCloseRowModal,
-                             rowPoints,
-                             setRowPoints,
-                             setPlantationPoints
-                           }) => {
+  selectedPoint,
+  onTreeHeightChange,
+  onCrownSizeChange,
+  onSavePoint,
+  onCancelPoint,
+  onCancelPlantation,
+  onConfirmPlantation,
+  treePoints,
+  onRemoveTreePoint,
+  onTreeHover,
+  onTreeLeave,
+  onClose,
+  isRowModalOpen,
+  setIsRowModalOpen,
+  setIsRulerOn,
+  onOpenRowModal,
+  onCloseRowModal,
+  rowPoints,
+  setRowPoints,
+  setPlantationPoints,
+}) => {
   const [hoveredPointIndex, setHoveredPointIndex] = useState(null);
   const [rowSettings, setRowSettings] = useState({ treeHeight: '', crownSize: '', step: '' });
   const listRef = useRef(null);
 
-  // Функции открытия/закрытия модального окна
-  const handleOpenRowModal = () => {
+  /**
+   * handleOpenRowModal — открывает окно разметки рядов и включает режим линейки
+   */
+  const handleOpenRowModal = useCallback(() => {
     if (onOpenRowModal) onOpenRowModal();
     setIsRowModalOpen(true);
     setIsRulerOn(true);
-  };
+  }, [onOpenRowModal, setIsRowModalOpen, setIsRulerOn]);
 
-  const handleCloseRowModal = () => {
+  /**
+   * handleCloseRowModal — закрывает окно разметки рядов и выключает режим линейки
+   */
+  const handleCloseRowModal = useCallback(() => {
     if (onCloseRowModal) onCloseRowModal();
     setIsRowModalOpen(false);
     setIsRulerOn(false);
     setRowPoints([]);
-  };
+  }, [onCloseRowModal, setIsRowModalOpen, setIsRulerOn, setRowPoints]);
 
-  // Функция удаления точки ряда
-  const deleteRowPoint = (index) => {
+  /**
+   * deleteRowPoint — удаляет точку ряда по индексу
+   * @param {number} index
+   */
+  const deleteRowPoint = useCallback((index) => {
     setRowPoints(prev => prev.filter((_, i) => i !== index));
-  };
+  }, [setRowPoints]);
 
-  // Функция отмены
-  const handleCancelRows = () => {
-    // setRowPoints([]);
+  /**
+   * handleCancelRows — отменяет разметку рядов и вновь открывает окно для корректировки
+   */
+  const handleCancelRows = useCallback(() => {
     setRowSettings({ treeHeight: '', crownSize: '', step: '' });
-    // Перезапуск режима линейки: временно выключаем isRulerOn и сразу же включаем.
-    // setIsRulerOn(false);
-    // setTimeout(() => {
-    //   setIsRulerOn(true);
-    // }, 2000);
-    // Закрываем окно разметки рядов
     handleCloseRowModal();
-    // Через небольшой таймаут (например, 500 мс) повторно открываем окно
-    setTimeout(() => {
-      handleOpenRowModal();
-    }, 10);
+    setTimeout(handleOpenRowModal, 10);
+  }, [handleCloseRowModal, handleOpenRowModal]);
 
-  };
-
-  // Функция подтверждения ряда: здесь окно закрывается (если требуется) или можно оставить его открытым
-  const handleConfirmRows = () => {
-    // Проверка на пустоту полей
-    if (!rowSettings.treeHeight || !rowSettings.crownSize || !rowSettings.step) {
-      alert("Пожалуйста, заполните все поля");
+  /**
+   *  handleConfirmRows — проверяет настройки рядов и генерирует точки деревьев
+   */
+  const handleConfirmRows = useCallback(() => {
+    const { treeHeight, crownSize, step } = rowSettings;
+    const numRegex = /^-?\d+(\.\d+)?$/;
+    if (!treeHeight || !crownSize || !step || !numRegex.test(treeHeight) || !numRegex.test(crownSize) || !numRegex.test(step)) {
+      alert('Пожалуйста, заполните все поля числовыми значениями');
       return;
     }
-
-    // Регулярное выражение для чисел (целые и десятичные, допускается знак минус)
-    const numberRegex = /^-?\d+(\.\d+)?$/;
-
-    if (
-        !numberRegex.test(rowSettings.treeHeight) ||
-        !numberRegex.test(rowSettings.crownSize) ||
-        !numberRegex.test(rowSettings.step)
-    ) {
-      alert("Значения в полях должны быть числовыми");
-      return;
-    }
-
-    // Преобразование значений в числа
-    const treeHeightNum = parseFloat(rowSettings.treeHeight);
-    const crownSizeNum = parseFloat(rowSettings.crownSize);
-    const stepNum = parseFloat(rowSettings.step);
-
-    // Дополнительная проверка, на случай, если что-то пойдёт не так
-    if (isNaN(treeHeightNum) || isNaN(crownSizeNum) || isNaN(stepNum)) {
-      alert("Значения в полях должны быть числовыми");
-      return;
-    }
-
-    const newTreePoints = generateTreePointsFromRow(rowPoints, {
-      treeHeight: rowSettings.treeHeight,
-      crownSize: rowSettings.crownSize,
-      step: rowSettings.step,
-    });
-    setPlantationPoints(prev => [...prev, ...newTreePoints]);
-    // Можно оставить окно открытым, если требуется, но здесь вызываем закрытие:
-    // handleCloseRowModal();
+    const newPoints = generateTreePointsFromRow(rowPoints, { treeHeight, crownSize, step });
+    setPlantationPoints(prev => [...prev, ...newPoints]);
     setRowPoints([]);
     onConfirmPlantation();
-  };
+  }, [rowSettings, rowPoints, setPlantationPoints, setRowPoints, onConfirmPlantation]);
 
-
-  // Прокрутка списка точек ряда вниз при добавлении новой точки
+  // Прокручивает список вниз при добавлении новой точки ряда
   useEffect(() => {
-    if (listRef.current) {
-      listRef.current.scrollTop = listRef.current.scrollHeight;
-    }
+    if (listRef.current) listRef.current.scrollTop = listRef.current.scrollHeight;
   }, [rowPoints]);
 
   return (
@@ -371,6 +368,7 @@ const PlantationPlanner = ({
   );
 };
 
+// Стили для PlantationPlanner и модалки
 const styles = {
   sidebar: {
     position: 'fixed',
