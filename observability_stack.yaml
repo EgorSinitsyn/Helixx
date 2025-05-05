@@ -1,3 +1,5 @@
+# observability_stack.yaml
+
 namespaceOverride: observability
 
 # ---------------- Prometheus ----------------
