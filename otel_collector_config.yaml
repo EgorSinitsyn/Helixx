@@ -1,0 +1,89 @@
+# otel_collector_config.yaml
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: otel-collector-config
+  namespace: observability
+data:
+  otel-collector-config.yaml: |
+    receivers:
+      otlp:
+        protocols:
+          http:
+            endpoint: "0.0.0.0:4318"
+            cors:
+              # поддерживаемые поля: allowed_origins, allowed_headers, max_age  [oai_citation:0‡pkg.go.dev](https://pkg.go.dev/go.opentelemetry.io/collector/config/confighttp)
+              allowed_origins: ["*"]
+              allowed_headers: ["*"]
+              max_age: 300
+          grpc:
+            endpoint: "0.0.0.0:4317"
+
+    processors:
+      batch: {}
+
+    exporters:
+      # вместо удалённого в последних релизах jaeger-exporter используем otlphttp  [oai_citation:1‡OpenTelemetry](https://opentelemetry.io/blog/2023/jaeger-exporter-collector-migration/?utm_source=chatgpt.com)
+      otlphttp:
+        endpoint: "http://jaeger-collector.observability:4318"
+
+    service:
+      pipelines:
+        traces:
+          receivers: [otlp]
+          processors: [batch]
+          exporters: [otlphttp]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: otel-collector
+  namespace: observability
+  labels:
+    app: otel-collector
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: otel-collector
+  template:
+    metadata:
+      labels:
+        app: otel-collector
+    spec:
+      containers:
+        - name: otel-collector
+          image: otel/opentelemetry-collector-contrib:latest
+          # убираем command, оставляем ENTRYPOINT образа; задаём только args
+          args:
+            - "--config=/conf/otel-collector-config.yaml"
+          ports:
+            - containerPort: 4318  # HTTP OTLP
+            - containerPort: 4317  # gRPC OTLP
+          volumeMounts:
+            - name: config
+              mountPath: /conf
+      volumes:
+        - name: config
+          configMap:
+            name: otel-collector-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: otel-collector
+  namespace: observability
+spec:
+  type: ClusterIP
+  selector:
+    app: otel-collector
+  ports:
+    - name: otlp-http
+      protocol: TCP
+      port: 4318
+      targetPort: 4318
+    - name: otlp-grpc
+      protocol: TCP
+      port: 4317
+      targetPort: 4317
