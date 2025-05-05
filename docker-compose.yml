@@ -42,19 +42,30 @@ services:
       context: ./frontend
     container_name: react_frontend
     networks: [ mission-net ]
-    depends_on: [ mission_mediator ]
+    depends_on:
+      - mission_mediator
+      - jaeger
     ports:
       - "3000:3000"
     environment:
+#      HOST: "0.0.0.0"
+#      PORT: "3000"
       REACT_APP_MEDIATOR_API: "http://localhost:5005"
+      REACT_APP_OTEL_EXPORTER_URL: "http://localhost:4318/v1/traces"
 
   # ---------------- Jaeger (по желанию) ------------
   jaeger:
     image: jaegertracing/all-in-one:1.68.0
+    command:
+      - "--collector.otlp.enabled=true"
+      - "--collector.otlp.http.host-port=:4318"
+      - "--collector.otlp.http.cors.allowed-origins=*"
+      - "--collector.otlp.http.cors.allowed-headers=Content-Type"
     container_name: jaeger
     networks: [ mission-net ]
     ports:
       - "16686:16686"  # UI
       - "4317:4317"    # OTLP gRPC
+      - "4318:4318"    # OTLP HTTP
     environment:
       COLLECTOR_OTLP_ENABLED: "true"
