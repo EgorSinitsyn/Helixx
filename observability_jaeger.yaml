@@ -1,15 +1,34 @@
-# Корневые ключи — как в values.yaml самого чарта
+# observability_jaeger.yaml
+
 allInOne:
   enabled: true
+
+  # 1) общий headless=false
+  service:
+    headless: false
+
+  # 2) для Query-сервиса
+  query:
+    service:
+      headless: false
+
+  # 3) для Collector-сервиса (хотя он у вас уже корректно выставился)
+  collector:
+    service:
+      headless: false
+
+  extraArgs:
+    - "--collector.otlp.enabled=true"
+    - "--collector.otlp.http.host-port=:4318"
+    - "--collector.otlp.http.cors.allowed-origins=*"
+    - "--collector.otlp.http.cors.allowed-headers=Content-Type"
+
   image:
     repository: jaegertracing/all-in-one
     tag: "1.68.0"
     pullPolicy: IfNotPresent
-  service:
-    type: ClusterIP
-    port: 16686        # UI  http://jaeger-query:16686
 
-# отдельные компоненты выключаем ─ они уже внутри all-in-one
+# отключаем “лишние” компоненты — всё в одном pod’е
 agent:
   enabled: false
 collector:
@@ -17,7 +36,6 @@ collector:
 query:
   enabled: false
 
-# в памяти, без Cassandra / ES
 storage:
   type: memory
 provisionDataStore:
