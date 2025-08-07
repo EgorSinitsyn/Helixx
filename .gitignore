@@ -27,3 +27,9 @@ yarn-error.log*
 # Файлы маршрута
 /backend/mission_handler/mission_map.html
 /backend/mission_handler/offset_route.json
+
+# .txt
+k8s-deployment_instructions.txt
+k8sss.txt
+minikube_deploy_final.txt
+observability_instructions.txt
