@@ -5,8 +5,9 @@ networks:
 
 services:
 
-  # ---------------- mission-handler ----------------
+  # ---------------- Backend: :mission-handler ----------------
   mission_handler:
+    image: helixx-mission_handler:0.9.3
     build:
       context: ./backend/mission_handler
     container_name: mission_handler
@@ -20,8 +21,9 @@ services:
       OTEL_SERVICE_NAME: "mission-handler"
       OTEL_EXPORTER_JAEGER_ENDPOINT: "http://jaeger:14268/api/traces"
 
-  # ---------------- mission-mediator ----------------
+  # ---------------- Backend: mission-mediator ----------------
   mission_mediator:
+    image: helixx-mission_mediator:0.9.3
     build:
       context: ./backend/mission_mediator
     container_name: mission_mediator
@@ -36,8 +38,9 @@ services:
       OTEL_SERVICE_NAME: "mission-mediator"
       OTEL_EXPORTER_JAEGER_ENDPOINT: "http://jaeger:14268/api/traces"
 
-  # ---------------- фронт ----------------
+  # ---------------- Frontend: react_frontend ----------------
   react_frontend:
+    image: helixx-react_frontend:0.9.3
     build:
       context: ./frontend
     container_name: react_frontend
@@ -48,12 +51,14 @@ services:
     ports:
       - "3000:3000"
     environment:
-#      HOST: "0.0.0.0"
-#      PORT: "3000"
-      REACT_APP_MEDIATOR_API: "http://localhost:5005"
-      REACT_APP_OTEL_EXPORTER_URL: "http://localhost:4318/v1/traces"
+#       HOST: "0.0.0.0"
+#       PORT: "3000"
+#       REACT_APP_MEDIATOR_API: "http://localhost:5005"
+#       REACT_APP_OTEL_EXPORTER_URL: "http://localhost:4318/v1/traces"
+       REACT_APP_MEDIATOR_API: "http://mission_mediator:5005"
+       REACT_APP_OTEL_EXPORTER_URL: "http://jaeger:4318/v1/traces"
 
-  # ---------------- Jaeger (по желанию) ------------
+  # ---------------- Jaeger ------------
   jaeger:
     image: jaegertracing/all-in-one:1.68.0
     command:
