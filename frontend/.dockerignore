@@ -2,6 +2,8 @@
 node_modules
 build
 
+.dockerignore
+
 # служебные и «лишние» файлы
 .git
 *.log
