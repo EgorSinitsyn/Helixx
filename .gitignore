@@ -11,6 +11,9 @@
 # production
 /build
 
+# cache
+__pycache__/
+
 # misc
 .gitignore
 .DS_Store
@@ -25,11 +28,16 @@ yarn-debug.log*
 yarn-error.log*
 
 # Файлы маршрута
-/backend/mission_handler/mission_map.html
-/backend/mission_handler/offset_route.json
+backend/mission_handler/mission_map.html
+backend/mission_handler/offset_route.json
 
-# .txt
+# Файлы с исследовательским анализом данных
+/backend/*.ipynb
+
+# .txt и .md
 k8s-deployment_instructions.txt
 k8sss.txt
 minikube_deploy_final.txt
 observability_instructions.txt
+/backend/docker.md
+
