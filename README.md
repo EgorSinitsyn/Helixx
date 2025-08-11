@@ -32,7 +32,7 @@
 - **Helm** >= 3.7 (пакетный менеджер для Kubernetes)
 
 
-## Установка
+## Установка и развертывание
 1. Клонируйте репозиторий:
 ```bash
    git clone https://github.com/EgorSinitsyn/Helixx
@@ -41,6 +41,7 @@
 ```bash
    cd ~/Helixx/
 ```
+___
 
 ### Локальный запуск
 1. Установка зависимостей:
@@ -127,6 +128,7 @@ chmod+x start.sh
 ./start.sh
 ```
 3. Открыть браузер и перейти по адресу [http://localhost:3000](http://localhost:3000)
+___
 
 ### Запуск через Docker-compose
 1. Аунтификация в Docker Hub:
@@ -139,6 +141,133 @@ docker-compose up --build -d
 ```
 3. Открыть браузер и перейти по адресу контейнера react_frontend
 4. Посмотреть адрес контейнера Jaeger и перейти по нему в браузере для просмотра трейсов
+
+___
+
+### Запуск в Docker Swarm
+
+#### Делаем multi-arch образы
+
+1. Cоздать и активировать отдельный билдер (однократно)
+  ```bash
+  docker buildx create --name multi --driver docker-container --use
+  docker buildx inspect --bootstrap
+  ```
+
+2. Логин в реестр
+```bash
+docker login
+```
+
+3. Сборка и пуш образов в Docker registry
+```bash
+# mission-handler
+docker buildx build --platform linux/amd64,linux/arm64 \
+  -t ouhom/helixx-mission_handler:0.9.3 \
+  ./backend/mission_handler --push
+
+# mission-mediator
+docker buildx build --platform linux/amd64,linux/arm64 \
+  -t ouhom/helixx-mission_mediator:0.9.3 \
+  ./backend/mission_mediator --push
+
+# react-frontend
+# Укажите публичные адреса вашего API-сервера и OTLP/HTTP
+PUBLIC_IP=<ВАШ_ПУБЛИЧНЫЙ_IP>
+
+docker buildx build --platform linux/amd64,linux/arm64 \
+  -t ouhom/helixx-react_frontend:0.9.4 \
+  --build-arg REACT_APP_MEDIATOR_API=http://$PUBLIC_IP:5005 \
+  --build-arg REACT_APP_OTEL_EXPORTER_URL=http://$PUBLIC_IP:4318/v1/traces \
+  ./frontend --push
+```
+
+4. Проверка манифеста
+```bash
+docker buildx imagetools inspect <DOCKER_USERNAME>/helixx-react_frontend:0.9.4
+docker buildx imagetools inspect <DOCKER_USERNAME>/helixx-mission_handler:0.9.3
+docker buildx imagetools inspect <DOCKER_USERNAME>/helixx-mission_mediator:0.9.3
+```
+
+#### Подготовка кластера swarm
+
+1. Узнаем свой внешний IP
+```bash
+MANAGER_IP=$(curl ifconfig.me)
+
+echo $MANAGER_IP  
+```
+
+2. Инициализация менеджера (мастер-узла)
+```bash
+docker swarm init --advertise-addr $MANAGER_IP
+
+# При необходимости повторно получить токен для воркера:
+docker swarm join-token worker
+```
+
+3. На воркер-ноде выполните команду из join-token, например:
+```bash
+docker swarm join --token <TOKEN> <MANAGER_PRIVATE_IP>:2377
+```
+
+4. Проверяем статус
+```bash
+docker node ls
+```
+
+5. Создаем overlay-сети
+```bash
+docker network create --driver overlay --attachable mission-net
+```
+
+6. Проверка на синтаксис конфига
+```bash
+docker stack config -c docker-stack.yml
+```
+
+7. Деплой стека
+```bash
+docker stack deploy -c docker-stack.yml mission
+```
+
+8. Полезные команды:
+```bash
+# просмотр логов сервиса
+docker service logs -f <service_name>
+
+# проверка состояния нод
+docker node ls
+# Подробная информация по конкретной ноде
+docker node inspect <NODE_NAME> --pretty
+
+# проверка состояния сервисов из стэка
+docker stack ps <STACK_NAME>
+
+# Фильтр по конкретному сервису
+docker service ps <SERVICE_NAME>
+
+# Список всех сервисов в стеке
+docker stack services <STACK_NAME>
+# Информация по конкретному сервису
+docker service inspect <SERVICE_NAME> --pretty
+# Логи сервиса (все реплики)
+docker service logs -f <SERVICE_NAME>
+# Логи сервиса с указанием реплики
+docker service logs -f <SERVICE_NAME> --tail 100
+
+# Rolling-update на новый тег:
+docker service update --image ouhom/helixx-react_frontend:0.9.5 mission_react_frontend
+docker service update --image ouhom/helixx-mission_handler:0.9.4 mission_mission_handler
+docker service update --image ouhom/helixx-mission_mediator:0.9.4 mission_mission_mediator
+
+# Откат
+docker service update --rollback mission_react_frontend
+
+# Масштабирование:
+docker service scale mission_mission_mediator=2 mission_mission_handler=2
+```
+___
 
 ### Запуск через Minikube и настройка мониторинга
 #### Запуск кластера и сборка контейнеров
