@@ -3,12 +3,16 @@ version: "3.8"
 networks:
   mission-net:
     external: true
+    name: mission-net
+  observability-net:
+    external: true
+    name: observability-net
 
 services:
 
   mission_handler:
     image: ouhom/helixx-mission_handler:0.9.3
-    networks: [ mission-net ]
+    networks: [ mission-net, observability-net ]
     ports:
       - "5006:5006"
     environment:
@@ -20,7 +24,7 @@ services:
     deploy:
       replicas: 1
       restart_policy:
-        condition: on-failure
+        condition: any
         delay: 3s
         max_attempts: 10
       update_config:
@@ -45,7 +49,7 @@ services:
 
   mission_mediator:
     image: ouhom/helixx-mission_mediator:0.9.3
-    networks: [ mission-net ]
+    networks: [ mission-net, observability-net ]
     ports:
       - "5005:5005"
     environment:
@@ -57,7 +61,7 @@ services:
     deploy:
       replicas: 1
       restart_policy:
-        condition: on-failure
+        condition: any
         delay: 3s
         max_attempts: 10
       update_config:
@@ -81,15 +85,14 @@ services:
       retries: 3
 
   react_frontend:
-    # В ЭТОМ образе адреса API уже встроены на этапе сборки
     image: ouhom/helixx-react_frontend:0.9.4
-    networks: [ mission-net ]
+    networks: [ mission-net, observability-net ]
     ports:
       - "3000:3000"
     deploy:
       replicas: 1
       restart_policy:
-        condition: on-failure
+        condition: any
       update_config:
         order: start-first
         parallelism: 1
@@ -104,24 +107,3 @@ services:
       placement:
         constraints:
           - node.role == worker
-
-  jaeger:
-    image: jaegertracing/all-in-one:1.68.0
-    command:
-      - "--collector.otlp.enabled=true"
-      - "--collector.otlp.http.host-port=:4318"
-      - "--collector.otlp.http.cors.allowed-origins=*"
-      - "--collector.otlp.http.cors.allowed-headers=Content-Type"
-    networks: [ mission-net ]
-    ports:
-      - "16686:16686"  # UI
-      - "4317:4317"    # OTLP gRPC
-      - "4318:4318"    # OTLP HTTP
-      - "14268:14268"  # Jaeger Thrift HTTP
-    deploy:
-      replicas: 1
-      restart_policy:
-        condition: on-failure
-      placement:
-        constraints:
-          - node.role == manager
