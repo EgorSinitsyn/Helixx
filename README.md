@@ -228,55 +228,10 @@ sudo sysctl -w vm.max_map_count=262144
 echo "vm.max_map_count=262144" | sudo tee /etc/sysctl.d/99-opensearch.conf
 sudo sysctl --system
 ```
-7. На мастере сохраняем конфиг
-```bash
-cat > fluent-bit.conf <<'EOF'
-[SERVICE]
-    Flush        1
-    Log_Level    info
-    Parsers_File /fluent-bit/etc/parsers.conf
 
-[INPUT]
-    Name              tail
-    Path              /var/lib/docker/containers/*/*-json.log
-    Parser            docker
-    Tag               docker.*
-    Refresh_Interval  5
-    Skip_Long_Lines   On
-    Mem_Buf_Limit     50MB
-    DB                /tmp/flb_tail.db
+7. На мастере создаем конфиг `./fluent-bit.conf`
 
-[FILTER]
-    Name         docker
-    Match        docker.*
-    Docker_Mode  On
-    Merge_Log    On
-    Keep_Log     Off
-    Labels       On
-    Env          On
-
-[FILTER]
-    Name          parser
-    Match         docker.*
-    Key_Name      message
-    Parser        json
-    Reserve_Data  On
-
-[OUTPUT]
-    Name               es
-    Match              docker.*
-    Host               opensearch
-    Port               9200
-    Logstash_Format    On
-    Replace_Dots       On
-    Suppress_Type_Name On
-    # HTTP_User          admin
-    # HTTP_Passwd        ChangeMe_2025!
-    Retry_Limit        False
-EOF
-```
-
-8. Создаем swarm конфиг
+<!-- 8. Создаем swarm конфиг
 ```bash
 # создаем и скармливаем конфиг
 docker config create fb_conf fluent-bit.conf 
@@ -287,38 +242,38 @@ docker config ls | grep fb_conf
 # детализация скормленной конфигурации
 docker service inspect monitoring_fluentbit \
   -f '{{json .Spec.TaskTemplate.ContainerSpec.Configs}}' | jq 
-```
+``` -->
 
-9. Валидаия стэка monitoring и деплой
+8. Валидаия стэка monitoring и деплой
 ```bash
 docker stack config -c docker-stack-monitoring.yml helixx-app
 docker stack deploy -c docker-stack-monitoring.yml monitoring
 watch -n1 'docker stack services monitoring'
 ```
 
-10. Патчим контейнер monitoring_opensearch для доступа в админку
+9. Патчим контейнер monitoring_opensearch для доступа в админку
 ```bash
 docker service update \
   --env-add OPENSEARCH_INITIAL_ADMIN_PASSWORD='ChangeMe_2025!' \
   monitoring_opensearch
 ```
 
-11. Валидация и деплой стэка с приложением
+10. Валидация и деплой стэка с приложением
 ```bash
 docker stack config -c docker-stack.yml helixx-app
 docker stack deploy -c docker-stack.yml helixx-app
 watch -n1 'docker stack services helixx-app'
 ```
 
-12. Доступность сервисов:
+11. Доступность сервисов:
 * Application – `<IP>:3000`
 * Jaeger – `<IP>:16686`
 * OpenSearch – `<IP>:5601`
 
-13. Устанавливаем Portainer:
+12. Устанавливаем Portainer:
 https://docs.portainer.io/start/install-ce/server/swarm/linux
 
-14. Полезные команды:
+13. Полезные команды:
 ```bash
 # просмотр логов сервиса
 docker service logs -f <service_name>
