@@ -105,5 +105,4 @@ services:
 
 configs:
   fb_conf:
-    external: true
-    name: fb_conf
+    file: ./fluent-bit.conf
