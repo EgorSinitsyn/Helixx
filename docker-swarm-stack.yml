@@ -1,0 +1,109 @@
+version: "3.8"
+
+networks:
+  mission-net:
+    external: true
+    name: mission-net
+  observability-net:
+    external: true
+    name: observability-net
+
+services:
+
+  mission_handler:
+    image: ouhom/helixx-mission_handler:0.9.3
+    networks: [ mission-net, observability-net ]
+    ports:
+      - "5006:5006"
+    environment:
+      HOST: "0.0.0.0"
+      PORT: "5006"
+      MEDIATOR_URL: "http://mission_mediator:5005"
+      OTEL_SERVICE_NAME: "mission-handler"
+      OTEL_EXPORTER_JAEGER_ENDPOINT: "http://jaeger:14268/api/traces"
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: any
+        delay: 3s
+        max_attempts: 10
+      update_config:
+        order: start-first
+        parallelism: 1
+        delay: 5s
+        monitor: 10s
+        failure_action: rollback
+        max_failure_ratio: 0.1
+      rollback_config:
+        order: start-first
+        parallelism: 1
+        delay: 5s
+      placement:
+        constraints:
+          - node.role == worker
+    healthcheck:
+      test: ["CMD-SHELL", "python -c 'import socket; s=socket.socket(); s.settimeout(2); s.connect((\"127.0.0.1\",5006)); s.close()' || exit 1"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+
+  mission_mediator:
+    image: ouhom/helixx-mission_mediator:0.9.3
+    networks: [ mission-net, observability-net ]
+    ports:
+      - "5005:5005"
+    environment:
+      HOST: "0.0.0.0"
+      PORT: "5005"
+      MH_URL: "http://mission_handler:5006"
+      OTEL_SERVICE_NAME: "mission-mediator"
+      OTEL_EXPORTER_JAEGER_ENDPOINT: "http://jaeger:14268/api/traces"
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: any
+        delay: 3s
+        max_attempts: 10
+      update_config:
+        order: start-first
+        parallelism: 1
+        delay: 5s
+        monitor: 10s
+        failure_action: rollback
+        max_failure_ratio: 0.1
+      rollback_config:
+        order: start-first
+        parallelism: 1
+        delay: 5s
+      placement:
+        constraints:
+          - node.role == worker
+    healthcheck:
+      test: ["CMD-SHELL", "python -c 'import socket; s=socket.socket(); s.settimeout(2); s.connect((\"127.0.0.1\",5005)); s.close()' || exit 1"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+
+  react_frontend:
+    image: ouhom/helixx-react_frontend:0.9.4
+    networks: [ mission-net, observability-net ]
+    ports:
+      - "3000:3000"
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: any
+      update_config:
+        order: start-first
+        parallelism: 1
+        delay: 5s
+        monitor: 10s
+        failure_action: rollback
+        max_failure_ratio: 0.1
+      rollback_config:
+        order: start-first
+        parallelism: 1
+        delay: 5s
+      placement:
+        constraints:
+          - node.role == worker

@@ -168,14 +168,12 @@ metadata:
   name: mission-mediator
   namespace: mission-planner
 spec:
-#  type: NodePort
   type: LoadBalancer
   selector:
     app: mission-mediator
   ports:
     - port: 5005
       targetPort: 5005
-#      nodePort: 30005     # снаружи (фиксированный)
       protocol: TCP
 ---
 # react-frontend, наружу NodePort

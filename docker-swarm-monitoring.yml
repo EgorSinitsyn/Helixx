@@ -1,0 +1,108 @@
+version: "3.8"
+
+networks:
+  # Общая внешняя сеть для трейсинга — общий DNS 'jaeger' для других стеков
+  observability-net:
+    external: true
+    name: observability-net
+
+  # Внутренняя сеть логов, создаётся этим стеком
+  logs-net:
+    driver: overlay
+    attachable: true
+
+volumes:
+  os-data: {}
+
+services:
+  # ───────────── Jaeger (Tracing) ─────────────
+  jaeger:
+    image: jaegertracing/all-in-one:1.68.0
+    command:
+      - "--collector.otlp.enabled=true"
+      - "--collector.otlp.http.host-port=:4318"
+      - "--collector.otlp.http.cors.allowed-origins=*"
+      - "--collector.otlp.http.cors.allowed-headers=Content-Type"
+    networks:
+      observability-net:
+        aliases: [ "jaeger" ]   # так другие стеки увидят 'http://jaeger:14268'
+    ports:
+      - "16686:16686"  # Jaeger UI
+      - "4317:4317"    # OTLP gRPC (если нужно)
+      - "4318:4318"    # OTLP HTTP
+      - "14268:14268"  # Jaeger Thrift HTTP (для opentelemetry-exporter-jaeger)
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: any
+      placement:
+        constraints:
+          - node.role == manager
+
+  # ───────────── OpenSearch (Logs storage) ─────────────
+  opensearch:
+    image: opensearchproject/opensearch:2.14.0
+    networks:
+      logs-net:
+        aliases:
+          - opensearch
+          - monitoring_opensearch
+    environment:
+      - cluster.name=opensearch-cluster
+      - discovery.type=single-node
+      - plugins.security.disabled=true          # для быстрого старта; в проде включите Security
+      - OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m # подстрой по RAM
+      - OPENSEARCH_USERNAME=admin
+      - OPENSEARCH_PASSWORD='ChangeMe_2025!'
+    volumes:
+      - os-data:/usr/share/opensearch/data
+    ports:
+      - "9200:9200"       # OpenSearch API
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager      # можно сменить на отдельную data-ноду
+      resources:
+        limits:
+          memory: 1G
+        reservations:
+          memory: 512M
+      restart_policy:
+        condition: on-failure
+
+  # ───────────── Dashboards (UI) ─────────────
+  dashboards:
+    image: opensearchproject/opensearch-dashboards:2.14.0
+    networks: [ logs-net ]
+    environment:
+      - OPENSEARCH_HOSTS=["http://opensearch:9200"]
+      - DISABLE_SECURITY_DASHBOARDS_PLUGIN=true
+    ports:
+      - "5601:5601"       # UI
+    depends_on: [ opensearch ]
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager
+      restart_policy:
+        condition: on-failure
+
+  # ───────────── Fluent Bit (Log shipper) ─────────────
+  fluentbit:
+    image: fluent/fluent-bit:2.2
+    networks: [ logs-net ]
+    deploy:
+      mode: global                     # агент на каждой ноде
+      restart_policy:
+        condition: on-failure
+    volumes:
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/log:/var/log:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    configs:
+      - source: fb_conf
+        target: /fluent-bit/etc/fluent-bit.conf
+
+configs:
+  fb_conf:
+    file: ./fluent-bit.conf

@@ -12,7 +12,7 @@ allInOne:
     service:
       headless: false
 
-  # 3) для Collector-сервиса (хотя он у вас уже корректно выставился)
+  # 3) для Collector-сервиса
   collector:
     service:
       headless: false
